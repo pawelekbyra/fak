@@ -2,13 +2,7 @@ import { db as mockDb } from './mock-db';
 import * as postgres from './db-postgres';
 import { Slide } from './types';
 
-const postgresDb = {
-    ...postgres,
-    savePushSubscription: postgres.savePushSubscription,
-    getPushSubscriptions: postgres.getPushSubscriptions,
-};
-
-export type Db = typeof postgresDb & {
+export type Db = typeof postgres & {
     getAllColumnCoords?: () => Promise<{ x: number }[]>;
     getSlidesInColumn?: (
         columnIndex: number,
@@ -24,7 +18,7 @@ if (process.env.MOCK_API === 'true') {
   db = mockDb as any;
 } else {
   console.log("Using Vercel Postgres.");
-  db = postgresDb;
+  db = postgres;
 }
 
 export { db };

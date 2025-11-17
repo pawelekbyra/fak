@@ -10,6 +10,7 @@ import { useUser } from '@/context/UserContext';
 import Image from 'next/image';
 import { useTranslation } from '@/context/LanguageContext';
 import { useToast } from '@/context/ToastContext';
+import { uploadAvatar } from '@/lib/actions';
 
 interface ProfileTabProps {
     onClose: () => void;
@@ -86,13 +87,9 @@ const ProfileTab: React.FC<ProfileTabProps> = ({ onClose }) => {
 
     setStatus(null);
     try {
-      const res = await fetch('/api/avatar/upload', {
-        method: 'POST',
-        body: formData,
-      });
+      const result = await uploadAvatar(formData);
 
-      const result = await res.json();
-      if (!res.ok) {
+      if (!result.success) {
         throw new Error(result.message || t('avatarUploadError'));
       }
 
