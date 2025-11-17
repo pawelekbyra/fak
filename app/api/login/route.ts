@@ -3,9 +3,7 @@ import { SignJWT } from 'jose';
 import { cookies } from 'next/headers';
 import { db } from '@/lib/db';
 import bcrypt from 'bcrypt';
-
-const JWT_SECRET = new TextEncoder().encode(process.env.JWT_SECRET || 'your-fallback-secret-for-development');
-const COOKIE_NAME = 'session';
+import { JWT_SECRET, COOKIE_NAME } from '@/lib/auth';
 
 export async function POST(req: NextRequest) {
   try {

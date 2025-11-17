@@ -13,9 +13,9 @@ export type Db = typeof postgres & {
 
 let db: Db;
 
-// Forcing Vercel Postgres for deployment
-console.log("Using Vercel Postgres.");
+// Wymuszamy użycie Vercel Postgres, zakładając, że DATABASE_URL jest zdefiniowany
 db = postgres;
+console.log("Using Vercel Postgres (DATABASE_URL is assumed to be set).");
 
 export { db };
 export * from './db.interfaces';

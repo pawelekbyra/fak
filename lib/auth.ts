@@ -3,8 +3,17 @@ import { jwtVerify } from 'jose';
 import { db } from '@/lib/db';
 import { User } from './db.interfaces';
 
-const JWT_SECRET = new TextEncoder().encode(process.env.JWT_SECRET || 'your-fallback-secret-for-development');
-const COOKIE_NAME = 'session';
+// UWAGA: TYMCZASOWA MODYFIKACJA DLA UŁATWIENIA DEWELOPMENTU/DEPLOYMENTU
+const FALLBACK_SECRET = 'a_very_long_insecure_key_for_testing_1234567890abcdef';
+
+const secretToUse = process.env.JWT_SECRET || FALLBACK_SECRET;
+
+if (!process.env.JWT_SECRET) {
+    console.warn("WARNING: JWT_SECRET not set. Using insecure default fallback key for development.");
+}
+
+export const JWT_SECRET = new TextEncoder().encode(secretToUse);
+export const COOKIE_NAME = 'session';
 
 export interface AuthPayload {
     user: Omit<User, 'password'>;
