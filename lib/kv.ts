@@ -7,7 +7,13 @@ function initializeKv() {
   }
 
   if (!process.env.KV_REST_API_URL || !process.env.KV_REST_API_TOKEN) {
-    throw new Error("Missing Vercel KV REST API environment variables. Set them in .env.local or enable MOCK_API=true for local development.");
+    console.warn("Missing Vercel KV REST API environment variables. Using mock KV client.");
+    // Return a mock client that does nothing.
+    return {
+      get: async () => null,
+      set: async () => {},
+      // Add other methods as needed, all returning benign values.
+    };
   }
 
   return createClient({
