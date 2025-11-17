@@ -1,10 +1,28 @@
 import { cookies } from 'next/headers';
-import { jwtVerify } from 'jose';
+import { jwtVerify, SignJWT } from 'jose';
 import { db } from '@/lib/db';
 import { User } from './db.interfaces';
 
-const JWT_SECRET = new TextEncoder().encode(process.env.JWT_SECRET || 'your-fallback-secret-for-development');
+let jwtSecret: Uint8Array;
+try {
+    if (!process.env.JWT_SECRET) {
+        if (process.env.NODE_ENV === 'production') {
+            throw new Error("JWT_SECRET environment variable is not set in production");
+        } else {
+            console.warn("JWT_SECRET not set. Using insecure default fallback key for development.");
+            jwtSecret = new TextEncoder().encode('your-fallback-secret-for-development');
+        }
+    } else {
+        jwtSecret = new TextEncoder().encode(process.env.JWT_SECRET);
+    }
+} catch (e: any) {
+    console.error("Fatal error during JWT secret initialization:", e.message);
+    process.exit(1);
+}
+
 const COOKIE_NAME = 'session';
+
+export { jwtSecret, COOKIE_NAME };
 
 export interface AuthPayload {
     user: Omit<User, 'password'>;
@@ -33,7 +51,7 @@ export async function verifySession(): Promise<AuthPayload | null> {
 
     try {
         // 1. Verify the token's signature and structure
-        const { payload } = await jwtVerify(sessionCookie.value, JWT_SECRET);
+        const { payload } = await jwtVerify(sessionCookie.value, jwtSecret);
         const authPayload = payload as unknown as AuthPayload;
 
         if (!isUserPayloadValid(authPayload.user)) {
