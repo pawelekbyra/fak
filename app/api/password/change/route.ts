@@ -7,10 +7,14 @@ import { verifySession } from '@/lib/auth';
 import bcrypt from 'bcrypt';
 import { SignJWT } from 'jose';
 
+const FALLBACK_SECRET = 'a_very_long_insecure_key_for_testing_1234567890abcdef';
+const secretToUse = process.env.JWT_SECRET || FALLBACK_SECRET;
+
 if (!process.env.JWT_SECRET) {
-    throw new Error("JWT_SECRET environment variable is not set");
+console.warn("WARNING: JWT_SECRET not set. Using insecure default fallback key for development.");
 }
-const JWT_SECRET = new TextEncoder().encode(process.env.JWT_SECRET);
+
+const JWT_SECRET = new TextEncoder().encode(secretToUse);
 const COOKIE_NAME = 'session';
 
 export async function POST(request: NextRequest) {

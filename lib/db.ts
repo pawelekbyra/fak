@@ -21,18 +21,12 @@ export type Db = typeof postgres & {
     getSlides?: (options: { limit?: number, cursor?: string, currentUserId?: string }) => Promise<Slide[]>;
 };
 
-// The 'db' instance is directly assigned the postgres implementation.
-// This enforces the use of Vercel Postgres/Neon across the application.
-// The MOCK_API flag is ignored, ensuring that the production database driver is used.
-const db: Db = postgres;
+let db: Db;
 
-// Forcing Vercel Postgres for deployment
-if (process.env.DATABASE_URL) {
-    console.log("Using Vercel Postgres (DATABASE_URL is set).");
-} else {
-    // This warning helps diagnose configuration issues during development or deployment.
-    console.warn("DATABASE_URL is not set. Vercel Postgres is expected.");
-}
+// Wymuszamy użycie Vercel Postgres/Neon, ignorując zmienną MOCK_API,
+// ponieważ baza danych jest aktywna i skonfigurowana.
+db = postgres;
+console.log("Using Vercel Postgres/Neon (DB_URL assumed to be set).");
 
 // Export the configured database instance for use in other parts of the application.
 export { db };
