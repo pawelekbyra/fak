@@ -1,4 +1,3 @@
-node_modules/
-.next/
-temp_dir/
 pro-feature-video-player-ux-fixes/
+node_modules/
+.env.local

@@ -6,7 +6,7 @@ async function testDelete() {
   const usersBefore = await db.getAllUsers();
   console.log('Users before deletion:', usersBefore.map(u => u.id));
 
-  const userIdToDelete = '1';
+  const userIdToDelete = 'user_admin_01';
   console.log(`Attempting to delete user with id: ${userIdToDelete}`);
   const result = await db.deleteUser(userIdToDelete);
   console.log('Deletion result:', result);
