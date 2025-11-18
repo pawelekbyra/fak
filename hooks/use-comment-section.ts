@@ -1,13 +1,13 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Comment, EntityCommentsTree } from '@/lib/comments/types';
 import { buildCommentsTree } from '@/lib/comments/tree';
-import { getCommentsByEntityId } from '@/lib/db'; // This will be replaced by a client-side fetcher or initial data
 import { addComment, deleteComment, updateComment, toggleCommentVote } from '@/lib/comment-actions';
+import { User } from '@/lib/db.interfaces';
 
 export interface UseCommentSectionProps {
   entityId: string;
   initialComments: Comment[];
-  currentUser: { id: string; [key: string]: any } | null;
+  currentUser: User | null;
 }
 
 export function useCommentSection({ entityId, initialComments, currentUser }: UseCommentSectionProps) {
@@ -15,34 +15,71 @@ export function useCommentSection({ entityId, initialComments, currentUser }: Us
   const [commentsTree, setCommentsTree] = useState<EntityCommentsTree>(() => buildCommentsTree(initialComments));
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-
-  // State for UI interactions
   const [repliedToComment, setRepliedToComment] = useState<Partial<Comment> | null>(null);
 
-  // Update tree whenever comments array changes
   useEffect(() => {
     setCommentsTree(buildCommentsTree(comments));
   }, [comments]);
 
+  useEffect(() => {
+    const handleMessage = (event: MessageEvent) => {
+      const { type, comment } = event.data;
+      if (type === 'new-comment' && comment.entityId === entityId) {
+        setComments(prev => [...prev, comment]);
+      }
+    };
+
+    navigator.serviceWorker.addEventListener('message', handleMessage);
+    return () => navigator.serviceWorker.removeEventListener('message', handleMessage);
+  }, [entityId]);
+
   const handleAddComment = useCallback(async (formData: FormData) => {
-    // Optimistic UI update can be implemented here
+    if (!currentUser) {
+      setError('You must be logged in to comment.');
+      return;
+    }
+
+    const tempId = `temp-${Date.now()}`;
+    const content = formData.get('content') as string;
+    const parentId = formData.get('parentId') as string | null;
+
+    const optimisticComment: Comment = {
+      id: tempId,
+      entityId,
+      userId: currentUser.id,
+      content,
+      parentId,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+      deletedAt: null,
+      user: currentUser,
+      upvotesCount: 0,
+      downvotesCount: 0,
+      repliesCount: 0,
+      metadata: null,
+      gif: null,
+      currentUserVote: null,
+      isSending: true,
+    };
+
+    setComments(prev => [...prev, optimisticComment]);
+
     const result = await addComment(formData);
+
     if (result.success && result.comment) {
-      setComments(prev => [...prev, result.comment as Comment]);
+      setComments(prev => prev.map(c => c.id === tempId ? result.comment as Comment : c));
     } else {
       setError(result.message || 'Failed to add comment.');
+      setComments(prev => prev.filter(c => c.id !== tempId));
     }
-  }, []);
+  }, [currentUser, entityId]);
 
   const handleDeleteComment = useCallback(async (formData: FormData) => {
     const commentId = formData.get('commentId') as string;
-    // Optimistic UI update
     setComments(prev => prev.filter(c => c.id !== commentId));
     const result = await deleteComment(formData);
     if (!result.success) {
       setError(result.message || 'Failed to delete comment.');
-      // Revert optimistic update if needed
-      // For simplicity, we're not doing that here yet.
     }
   }, []);
 
@@ -56,27 +93,23 @@ export function useCommentSection({ entityId, initialComments, currentUser }: Us
   }, []);
 
   const handleToggleVote = useCallback(async (formData: FormData) => {
+    // This part would also benefit from an optimistic update and real-time sync
     const result = await toggleCommentVote(formData);
     if (result.success) {
-      // Here you would update the specific comment's vote count
-      // This requires fetching the comment again or getting updated counts from the server action
+      // For a full implementation, the server should return the updated comment
+      // and we would update it in the state here.
     } else {
       setError(result.message || 'Failed to vote.');
     }
   }, []);
-
 
   return {
     comments,
     commentsTree,
     loading,
     error,
-
-    // UI state and handlers
     repliedToComment,
     setRepliedToComment,
-
-    // Actions
     addComment: handleAddComment,
     deleteComment: handleDeleteComment,
     updateComment: handleUpdateComment,

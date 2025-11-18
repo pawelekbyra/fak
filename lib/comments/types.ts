@@ -17,6 +17,7 @@ export interface Comment {
   downvotesCount: number;
   currentUserVote: 'upvote' | 'downvote' | null;
   new?: boolean; // For newly added comments in the UI
+  isSending?: boolean;
 }
 
 export type EntityCommentsTree = Record<
