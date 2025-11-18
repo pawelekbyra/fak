@@ -72,35 +72,35 @@ STRIPE_SECRET_KEY: Klucz tajny do autoryzacji żądań API Stripe (tworzenie Pay
 
 NEXT_PUBLIC_STRIPE_PK: Klucz publiczny Stripe do inicjalizacji biblioteki Stripe.js na frontendzie.
 
-2. System Komentarzy i Powiadomień (Kopia Logiki Replyke)
-Logika tego systemu musi być przeniesiona 1:1 z projektu Replyke (lub Fak), co ma zapewnić stabilność i zaawansowaną obsługę wątków.
+2. Wdrożony System Komentarzy (Logika Replyke + Server Actions)
+System komentarzy został wdrożony, wiernie odtwarzając kluczowe mechanizmy logiki z projektu `replyke/monorepo`, ale z wykorzystaniem nowoczesnego stosu technologicznego opartego o Next.js Server Actions, co eliminuje potrzebę tworzenia dedykowanych API Routes.
 
-A. Backend Komentarzy (API Routes)
-Pobieranie Komentarzy (GET /api/comments): Przyjmuje slideId i wywołuje db.getComments(slideId) po walidacji identyfikatora.
+A. Architektura Backendu (Server Actions)
+Cała logika backendowa została umieszczona w pliku `lib/comment-actions.ts` i opiera się na czterech kluczowych akcjach serwerowych:
+- `addComment`: Dodaje nowy komentarz lub odpowiedź.
+- `updateComment`: Aktualizuje treść istniejącego komentarza.
+- `deleteComment`: Realizuje miękkie usuwanie (soft delete) komentarza.
+- `toggleCommentVote`: Obsługuje system głosowania (upvote/downvote).
 
-Dodawanie Komentarza (POST /api/comments):
+Wszystkie akcje są zabezpieczone za pomocą funkcji `verifySession()` z `lib/auth.ts` i wykorzystują `zod` do walidacji danych wejściowych. Logika bazodanowa została zaimplementowana w `lib/db-postgres.ts` i jest w pełni zgodna ze schemą danych `replyke`.
 
-Wymaga pomyślnej verifySession().
+B. Logika Frontendowa i Zarządzanie Stanem
+- **Budowanie Drzewa Komentarzy (`lib/comments/tree.ts`):** Logika budowania zagnieżdżonej struktury komentarzy została wiernie przeniesiona z `replyke`, włącznie z kluczowym mechanizmem obronnym zapobiegającym dodawaniu odpowiedzi do nieistniejących rodziców.
+- **Centralny Hak (`hooks/use-comment-section.ts`):** Cały stan i logika UI sekcji komentarzy są zarządzane przez ten hak. Odpowiada on za pobieranie danych, budowanie drzewa, obsługę interakcji (np. wybór komentarza do odpowiedzi) i wywoływanie Server Actions.
+- **Zarządzanie Stanem Globalnym (Zustand):** Widoczność modala komentarzy jest kontrolowana przez globalny store Zustand (`store/useStore.ts`), co pozwala na jego otwieranie z dowolnego miejsca w aplikacji poprzez wywołanie `setActiveModal('comments')`.
 
-Tekst jest sanityzowany (sanitize(text.trim())) przed zapisem do bazy.
+C. Komponenty UI (`components/comments/`)
+Interfejs użytkownika został zbudowany w sposób modularny i w pełni ostylowany w nowoczesnym, "tiktokowym" stylu (ciemny motyw, animacje `framer-motion`), wykorzystując bibliotekę `shadcn/ui` dla spójności wizualnej.
+- `CommentsModal.tsx`: Główny komponent-modal, który integruje wszystkie pozostałe. Asynchronicznie pobiera komentarze po otwarciu i wyświetla stan ładowania.
+- `CommentsList.tsx` i `CommentItem.tsx`: Odpowiedzialne za rekurencyjne renderowanie drzewa komentarzy.
+- `CommentForm.tsx`: Formularz do dodawania komentarzy, zintegrowany z Server Actions.
 
-Musi weryfikować istnienie slajdu (db.getSlide(slideId)) oraz rodzica (parentId).
-
-Lajkowanie (POST /api/comments/like): Wymaga verifySession() i replikuje logikę Replyke do zwiększania/zmniejszania liczby głosów (db.upvoteComment lub db.downvoteComment).
-
-B. Drzewo Komentarzy i Stan (Frontend Logic)
-Budowanie Drzewa (helpers/addCommentsToTree.ts): Krytyczna logika Replyke musi zostać skopiowana 1:1, zapewniając obsługę hierarchicznej struktury komentarzy z zachowaniem niezmienności (immutability).
-
-Mechanizm Obronny: Implementacja musi zawierać mechanizm obronny przed dodawaniem odpowiedzi do komentarzy, których obiekt rodzica nie jest jeszcze załadowany w stanie (if (!entityCommentsTree[newComment.parentId]) return...).
-
-Zarządzanie Stanem UI: Dedykowany Context/Hook (Zustand) (CommentSectionContext.tsx, useCommentSectionData) utrzymuje zmaterializowane drzewo komentarzy i funkcje do wywoływania akcji serwera.
-
-C. Powiadomienia (WebPush)
-Rejestracja (POST /api/notifications): Wymaga verifySession() i zapisuje obiekt subskrypcji (używa NEXT_PUBLIC_VAPID_PUBLIC_KEY) do bazy danych.
-
-Pobieranie (GET /api/notifications): Zabezpieczony Endpoint, który pobiera db.getNotifications(userId) i zwraca status nieprzeczytanych powiadomień. Wymaga ustawienia nagłówka Cache-Control: no-cache.
-
-Service Worker (public/sw.js): Plik ten jest odpowiedzialny za nasłuchiwanie na zdarzenia push i wyświetlanie powiadomień (self.registration.showNotification(title, options)) oraz obsługę notificationclick do przekierowania.
+D. Rekomendacje i Dalszy Rozwój
+Obecna implementacja stanowi solidny fundament. Dalsze prace powinny skupić się na:
+1.  **Powiadomienia w Czasie Rzeczywistym:** Integracja z usługą taką jak Pusher lub Ably, aby komentarze i głosy pojawiały się na żywo, bez potrzeby odświeżania.
+2.  **Obsługa Załączników:** Rozbudowa `CommentForm` i `CommentItem` o możliwość dodawania i wyświetlania obrazów (np. GIF-ów), wykorzystując Vercel Blob.
+3.  **Zaawansowana Moderacja:** Stworzenie panelu administracyjnego do zarządzania komentarzami (usuwanie, edycja).
+4.  **Optymistyczne UI:** Udoskonalenie `useCommentSection` o mechanizmy optymistycznego UI, aby interfejs reagował natychmiastowo, a dane synchronizowały się w tle.
 
 3. Wielokrokowy Modal Napiwków (TippingModal)
 Komponent TippingModal.tsx musi odtworzyć wieloetapowy przepływ, który automatyzuje proces zostania Patronem.

@@ -62,15 +62,18 @@ function getDb() {
 // --- Table Creation ---
 export async function createTables() {
   const sql = getDb();
+  // Drop tables in an order that respects foreign key constraints
   await sql`DROP TABLE IF EXISTS password_reset_tokens CASCADE;`;
   await sql`DROP TABLE IF EXISTS push_subscriptions CASCADE;`;
   await sql`DROP TABLE IF EXISTS notifications CASCADE;`;
-  await sql`DROP TABLE IF EXISTS comment_likes CASCADE;`;
+  await sql`DROP TABLE IF EXISTS comment_votes CASCADE;`;
+  await sql`DROP TABLE IF EXISTS comment_likes CASCADE;`; // Keep for safety, will be replaced by comment_votes
   await sql`DROP TABLE IF EXISTS likes CASCADE;`;
   await sql`DROP TABLE IF EXISTS comments CASCADE;`;
   await sql`DROP TABLE IF EXISTS slides CASCADE;`;
   await sql`DROP TABLE IF EXISTS users CASCADE;`;
 
+  // Create tables
   await sql`
     CREATE TABLE users (
       id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -83,6 +86,7 @@ export async function createTables() {
       "sessionVersion" INTEGER DEFAULT 1
     );
   `;
+
   await sql`
     CREATE TABLE password_reset_tokens (
       id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -91,6 +95,7 @@ export async function createTables() {
       "expiresAt" TIMESTAMP WITH TIME ZONE NOT NULL
     );
   `;
+
   await sql`
     CREATE TABLE slides (
         id VARCHAR(255) PRIMARY KEY,
@@ -106,23 +111,33 @@ export async function createTables() {
         UNIQUE(x, y)
     );
   `;
+
   await sql`
     CREATE TABLE comments (
-        id VARCHAR(255) PRIMARY KEY,
-        "slideId" VARCHAR(255) REFERENCES slides(id),
-        "userId" UUID REFERENCES users(id),
-        "parentId" VARCHAR(255) REFERENCES comments(id) DEFAULT NULL,
-        text TEXT NOT NULL,
-        "createdAt" TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        "entityId" VARCHAR(255) REFERENCES slides(id) ON DELETE CASCADE NOT NULL,
+        "userId" UUID REFERENCES users(id) ON DELETE CASCADE NOT NULL,
+        "parentId" UUID REFERENCES comments(id) ON DELETE CASCADE DEFAULT NULL,
+        content TEXT,
+        gif JSONB,
+        "repliesCount" INTEGER NOT NULL DEFAULT 0,
+        metadata JSONB,
+        "createdAt" TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+        "updatedAt" TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+        "deletedAt" TIMESTAMP WITH TIME ZONE DEFAULT NULL,
+        CONSTRAINT content_or_gif_check CHECK (content IS NOT NULL OR gif IS NOT NULL)
     );
   `;
+
   await sql`
-      CREATE TABLE comment_likes (
-          "commentId" VARCHAR(255) REFERENCES comments(id),
-          "userId" UUID REFERENCES users(id),
+      CREATE TABLE comment_votes (
+          "commentId" UUID REFERENCES comments(id) ON DELETE CASCADE,
+          "userId" UUID REFERENCES users(id) ON DELETE CASCADE,
+          "voteType" VARCHAR(10) NOT NULL CHECK ("voteType" IN ('upvote', 'downvote')),
           PRIMARY KEY ("commentId", "userId")
       );
     `;
+
   await sql`
     CREATE TABLE likes (
         "slideId" VARCHAR(255) REFERENCES slides(id),
@@ -130,6 +145,7 @@ export async function createTables() {
         PRIMARY KEY ("slideId", "userId")
     );
   `;
+
   await sql`
     CREATE TABLE notifications (
         id VARCHAR(255) PRIMARY KEY,
@@ -142,6 +158,7 @@ export async function createTables() {
         "createdAt" TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
     );
   `;
+
   await sql`
     CREATE TABLE push_subscriptions (
         id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -436,28 +453,156 @@ export async function getComments(slideId: string): Promise<Comment[]> {
     return (result as unknown as any[]).map(c => ({ ...c, user: { displayName: c.displayName, avatar: c.avatar } }));
 }
 
-export async function addComment(slideId: string, userId:string, text: string, parentId: string | null = null): Promise<Comment> {
+export async function getCommentsByEntityId(entityId: string, currentUserId?: string | null): Promise<Comment[]> {
     const sql = getDb();
-    const result = await sql`
+    const result = await sql.query(`
+        SELECT
+            c.*,
+            u.username,
+            u."displayName",
+            u.avatar,
+            (SELECT COUNT(*) FROM comment_votes WHERE "commentId" = c.id AND "voteType" = 'upvote') AS "upvotesCount",
+            (SELECT COUNT(*) FROM comment_votes WHERE "commentId" = c.id AND "voteType" = 'downvote') AS "downvotesCount",
+            (SELECT "voteType" FROM comment_votes WHERE "commentId" = c.id AND "userId" = $2) AS "currentUserVote"
+        FROM comments c
+        JOIN users u ON c."userId" = u.id
+        WHERE c."entityId" = $1 AND c."deletedAt" IS NULL
+        ORDER BY c."createdAt" ASC;
+    `, [entityId, currentUserId]);
+
+    return (result as unknown as any[]).map(row => ({
+        id: row.id,
+        entityId: row.entityId,
+        userId: row.userId,
+        parentId: row.parentId,
+        content: row.content,
+        gif: row.gif,
+        repliesCount: parseInt(row.repliesCount, 10),
+        metadata: row.metadata,
+        createdAt: new Date(row.createdAt),
+        updatedAt: new Date(row.updatedAt),
+        deletedAt: row.deletedAt ? new Date(row.deletedAt) : null,
+        user: {
+            id: row.userId,
+            username: row.username,
+            displayName: row.displayName,
+            avatar: row.avatar,
+        },
+        upvotesCount: parseInt(row.upvotesCount, 10),
+        downvotesCount: parseInt(row.downvotesCount, 10),
+        currentUserVote: row.currentUserVote || null,
+    })) as Comment[];
+}
+
+export async function addComment(commentData: {
+    entityId: string;
+    userId: string;
+    content: string;
+    parentId?: string | null;
+    gif?: object | null;
+}): Promise<Comment> {
+    const sql = getDb();
+    const { entityId, userId, content, parentId = null, gif = null } = commentData;
+
+    const result = await sql.query(`
         WITH new_comment AS (
-            INSERT INTO comments (id, "slideId", "userId", text, "parentId")
-            VALUES ('comment_' || gen_random_uuid()::text, ${slideId}, ${userId}, ${text}, ${parentId})
+            INSERT INTO comments ("entityId", "userId", "content", "parentId", "gif")
+            VALUES ($1, $2, $3, $4, $5)
             RETURNING *
         )
-        SELECT c.*, u."displayName", u.username, u.avatar
+        SELECT
+            c.*,
+            u.username,
+            u."displayName",
+            u.avatar
         FROM new_comment c
-        JOIN users u ON c."userId" = u.id;
-    `;
+        JOIN users u ON c."userId" = u.id
+        WHERE c.id = (SELECT id FROM new_comment);
+    `, [entityId, userId, content, parentId, gif ? JSON.stringify(gif) : null]);
+
     const newCommentData = result[0];
-    const { displayName, username, avatar, ...commentData } = newCommentData;
+    const { displayName, username, avatar, ...commentFields } = newCommentData;
     return {
-        ...commentData,
+        ...commentFields,
         user: {
+            id: userId,
             displayName: displayName || username,
-            avatar: avatar || ''
-        }
-    } as Comment;
+            avatar: avatar || '',
+        },
+        upvotesCount: 0,
+        downvotesCount: 0,
+        currentUserVote: null,
+    } as unknown as Comment;
 }
+
+export async function updateComment(commentId: string, userId: string, content: string): Promise<Comment | null> {
+    const sql = getDb();
+    const result = await sql`
+        UPDATE comments SET content = ${content}, "updatedAt" = CURRENT_TIMESTAMP
+        WHERE id = ${commentId} AND "userId" = ${userId}
+        RETURNING *;
+    `;
+    return result[0] ? (result[0] as unknown as Comment) : null;
+}
+
+export async function deleteComment(commentId: string, userId: string): Promise<boolean> {
+    const sql = getDb();
+    const result = await sql`
+        UPDATE comments SET "deletedAt" = CURRENT_TIMESTAMP
+        WHERE id = ${commentId} AND "userId" = ${userId};
+    `;
+    return result.length > 0;
+}
+
+export async function toggleCommentVote(commentId: string, userId: string, voteType: 'upvote' | 'downvote'): Promise<{
+    newStatus: 'upvoted' | 'downvoted' | 'none',
+    upvotesCount: number,
+    downvotesCount: number
+}> {
+    const sql = getDb();
+
+    // Check current vote status
+    const currentVoteResult = await sql`
+        SELECT "voteType" FROM comment_votes WHERE "commentId" = ${commentId} AND "userId" = ${userId};
+    `;
+    const currentVote = currentVoteResult.length > 0 ? currentVoteResult[0].voteType : null;
+
+    let newStatus: 'upvoted' | 'downvoted' | 'none';
+
+    if (currentVote === voteType) {
+        // User is toggling off their vote
+        await sql`
+            DELETE FROM comment_votes WHERE "commentId" = ${commentId} AND "userId" = ${userId};
+        `;
+        newStatus = 'none';
+    } else if (currentVote) {
+        // User is changing their vote
+        await sql`
+            UPDATE comment_votes SET "voteType" = ${voteType} WHERE "commentId" = ${commentId} AND "userId" = ${userId};
+        `;
+        newStatus = voteType === 'upvote' ? 'upvoted' : 'downvoted';
+    } else {
+        // User is casting a new vote
+        await sql`
+            INSERT INTO comment_votes ("commentId", "userId", "voteType") VALUES (${commentId}, ${userId}, ${voteType});
+        `;
+        newStatus = voteType === 'upvote' ? 'upvoted' : 'downvoted';
+    }
+
+    // Recalculate counts
+    const countsResult = await sql`
+        SELECT
+            (SELECT COUNT(*) FROM comment_votes WHERE "commentId" = ${commentId} AND "voteType" = 'upvote') AS "upvotesCount",
+            (SELECT COUNT(*) FROM comment_votes WHERE "commentId" = ${commentId} AND "voteType" = 'downvote') AS "downvotesCount";
+    `;
+
+    return {
+        newStatus,
+        upvotesCount: parseInt(countsResult[0].upvotesCount as string, 10),
+        downvotesCount: parseInt(countsResult[0].downvotesCount as string, 10),
+    };
+}
+
 
 // --- Notification Functions ---
 export async function createNotification(notificationData: Omit<Notification, 'id' | 'createdAt' | 'read'>): Promise<Notification> {
