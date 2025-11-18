@@ -33,6 +33,12 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   return (
     <div className="flex h-full flex-col relative">
       <TopBar />
+import GlobalVideoPlayer from './GlobalVideoPlayer';
+
+// ... (keep the rest of the imports)
+
+// ... (keep the component definition)
+
       <div className="flex-1 md:bg-gray-100 md:flex md:justify-center">
         <main className="relative w-full h-full bg-white md:max-w-[400px] md:border md:shadow-lg overflow-hidden z-10">
           <GlobalVideoPlayer />

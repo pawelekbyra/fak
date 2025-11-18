@@ -3847,6 +3847,11 @@ react-is@^16.13.1:
     "@types/use-sync-external-store" "^0.0.6"
     use-sync-external-store "^1.4.0"
 
+react-window@^2.2.3:
+  version "2.2.3"
+  resolved "https://registry.yarnpkg.com/react-window/-/react-window-2.2.3.tgz#f8ffdddbb612ccd3e1314b59fce79af85d3f15e3"
+  integrity sha512-gTRqQYC8ojbiXyd9duYFiSn2TJw0ROXCgYjenOvNKITWzK0m0eCvkUsEUM08xvydkMh7ncp+LE0uS3DeNGZxnQ==
+
 react@^18:
   version "18.3.1"
   resolved "https://registry.npmjs.org/react/-/react-18.3.1.tgz"

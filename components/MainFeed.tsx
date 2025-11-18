@@ -68,7 +68,8 @@ const MainFeed = () => {
   const handleScroll = () => {
       const visibleRange = rowVirtualizer.getVirtualItems();
       if (visibleRange.length > 0) {
-          const middleIndex = visibleRange[Math.floor(visibleRange.length / 2)].index;
+          // Używamy pierwszego widocznego elementu, co jest typowe dla snap-scrolla
+          const middleIndex = visibleRange[0].index; 
           if (middleIndex !== activeSlideIndex && slides[middleIndex]) {
               setActiveSlide(slides[middleIndex], middleIndex);
           }
@@ -77,6 +78,7 @@ const MainFeed = () => {
 
 
   useEffect(() => {
+      // Przypisanie funkcji jumpToSlide do stanu globalnego
       useStore.setState({
           jumpToSlide: async (slideId: string) => {
               try {
@@ -84,8 +86,10 @@ const MainFeed = () => {
                   if (res.ok) {
                       const newSlide = await res.json();
                       setSlides(produce(draft => {
+                          // Aktualizacja aktywnego slajdu
                           draft[activeSlideIndex] = newSlide;
                       }));
+                      // Przewinięcie, aby upewnić się, że slajd jest widoczny
                       rowVirtualizer.scrollToIndex(activeSlideIndex, { align: 'start' });
                   }
               } catch (error) {
@@ -109,7 +113,7 @@ const MainFeed = () => {
         <div style={{ height: `${rowVirtualizer.getTotalSize()}px`, width: '100%', position: 'relative' }}>
             {rowVirtualizer.getVirtualItems().map((virtualItem) => {
                 const isLoaderRow = virtualItem.index > slides.length - 1;
-                const slide = slides[virtualItem.index % slides.length];
+                const slide = slides[virtualItem.index];
 
                 return (
                     <div
