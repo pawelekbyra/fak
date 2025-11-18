@@ -7,18 +7,19 @@ import {
   Slide as SlideUnionType,
   HtmlSlide,
   ImageSlide,
-  VideoSlide,
 } from '@/lib/types';
-import { useStore, ModalType } from '@/store/useStore';
-import VideoPlayer from './VideoPlayer';
+import { useStore } from '@/store/useStore';
 import VideoControls from './VideoControls';
 import { shallow } from 'zustand/shallow';
 import { AnimatePresence, motion } from 'framer-motion';
 import PlayIcon from './icons/PlayIcon';
 import PauseIcon from './icons/PauseIcon';
 import Sidebar from './Sidebar';
+import { useUser } from '@/context/UserContext';
+import { cn } from '@/lib/utils';
+import SecretOverlay from './SecretOverlay';
 
-// --- Prop Types for Sub-components ---
+
 interface HtmlContentProps {
   slide: HtmlSlide;
 }
@@ -27,9 +28,9 @@ interface ImageContentProps {
 }
 interface SlideUIProps {
     slide: SlideUnionType;
+    isVisible: boolean;
 }
 
-// --- Sub-components ---
 
 const HtmlContent = ({ slide }: HtmlContentProps) => {
   if (!slide.data?.htmlContent) return null;
@@ -57,10 +58,8 @@ const ImageContent = ({ slide }: ImageContentProps) => {
   );
 };
 
-const SlideUI = ({ slide }: SlideUIProps) => {
+const SlideUI = ({ slide, isVisible }: SlideUIProps) => {
     const {
-        activeModal,
-        setActiveModal,
         togglePlay,
         currentTime,
         duration,
@@ -69,8 +68,6 @@ const SlideUI = ({ slide }: SlideUIProps) => {
         seek,
         setIsMuted
     } = useStore(state => ({
-        activeModal: state.activeModal,
-        setActiveModal: state.setActiveModal,
         togglePlay: state.togglePlay,
         currentTime: state.currentTime,
         duration: state.duration,
@@ -84,7 +81,7 @@ const SlideUI = ({ slide }: SlideUIProps) => {
     const iconTimer = useRef<NodeJS.Timeout | null>(null);
 
     const handleContainerClick = (e: React.MouseEvent<HTMLDivElement>) => {
-        if (e.target === e.currentTarget) {
+        if (e.target === e.currentTarget && slide.type === 'video') {
             togglePlay();
             setShowPlaybackIcon(true);
             if (iconTimer.current) {
@@ -111,13 +108,11 @@ const SlideUI = ({ slide }: SlideUIProps) => {
         className="absolute inset-0 z-10 p-4 flex flex-col justify-end text-white"
         onClick={handleContainerClick}
       >
-        {/* Top gradient */}
         <div className="absolute inset-x-0 top-0 h-24 bg-gradient-to-b from-black/50 to-transparent pointer-events-none" />
-        {/* Bottom gradient */}
         <div className="absolute inset-x-0 bottom-0 h-48 bg-gradient-to-t from-black/50 to-transparent pointer-events-none" />
 
         <AnimatePresence>
-            {showPlaybackIcon && (
+            {showPlaybackIcon && isVideoSlide && (
                 <motion.div
                     className="absolute inset-0 flex items-center justify-center"
                     initial={{ opacity: 0, scale: 1.5 }}
@@ -136,8 +131,6 @@ const SlideUI = ({ slide }: SlideUIProps) => {
             )}
         </AnimatePresence>
 
-
-        {/* UI Controls Container */}
         <div className="relative z-20">
             <div className="flex items-center gap-2 mb-2">
                 <Image src={slide.avatar || '/avatars/default.png'} alt={slide.username} width={40} height={40} className="rounded-full border-2 border-white" />
@@ -148,7 +141,6 @@ const SlideUI = ({ slide }: SlideUIProps) => {
             {slide.data && 'description' in slide.data && <p className="text-sm opacity-90">{slide.data.description}</p>}
         </div>
 
-
         <Sidebar
             slideId={slide.id}
             initialLikes={slide.initialLikes}
@@ -156,7 +148,7 @@ const SlideUI = ({ slide }: SlideUIProps) => {
             commentsCount={slide.initialComments}
         />
 
-        {isVideoSlide && (
+        {isVisible && isVideoSlide && (
             <VideoControls
               currentTime={currentTime}
               duration={duration}
@@ -171,26 +163,21 @@ const SlideUI = ({ slide }: SlideUIProps) => {
     );
   };
 
-import { useUser } from '@/context/UserContext';
-import { cn } from '@/lib/utils';
-import SecretOverlay from './SecretOverlay';
-
-// --- Main Slide Component ---
 
 interface SlideProps {
     slide: SlideUnionType;
+    isVisible: boolean;
 }
 
-const Slide = memo<SlideProps>(({ slide}) => {
+const Slide = memo<SlideProps>(({ slide, isVisible }) => {
     const { isLoggedIn } = useUser();
     const showSecretOverlay = slide.access === 'secret' && !isLoggedIn;
 
     const renderContent = () => {
         switch (slide.type) {
             case 'video':
-                const videoSlide = slide as VideoSlide;
-                if (!videoSlide.data?.hlsUrl) return <div className="w-full h-full bg-black" />;
-                return <VideoPlayer hlsUrl={videoSlide.data.hlsUrl} />;
+                 // Video is now handled by GlobalVideoPlayer, render a black background
+                return <div className="w-full h-full bg-black" />;
             case 'html':
                 return <HtmlContent slide={slide as HtmlSlide} />;
             case 'image':
@@ -206,7 +193,7 @@ const Slide = memo<SlideProps>(({ slide}) => {
             showSecretOverlay && "blur-md brightness-50"
         )}>
             {renderContent()}
-            {showSecretOverlay ? <SecretOverlay /> : <SlideUI slide={slide} />}
+            {showSecretOverlay ? <SecretOverlay /> : <SlideUI slide={slide} isVisible={isVisible} />}
         </div>
     );
 });

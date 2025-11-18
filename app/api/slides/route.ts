@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { db } from '@/lib/db';
+import { prisma } from '@/lib/prisma';
 import { verifySession } from '@/lib/auth';
 
 export const dynamic = 'force-dynamic';
@@ -13,16 +13,49 @@ export async function GET(request: NextRequest) {
     const session = await verifySession();
     const currentUserId = session?.user?.id;
 
-    if (!db.getSlides) {
-        return NextResponse.json({ error: 'db.getSlides is not a function' }, { status: 500 });
-    }
+    const slidesRaw = await prisma.slides.findMany({
+      take: limit,
+      ...(cursor ? { skip: 1, cursor: { id: cursor } } : {}),
+      orderBy: {
+        createdAt: 'desc',
+      },
+      include: {
+        likes: {
+          select: {
+            userId: true,
+          },
+        },
+        comments: {
+          select: {
+            id: true,
+          },
+        },
+        users: {
+            select: {
+                avatar: true,
+            }
+        }
+      },
+    });
 
-    const slides = await db.getSlides({ limit, cursor, currentUserId });
+    const slides = slidesRaw.map(slide => {
+        const { likes, comments, users, slideType, content, createdAt, ...rest } = slide;
+        return {
+            ...rest,
+            avatar: users?.avatar,
+            type: slideType,
+            createdAt: createdAt ? new Date(createdAt).getTime() : 0,
+            initialLikes: likes.length,
+            initialComments: comments.length,
+            isLiked: currentUserId ? likes.some(like => like.userId === currentUserId) : false,
+            data: JSON.parse(content || '{}'),
+        }
+    });
+
 
     let nextCursor: string | null = null;
     if (slides.length === limit) {
-      const lastSlide = slides[slides.length - 1];
-      nextCursor = lastSlide.createdAt.toString();
+      nextCursor = slides[slides.length - 1].id;
     }
 
     return NextResponse.json({

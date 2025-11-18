@@ -28,3 +28,5 @@ jules-scratch/
 test-db.ts
 cookie.txt
 package-lock.json
+
+/lib/generated/prisma

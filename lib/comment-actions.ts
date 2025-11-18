@@ -1,7 +1,7 @@
 'use server';
 
 import { revalidatePath } from 'next/cache';
-import { db } from '@/lib/db';
+import { prisma } from '@/lib/prisma';
 import { verifySession } from '@/lib/auth';
 import { put } from '@vercel/blob';
 import { z } from 'zod';
@@ -65,15 +65,38 @@ export async function addComment(formData: FormData) {
   }
 
   try {
-    const newComment = await db.addComment({
-      entityId,
-      userId: currentUser.id,
-      content,
-      imageUrl,
-      parentId: parentId || null,
+    const newComment = await prisma.comments.create({
+        data: {
+            entityId,
+            userId: currentUser.id,
+            content,
+            imageUrl,
+            parentId: parentId || null,
+        },
+        include: {
+            users: {
+                select: {
+                    id: true,
+                    username: true,
+                    displayName: true,
+                    avatar: true,
+                }
+            }
+        }
     });
+
+    const { users, ...commentData } = newComment;
+
+    const commentWithUser = {
+        ...commentData,
+        user: users,
+        upvotesCount: 0,
+        downvotesCount: 0,
+        currentUserVote: null,
+    }
+
     revalidatePath('/');
-    return { success: true, message: 'Comment added', comment: newComment };
+    return { success: true, message: 'Comment added', comment: commentWithUser };
   } catch (error) {
     console.error('Error adding comment:', error);
     return { success: false, message: 'Failed to add comment.' };
@@ -99,7 +122,16 @@ export async function updateComment(formData: FormData) {
     const { commentId, content } = validatedFields.data;
 
     try {
-        const updatedComment = await db.updateComment(commentId, currentUser.id, content);
+        const updatedComment = await prisma.comments.update({
+            where: {
+                id: commentId,
+                userId: currentUser.id,
+            },
+            data: {
+                content,
+                updatedAt: new Date(),
+            }
+        });
         if (!updatedComment) {
             return { success: false, message: 'Comment not found or user not authorized.' };
         }
@@ -130,8 +162,16 @@ export async function deleteComment(formData: FormData) {
     const { commentId } = validatedFields.data;
 
     try {
-        const success = await db.deleteComment(commentId, currentUser.id);
-        if (!success) {
+        const updatedComment = await prisma.comments.update({
+            where: {
+                id: commentId,
+                userId: currentUser.id,
+            },
+            data: {
+                deletedAt: new Date(),
+            }
+        });
+        if (!updatedComment) {
             return { success: false, message: 'Comment not found or user not authorized.' };
         }
         revalidatePath('/');
@@ -166,9 +206,47 @@ export async function toggleCommentVote(formData: FormData) {
     const { commentId, voteType } = validatedFields.data;
 
     try {
-        const result = await db.toggleCommentVote(commentId, currentUser.id, voteType);
+        let newStatus: 'upvoted' | 'downvoted' | 'none';
+
+        await prisma.$transaction(async (tx) => {
+            const existingVote = await tx.comment_votes.findUnique({
+                where: {
+                    commentId_userId: {
+                        commentId,
+                        userId: currentUser.id,
+                    }
+                }
+            });
+
+            if (existingVote) {
+                if (existingVote.voteType === voteType) {
+                    await tx.comment_votes.delete({ where: { commentId_userId: { commentId, userId: currentUser.id } } });
+                    newStatus = 'none';
+                } else {
+                    await tx.comment_votes.update({
+                        where: { commentId_userId: { commentId, userId: currentUser.id } },
+                        data: { voteType },
+                    });
+                    newStatus = voteType;
+                }
+            } else {
+                await tx.comment_votes.create({
+                    data: {
+                        commentId,
+                        userId: currentUser.id,
+                        voteType,
+                    }
+                });
+                newStatus = voteType;
+            }
+        });
+
+        const upvotesCount = await prisma.comment_votes.count({ where: { commentId, voteType: 'upvote' } });
+        const downvotesCount = await prisma.comment_votes.count({ where: { commentId, voteType: 'downvote' } });
+
+
         revalidatePath('/');
-        return { success: true, ...result };
+        return { success: true, newStatus, upvotesCount, downvotesCount };
     } catch (error) {
         console.error('Error toggling comment vote:', error);
         return { success: false, message: 'Failed to toggle vote.' };

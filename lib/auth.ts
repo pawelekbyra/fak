@@ -1,7 +1,7 @@
 import { cookies } from 'next/headers';
 import { jwtVerify } from 'jose';
-import { db } from '@/lib/db';
-import { User } from './db.interfaces';
+import { prisma } from '@/lib/prisma';
+import { users as User } from '@prisma/client';
 
 // UWAGA: TYMCZASOWA MODYFIKACJA DLA UŁATWIENIA DEWELOPMENTU/DEPLOYMENTU
 const FALLBACK_SECRET = 'a_very_long_insecure_key_for_testing_1234567890abcdef';
@@ -52,7 +52,7 @@ export async function verifySession(): Promise<AuthPayload | null> {
         }
 
         // 2. Fetch the user's current state from the database
-        const userFromDb = await db.findUserById(authPayload.user.id);
+        const userFromDb = await prisma.users.findUnique({ where: { id: authPayload.user.id } });
         if (!userFromDb) {
             console.log(`User ${authPayload.user.id} not found in DB.`);
             return null;
