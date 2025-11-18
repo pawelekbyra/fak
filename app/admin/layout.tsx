@@ -29,6 +29,9 @@ export default async function AdminLayout({
     <div className="admin-layout bg-gray-900 text-white min-h-screen">
       <header className="bg-gray-800 p-4 shadow-md">
         <h1 className="text-xl font-bold">Admin Panel</h1>
+        <nav>
+          <a href="/admin/users" className="text-blue-400 hover:underline">User Management</a>
+        </nav>
       </header>
       <main className="p-6">{children}</main>
     </div>

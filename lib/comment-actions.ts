@@ -3,6 +3,7 @@
 import { revalidatePath } from 'next/cache';
 import { db } from '@/lib/db';
 import { verifySession } from '@/lib/auth';
+import { put } from '@vercel/blob';
 import { z } from 'zod';
 import { checkRateLimit } from './rate-limiter';
 
@@ -56,11 +57,19 @@ export async function addComment(formData: FormData) {
 
   const { entityId, content, parentId } = validatedFields.data;
 
+  let imageUrl: string | undefined;
+  const imageFile = formData.get('image') as File;
+  if (imageFile) {
+    const blob = await put(imageFile.name, imageFile, { access: 'public' });
+    imageUrl = blob.url;
+  }
+
   try {
     const newComment = await db.addComment({
       entityId,
       userId: currentUser.id,
       content,
+      imageUrl,
       parentId: parentId || null,
     });
     revalidatePath('/');

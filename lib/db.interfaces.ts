@@ -9,7 +9,7 @@ export interface User {
   displayName?: string;
   avatar?: string;
   sessionVersion?: number;
-  role?: 'user' | 'admin';
+  role?: 'ADMIN' | 'PATRON' | 'TWÓRCA';
 }
 
 export interface Comment {
@@ -17,6 +17,7 @@ export interface Comment {
   slideId: string; // Changed from videoId
   userId: string;
   text: string;
+  imageUrl?: string;
   createdAt: number; // Unix timestamp
   likedBy: string[]; // Array of userIds
   parentId?: string | null;

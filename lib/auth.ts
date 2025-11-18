@@ -31,7 +31,7 @@ function isUserPayloadValid(user: any): user is Omit<User, 'password'> {
     // Optional fields can be checked for type if they exist
     if (user.displayName && typeof user.displayName !== 'string') return false;
     if (user.avatar && typeof user.avatar !== 'string') return false;
-    if (user.role && (user.role !== 'user' && user.role !== 'admin')) return false;
+    if (user.role && (user.role !== 'ADMIN' && user.role !== 'PATRON' && user.role !== 'TWÓRCA')) return false;
     return true;
 }
 

@@ -82,7 +82,7 @@ export async function createTables() {
       email VARCHAR(255) UNIQUE NOT NULL,
       password VARCHAR(255),
       avatar VARCHAR(255),
-      "role" VARCHAR(50) DEFAULT 'user',
+      "role" TEXT CHECK ("role" IN ('ADMIN', 'PATRON', 'TWÓRCA')) DEFAULT 'PATRON',
       "sessionVersion" INTEGER DEFAULT 1
     );
   `;
@@ -119,6 +119,7 @@ export async function createTables() {
         "userId" UUID REFERENCES users(id) ON DELETE CASCADE NOT NULL,
         "parentId" UUID REFERENCES comments(id) ON DELETE CASCADE DEFAULT NULL,
         content TEXT,
+        "imageUrl" TEXT,
         gif JSONB,
         "repliesCount" INTEGER NOT NULL DEFAULT 0,
         metadata JSONB,
@@ -190,7 +191,7 @@ export async function createUser(userData: Omit<User, 'id' | 'sessionVersion' | 
     const { username, displayName, email, password, avatar, role } = userData;
     const result = await sql`
         INSERT INTO users (username, "displayName", email, password, avatar, "role")
-        VALUES (${username}, ${displayName}, ${email}, ${password}, ${avatar}, ${role || 'user'})
+        VALUES (${username}, ${displayName}, ${email}, ${password}, ${avatar}, ${role || 'PATRON'})
         RETURNING *;
     `;
     return result[0] as User;
@@ -498,16 +499,17 @@ export async function addComment(commentData: {
     entityId: string;
     userId: string;
     content: string;
+    imageUrl?: string;
     parentId?: string | null;
     gif?: object | null;
 }): Promise<Comment> {
     const sql = getDb();
-    const { entityId, userId, content, parentId = null, gif = null } = commentData;
+    const { entityId, userId, content, imageUrl, parentId = null, gif = null } = commentData;
 
     const result = await sql.query(`
         WITH new_comment AS (
-            INSERT INTO comments ("entityId", "userId", "content", "parentId", "gif")
-            VALUES ($1, $2, $3, $4, $5)
+            INSERT INTO comments ("entityId", "userId", "content", "imageUrl", "parentId", "gif")
+            VALUES ($1, $2, $3, $4, $5, $6)
             RETURNING *
         )
         SELECT
@@ -518,7 +520,7 @@ export async function addComment(commentData: {
         FROM new_comment c
         JOIN users u ON c."userId" = u.id
         WHERE c.id = (SELECT id FROM new_comment);
-    `, [entityId, userId, content, parentId, gif ? JSON.stringify(gif) : null]);
+    `, [entityId, userId, content, imageUrl, parentId, gif ? JSON.stringify(gif) : null]);
 
     const newCommentData = result[0];
     const { displayName, username, avatar, ...commentFields } = newCommentData;

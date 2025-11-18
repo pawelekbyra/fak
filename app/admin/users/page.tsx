@@ -1,40 +1,81 @@
-import { db } from '@/lib/db';
-import React from 'react';
-import { revalidatePath } from 'next/cache';
-import UserManagementClient from './UserManagementClient';
-import { verifySession } from '@/lib/auth';
-import { redirect } from 'next/navigation';
+'use client';
 
-export const dynamic = 'force-dynamic';
+import { useEffect, useState } from 'react';
+import { useUser } from '@/context/UserContext';
+import { getAllUsersAction, updateUserRoleAction } from '@/lib/admin-actions';
+import { User } from '@/lib/db.interfaces';
 
-export default async function UserManagementPage() {
-  const payload = await verifySession();
-  if (!payload || payload.user.role !== 'admin') {
-    redirect('/admin/login');
-  }
+export default function AdminUserManagementPage() {
+  const { user } = useUser();
+  const [users, setUsers] = useState<User[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  const users = await db.getAllUsers();
-
-  async function deleteUserAction(formData: FormData) {
-    'use server';
-    const userId = formData.get('userId') as string;
-    if (!userId) {
+  useEffect(() => {
+    if (user?.role !== 'ADMIN') {
+      setError('You do not have permission to view this page.');
+      setLoading(false);
       return;
     }
 
-    try {
-      await db.deleteUser(userId);
-      revalidatePath('/admin/users'); // Revalidate the page to show the updated list
-    } catch (error) {
-      console.error('Failed to delete user:', error);
-      // Here you could return an error message to the client
+    async function fetchUsers() {
+      try {
+        const allUsers = await getAllUsersAction();
+        setUsers(allUsers);
+      } catch (err) {
+        setError('Failed to fetch users.');
+      } finally {
+        setLoading(false);
+      }
     }
-  }
+
+    fetchUsers();
+  }, [user]);
+
+  const handleRoleChange = async (userId: string, newRole: 'ADMIN' | 'PATRON' | 'TWÓRCA') => {
+    try {
+      const updatedUser = await updateUserRoleAction(userId, newRole);
+      if (updatedUser) {
+        setUsers(users.map(u => u.id === userId ? updatedUser : u));
+      }
+    } catch (err) {
+      setError('Failed to update user role.');
+    }
+  };
+
+  if (loading) return <div>Loading...</div>;
+  if (error) return <div>Error: {error}</div>;
 
   return (
-    <div>
-      <h2 className="text-2xl font-semibold mb-4">User Management</h2>
-      <UserManagementClient users={users} deleteUserAction={deleteUserAction} />
+    <div className="p-4">
+      <h1 className="text-2xl font-bold mb-4">User Management</h1>
+      <table className="w-full">
+        <thead>
+          <tr>
+            <th className="text-left">Username</th>
+            <th className="text-left">Email</th>
+            <th className="text-left">Role</th>
+          </tr>
+        </thead>
+        <tbody>
+          {users.map((u) => (
+            <tr key={u.id}>
+              <td>{u.username}</td>
+              <td>{u.email}</td>
+              <td>
+                <select
+                  value={u.role}
+                  onChange={(e) => handleRoleChange(u.id, e.target.value as 'ADMIN' | 'PATRON' | 'TWÓRCA')}
+                >
+                  <option value="PATRON">Patron</option>
+                  <option value="TWÓRCA">Twórca</option>
+                  <option value="ADMIN">Admin</option>
+                </select>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
     </div>
   );
 }

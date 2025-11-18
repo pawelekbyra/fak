@@ -9,6 +9,7 @@
     "lint": "next lint",
     "db:seed": "tsx scripts/seed-kv.ts",
     "db:init": "dotenv -e .env.local -- tsx scripts/init-db.ts",
+    "db:reset": "dotenv -e .env.local -- tsx scripts/reset-db.ts",
     "admin:create": "dotenv -e .env.local -- tsx scripts/create-admin.ts"
   },
   "dependencies": {

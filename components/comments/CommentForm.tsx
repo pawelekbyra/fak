@@ -22,6 +22,7 @@ interface CommentFormProps {
 
 const commentSchema = z.object({
   content: z.string().min(1, 'Comment cannot be empty').max(1000, 'Comment cannot exceed 1000 characters'),
+  image: z.instanceof(File).optional(),
 });
 
 type CommentFormData = z.infer<typeof commentSchema>;
@@ -54,6 +55,9 @@ export function CommentForm({ entityId, parentId, onCommentAdded, className, add
       formData.append('parentId', parentId);
     }
     formData.append('content', data.content);
+    if (data.image) {
+      formData.append('image', data.image);
+    }
     formData.append('userId', user.id); // Assuming user object has an id
     formData.append('userAvatar', user.avatar || '');
     formData.append('userUsername', user.username || 'guest');
@@ -70,6 +74,12 @@ export function CommentForm({ entityId, parentId, onCommentAdded, className, add
       className={cn('flex w-full flex-col space-y-2', className)}
     >
         <div className="flex w-full items-center space-x-2">
+            <Input
+                {...register('image')}
+                type="file"
+                accept="image/*"
+                className="flex-1"
+            />
             <Input
                 {...register('content')}
                 placeholder="Add a comment..."
