@@ -6,8 +6,17 @@ import { useTranslation } from '@/context/LanguageContext';
 import TopBar from './TopBar';
 import { useStore } from '@/store/useStore';
 import { shallow } from 'zustand/shallow';
+import TippingModal from './TippingModal'; // Import the TippingModal component
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
+  const { activeModal, setActiveModal } = useStore(
+    (state) => ({
+      activeModal: state.activeModal,
+      setActiveModal: state.setActiveModal,
+    }),
+    shallow
+  );
+
   useEffect(() => {
     const setAppHeight = () => {
       document.documentElement.style.setProperty('--app-height', `${window.innerHeight}px`);
@@ -26,6 +35,11 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
           {children}
         </main>
       </div>
+      {/* Render the TippingModal when activeModal is 'tip' */}
+      <TippingModal
+        isOpen={activeModal === 'tip'}
+        onClose={() => setActiveModal(null)}
+      />
     </div>
   );
 }

@@ -2,7 +2,7 @@ import { create } from 'zustand';
 import { Slide } from '@/lib/types';
 import React from 'react';
 
-export type ModalType = 'account' | 'comments' | 'info' | 'login' | null;
+export type ModalType = 'account' | 'comments' | 'info' | 'login' | 'tip' | null;
 
 interface LikeState {
     likes: number;
