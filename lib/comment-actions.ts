@@ -4,6 +4,7 @@ import { revalidatePath } from 'next/cache';
 import { db } from '@/lib/db';
 import { verifySession } from '@/lib/auth';
 import { z } from 'zod';
+import { checkRateLimit } from './rate-limiter';
 
 // Zod schemas for input validation
 const addCommentSchema = z.object({
@@ -33,6 +34,11 @@ export async function addComment(formData: FormData) {
     return { success: false, message: 'Not authenticated' };
   }
   const currentUser = payload.user;
+
+  const rateLimitResult = await checkRateLimit(currentUser.id);
+  if (!rateLimitResult.success) {
+    return { success: false, message: rateLimitResult.message };
+  }
 
   const validatedFields = addCommentSchema.safeParse({
     entityId: formData.get('entityId'),
@@ -133,6 +139,11 @@ export async function toggleCommentVote(formData: FormData) {
         return { success: false, message: 'Not authenticated' };
     }
     const currentUser = payload.user;
+
+    const rateLimitResult = await checkRateLimit(currentUser.id);
+    if (!rateLimitResult.success) {
+        return { success: false, message: rateLimitResult.message };
+    }
 
     const validatedFields = voteCommentSchema.safeParse({
         commentId: formData.get('commentId'),

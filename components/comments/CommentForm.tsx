@@ -1,13 +1,16 @@
 'use client';
 
-import React, { useRef } from 'react';
+import React from 'react';
+import { useForm, SubmitHandler } from 'react-hook-form';
 import { useFormStatus } from 'react-dom';
 import { SendHorizonal } from 'lucide-react';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { z } from 'zod';
 
 import { cn } from '@/lib/utils';
-import { addComment } from '@/lib/comment-actions';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
+import { useUser } from '@/context/UserContext';
 
 interface CommentFormProps {
   entityId: string;
@@ -16,6 +19,12 @@ interface CommentFormProps {
   className?: string;
   addCommentAction: (formData: FormData) => Promise<void>;
 }
+
+const commentSchema = z.object({
+  content: z.string().min(1, 'Comment cannot be empty').max(1000, 'Comment cannot exceed 1000 characters'),
+});
+
+type CommentFormData = z.infer<typeof commentSchema>;
 
 function SubmitButton() {
   const { pending } = useFormStatus();
@@ -27,35 +36,49 @@ function SubmitButton() {
 }
 
 export function CommentForm({ entityId, parentId, onCommentAdded, className, addCommentAction }: CommentFormProps) {
-  const formRef = useRef<HTMLFormElement>(null);
+  const { user } = useUser();
+  const { register, handleSubmit, reset, formState: { errors } } = useForm<CommentFormData>({
+    resolver: zodResolver(commentSchema),
+  });
 
-  const handleAction = async (formData: FormData) => {
-    // Basic check to prevent empty submissions client-side
-    if (!formData.get('content')?.toString().trim()) {
+  const onSubmit: SubmitHandler<CommentFormData> = async (data) => {
+    if (!user) {
+        // Here you might want to trigger a login modal
+        alert("Please log in to comment.");
         return;
     }
+
+    const formData = new FormData();
+    formData.append('entityId', entityId);
+    if (parentId) {
+      formData.append('parentId', parentId);
+    }
+    formData.append('content', data.content);
+    formData.append('userId', user.id); // Assuming user object has an id
+    formData.append('userAvatar', user.avatar || '');
+    formData.append('userUsername', user.username || 'guest');
+
     await addCommentAction(formData);
-    formRef.current?.reset();
+
+    reset();
     onCommentAdded?.();
   };
 
   return (
     <form
-      ref={formRef}
-      action={handleAction}
-      className={cn('flex w-full items-center space-x-2', className)}
+      onSubmit={handleSubmit(onSubmit)}
+      className={cn('flex w-full flex-col space-y-2', className)}
     >
-      <input type="hidden" name="entityId" value={entityId} />
-      {parentId && <input type="hidden" name="parentId" value={parentId} />}
-
-      <Input
-        name="content"
-        required
-        placeholder="Add a comment..."
-        className="flex-1"
-        autoComplete="off"
-      />
-      <SubmitButton />
+        <div className="flex w-full items-center space-x-2">
+            <Input
+                {...register('content')}
+                placeholder="Add a comment..."
+                className="flex-1"
+                autoComplete="off"
+            />
+            <SubmitButton />
+        </div>
+        {errors.content && <p className="text-xs text-red-500">{errors.content.message}</p>}
     </form>
   );
 }

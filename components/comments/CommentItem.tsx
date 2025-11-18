@@ -11,14 +11,15 @@ import { Comment } from '@/lib/comments/types';
 import { cn } from '@/lib/utils';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
+// import {
+//   DropdownMenu,
+//   DropdownMenuContent,
+//   DropdownMenuItem,
+//   DropdownMenuTrigger,
+// } from "@/components/ui/dropdown-menu"
 import { useUser } from '@/context/UserContext';
 import { EntityCommentsTree } from '@/lib/comments/types';
+import { parseMentions } from '@/lib/comments/parseMentions';
 
 
 interface CommentItemProps {
@@ -40,7 +41,7 @@ export function CommentItem({ comment, replies, onReply, onDelete, onVote, comme
   };
 
   return (
-    <div className="flex items-start space-x-3 py-2">
+    <div className={cn('flex items-start space-x-3 py-2', comment.isSending && 'opacity-50')}>
       <Avatar className="h-8 w-8">
         <AvatarImage src={comment.user.avatar || undefined} alt={`@${comment.user.username}`} />
         <AvatarFallback>{comment.user.username?.[0].toUpperCase()}</AvatarFallback>
@@ -52,7 +53,7 @@ export function CommentItem({ comment, replies, onReply, onDelete, onVote, comme
         </div>
 
         <p className="mt-1 text-sm text-neutral-300 whitespace-pre-wrap">
-          {comment.content}
+          {parseMentions(comment.content || '')}
         </p>
 
         <div className="mt-2 flex items-center space-x-4 text-xs text-neutral-400">
@@ -82,7 +83,7 @@ export function CommentItem({ comment, replies, onReply, onDelete, onVote, comme
               </Button>
            </form>
 
-          <DropdownMenu>
+          {/* <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" size="icon" className="h-6 w-6">
                 <MoreHorizontal size={14} />
@@ -98,7 +99,7 @@ export function CommentItem({ comment, replies, onReply, onDelete, onVote, comme
                 </form>
               )}
             </DropdownMenuContent>
-          </DropdownMenu>
+          </DropdownMenu> */}
         </div>
 
         {hasReplies && (

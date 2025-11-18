@@ -25,9 +25,18 @@ self.addEventListener('push', (event) => {
     },
   };
 
-  event.waitUntil(
-    self.registration.showNotification(title, options)
-  );
+  const notificationPromise = self.registration.showNotification(title, options);
+
+  const broadcastPromise = self.clients.matchAll({
+    type: 'window',
+    includeUncontrolled: true,
+  }).then((clients) => {
+    clients.forEach((client) => {
+      client.postMessage(data);
+    });
+  });
+
+  event.waitUntil(Promise.all([notificationPromise, broadcastPromise]));
 
   if ('setAppBadge' in navigator && data.badge) {
     navigator.setAppBadge(data.badge);

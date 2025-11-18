@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { verifySession } from '@/lib/auth';
+import { checkRateLimit } from '@/lib/rate-limiter';
 
 export const dynamic = 'force-dynamic';
 
@@ -10,6 +11,11 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ success: false, message: 'Authentication required to like a post.' }, { status: 401 });
   }
   const currentUser = payload.user;
+
+  const rateLimitResult = await checkRateLimit(currentUser.id);
+  if (!rateLimitResult.success) {
+    return NextResponse.json({ success: false, message: rateLimitResult.message }, { status: 429 });
+  }
 
   try {
     const { slideId } = await request.json();
