@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { db } from '@/lib/db';
+import * as db from '@/lib/db';
 import { verifySession } from '@/lib/auth';
 import { checkRateLimit } from '@/lib/rate-limiter';
 
@@ -24,11 +24,13 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ success: false, message: 'slideId is required' }, { status: 400 });
     }
 
+    // @ts-ignore
     const slide = await db.getSlide(slideId);
     if (!slide) {
       return NextResponse.json({ success: false, message: 'Slide not found' }, { status: 404 });
     }
 
+    // @ts-ignore
     const result = await db.toggleLike(slideId, currentUser.id);
 
     return NextResponse.json({

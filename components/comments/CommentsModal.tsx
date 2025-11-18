@@ -6,8 +6,7 @@ import { X } from 'lucide-react';
 
 import { useStore } from '@/store/useStore';
 import { useCommentSection } from '@/hooks/use-comment-section';
-import { Comment } from '@/lib/comments/types';
-import { prisma } from '@/lib/prisma';
+import { CommentWithDetails as Comment } from '@/lib/db';
 import { useUser } from '@/context/UserContext';
 import { CommentsList } from './CommentsList';
 import { CommentForm } from './CommentForm';
@@ -25,39 +24,23 @@ export function CommentsModal() {
     async function fetchComments() {
       if (isVisible && activeSlide?.id) {
         setIsLoading(true);
-        const commentsRaw = await prisma.comments.findMany({
-            where: {
-                entityId: activeSlide.id,
-                deletedAt: null,
-            },
-            include: {
-                users: true,
-                comment_votes: true,
-            },
-            orderBy: {
-                createdAt: 'asc',
-            }
-        });
-
-        const comments = commentsRaw.map(comment => {
-            const { users, comment_votes, ...commentData } = comment;
-            const currentUserVote = comment_votes.find(vote => vote.userId === user?.id)?.voteType || null;
-            return {
-                ...commentData,
-                user,
-                upvotesCount: comment_votes.filter(v => v.voteType === 'upvote').length,
-                downvotesCount: comment_votes.filter(v => v.voteType === 'downvote').length,
-                currentUserVote,
-            }
-        }) as Comment[];
-
-
-        setInitialComments(comments);
-        setIsLoading(false);
+        try {
+          const response = await fetch(`/api/comments?slideId=${activeSlide.id}`);
+          const data = await response.json();
+          if (data.success) {
+            setInitialComments(data.comments);
+          } else {
+            console.error('Failed to fetch comments:', data.message);
+          }
+        } catch (error) {
+          console.error('Error fetching comments:', error);
+        } finally {
+          setIsLoading(false);
+        }
       }
     }
     fetchComments();
-  }, [isVisible, activeSlide, user]);
+  }, [isVisible, activeSlide]);
 
   const {
     commentsTree,

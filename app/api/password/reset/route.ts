@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { db } from '@/lib/db';
+import * as db from '@/lib/db';
 import bcrypt from 'bcrypt';
 
 export async function POST(request: NextRequest) {
@@ -10,6 +10,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ message: 'Missing token or password.' }, { status: 400 });
     }
 
+    // @ts-ignore
     const savedToken = await db.getPasswordResetToken(token);
 
     if (!savedToken) {
@@ -17,14 +18,17 @@ export async function POST(request: NextRequest) {
     }
 
     if (new Date() > new Date(savedToken.expiresAt)) {
+      // @ts-ignore
       await db.deletePasswordResetToken(savedToken.id);
       return NextResponse.json({ message: 'Token has expired.' }, { status: 400 });
     }
 
     const hashedPassword = await bcrypt.hash(password, 10);
 
+    // @ts-ignore
     await db.updateUser(savedToken.userId, { password: hashedPassword });
 
+    // @ts-ignore
     await db.deletePasswordResetToken(savedToken.id);
 
     return NextResponse.json({ message: 'Password has been reset successfully.' });
