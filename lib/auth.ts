@@ -3,15 +3,11 @@ import { jwtVerify } from 'jose';
 import { findUserById } from '@/lib/db';
 import { User } from './db.interfaces';
 
-// Fallback secret for development/deployment flexibility
-const FALLBACK_SECRET = 'a_very_long_insecure_key_for_testing_1234567890abcdef';
-const secretToUse = process.env.JWT_SECRET || FALLBACK_SECRET;
-
-if (!process.env.JWT_SECRET) {
-    console.warn("WARNING: JWT_SECRET not set. Using insecure default fallback key for development.");
+if (process.env.NODE_ENV === 'production' && !process.env.JWT_SECRET) {
+  throw new Error('FATAL: JWT_SECRET environment variable is not set in production.');
 }
 
-const jwtSecret = new TextEncoder().encode(secretToUse);
+const jwtSecret = new TextEncoder().encode(process.env.JWT_SECRET || 'your-fallback-secret-for-development');
 const COOKIE_NAME = 'session';
 export { jwtSecret, COOKIE_NAME };
 

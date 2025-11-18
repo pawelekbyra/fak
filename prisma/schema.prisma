@@ -15,24 +15,27 @@ model CommentVote {
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@id([commentId, userId])
+  @@index([userId])
   @@map("comment_votes")
 }
 
 model Comment {
-  id           String        @id @default(cuid())
-  slideId      String
-  authorId     String
-  parentId     String?
-  content      String
-  createdAt    DateTime      @default(now())
-  updatedAt    DateTime      @updatedAt
+  id        String        @id @default(cuid())
+  slideId   String
+  authorId  String
+  parentId  String?
+  content   String
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
+  slide     Slide         @relation(fields: [slideId], references: [id], onDelete: Cascade)
+  author    User          @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  parent    Comment?      @relation("CommentReplies", fields: [parentId], references: [id], onDelete: Cascade)
+  children  Comment[]     @relation("CommentReplies")
+  votes     CommentVote[]
 
-  slide        Slide         @relation(fields: [slideId], references: [id], onDelete: Cascade)
-  author       User          @relation(fields: [authorId], references: [id], onDelete: Cascade)
-  parent       Comment?      @relation("CommentReplies", fields: [parentId], references: [id], onDelete: Cascade)
-  children     Comment[]     @relation("CommentReplies")
-  votes        CommentVote[]
-
+  @@index([slideId])
+  @@index([authorId])
+  @@index([parentId])
   @@map("comments")
 }
 
@@ -43,6 +46,7 @@ model Like {
   user    User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@id([slideId, userId])
+  @@index([userId])
   @@map("likes")
 }
 
@@ -55,10 +59,11 @@ model Notification {
   link      String   @db.VarChar(255)
   read      Boolean  @default(false)
   createdAt DateTime @default(now())
-
   user      User     @relation("UserNotifications", fields: [userId], references: [id], onDelete: Cascade)
   actor     User     @relation("UserActions", fields: [actorId], references: [id], onDelete: Cascade)
 
+  @@index([userId])
+  @@index([actorId])
   @@map("notifications")
 }
 
@@ -69,17 +74,19 @@ model PasswordResetToken {
   expiresAt DateTime
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
+  @@index([userId])
   @@map("password_reset_tokens")
 }
 
 model PushSubscription {
-  id        String   @id @default(cuid())
-  userId    String
-  endpoint  String   @unique
-  p256dh    String
-  auth      String
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id       String @id @default(cuid())
+  userId   String
+  endpoint String @unique
+  p256dh   String
+  auth     String
+  user     User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
+  @@index([userId])
   @@map("push_subscriptions")
 }
 
@@ -90,38 +97,36 @@ model Slide {
   type      String   @db.VarChar(50)
   data      Json
   createdAt DateTime @default(now())
-
-  author    User       @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  author    User     @relation(fields: [authorId], references: [id], onDelete: Cascade)
   comments  Comment[]
   likes     Like[]
 
+  @@index([authorId])
   @@map("slides")
 }
 
 model User {
-  id                  String    @id @default(cuid())
-  username            String    @unique @db.VarChar(255)
-  displayName         String?   @db.VarChar(255)
-  email               String    @unique @db.VarChar(255)
-  password            String?   @db.VarChar(255)
-  avatar              String?   @db.VarChar(255)
-  role                String    @default("PATRON")
-  sessionVersion      Int       @default(1)
-  is_profile_complete Boolean   @default(false)
+  id                  String               @id @default(cuid())
+  username            String               @unique @db.VarChar(255)
+  displayName         String?              @db.VarChar(255)
+  email               String               @unique @db.VarChar(255)
+  password            String?              @db.VarChar(255)
+  avatar              String?              @db.VarChar(255)
+  role                Role                 @default(PATRON)
+  sessionVersion      Int                  @default(1)
+  is_profile_complete Boolean              @default(false)
   bio                 String?
-
   commentVotes        CommentVote[]
   comments            Comment[]
   likes               Like[]
-  notifications       Notification[] @relation("UserNotifications")
-  actions             Notification[] @relation("UserActions")
+  notifications       Notification[]       @relation("UserNotifications")
+  actions             Notification[]       @relation("UserActions")
   passwordResetTokens PasswordResetToken[]
   pushSubscriptions   PushSubscription[]
   slides              Slide[]
 
   @@map("users")
 }
-
 enum Role {
   PATRON
   TW_RCA

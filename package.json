@@ -7,6 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
+    "test": "jest",
     "db:seed": "tsx scripts/seed-kv.ts",
     "db:init": "dotenv -e .env.local -- tsx scripts/init-db.ts",
     "db:reset": "dotenv -e .env.local -- tsx scripts/reset-db.ts",
@@ -58,6 +59,9 @@
     "zustand": "^4.5.4"
   },
   "devDependencies": {
+    "@testing-library/dom": "^10.4.1",
+    "@testing-library/jest-dom": "^6.9.1",
+    "@testing-library/react": "^16.3.0",
     "@types/bcrypt": "^5.0.2",
     "@types/node": "24.3.0",
     "@types/react": "^18",
@@ -69,6 +73,8 @@
     "dotenv-cli": "^11.0.0",
     "eslint": "^8",
     "eslint-config-next": "14.2.3",
+    "jest": "^30.2.0",
+    "jest-environment-jsdom": "^30.2.0",
     "postcss": "^8.5.6",
     "prisma": "^6.19.0",
     "tailwindcss": "^3.4.17",
