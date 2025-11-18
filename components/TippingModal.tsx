@@ -58,7 +58,7 @@ const CheckoutForm = ({ clientSecret, onClose }: { clientSecret: string, onClose
 
 const TippingModal: React.FC<TippingModalProps> = ({ isOpen, onClose }) => {
   const { isLoggedIn, user } = useUser();
-  const { t } = useTranslation();
+  const { t, language } = useTranslation();
   const { addToast } = useToast();
 
   const [currentStep, setCurrentStep] = useState(0);
@@ -125,7 +125,8 @@ const TippingModal: React.FC<TippingModalProps> = ({ isOpen, onClose }) => {
                 currency: formData.currency,
                 countryCodeHint: 'PL',
                 email: formData.email,
-                createAccount: formData.create_account
+                createAccount: formData.create_account,
+                language: language
             }),
         });
         const data = await res.json();
