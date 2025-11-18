@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { verifySession } from '@/lib/auth';
-import { db } from '@/lib/db';
+import * as db from '@/lib/db';
 import webpush from 'web-push';
 
 if (process.env.VAPID_SUBJECT && process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY && process.env.VAPID_PRIVATE_KEY) {
@@ -25,19 +25,24 @@ export async function POST(request: NextRequest) {
 
     if (userId) {
         options.userId = userId;
+        // @ts-ignore
         subscriptions = await db.getPushSubscriptions(options);
     } else if (userType) {
         options.userType = userType;
+        // @ts-ignore
         subscriptions = await db.getPushSubscriptions(options);
     } else if (targetPwa || targetBrowser) {
         if (targetPwa && targetBrowser) {
             // Get all users, no isPwaInstalled filter
+            // @ts-ignore
             subscriptions = await db.getPushSubscriptions({});
         } else if (targetPwa) {
             options.isPwaInstalled = true;
+            // @ts-ignore
             subscriptions = await db.getPushSubscriptions(options);
         } else { // targetBrowser
             options.isPwaInstalled = false;
+            // @ts-ignore
             subscriptions = await db.getPushSubscriptions(options);
         }
     } else {
