@@ -1,11 +1,10 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
-import "./globals.css";
-import { cn } from "@/lib/utils";
 import { Providers } from "@/components/Providers";
 import AppLayout from "@/components/AppLayout";
 import PWAInstallPrompt from "@/components/PWAInstallPrompt";
 import Script from "next/script";
+import { ChakraProvider } from "@chakra-ui/next-js";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -22,15 +21,16 @@ export default function RootLayout({
   return (
     <html lang="pl" suppressHydrationWarning>
       <head>
-          {/* Poprawiona meta tag viewport */}
           <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
           <meta name="theme-color" content="#000000" />
       </head>
-      <body className={cn("antialiased", inter.className)}>
-        <Providers>
-          <AppLayout>{children}</AppLayout>
-          <PWAInstallPrompt />
-        </Providers>
+      <body className={inter.className}>
+        <ChakraProvider>
+          <Providers>
+            <AppLayout>{children}</AppLayout>
+            <PWAInstallPrompt />
+          </Providers>
+        </ChakraProvider>
         <Script
           data-name="BMC-Widget"
           data-cfasync="false"

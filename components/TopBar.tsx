@@ -9,19 +9,26 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useTranslation } from '@/context/LanguageContext';
 import { useStore } from '@/store/useStore';
 import LoginForm from './LoginForm';
-import { useToast } from '@/context/ToastContext';
 import MenuIcon from './icons/MenuIcon';
 import BellIcon from './icons/BellIcon';
 import PwaDesktopModal from './PwaDesktopModal';
+import {
+  Box,
+  Flex,
+  IconButton,
+  Text,
+  Avatar,
+  useDisclosure,
+} from '@chakra-ui/react';
+import { HamburgerIcon, BellIcon as ChakraBellIcon } from '@chakra-ui/icons';
 
 const TopBar = () => {
   const { user } = useUser();
   const setActiveModal = useStore((state) => state.setActiveModal);
   const { t } = useTranslation();
-  const { addToast } = useToast();
-  const [isLoginPanelOpen, setIsLoginPanelOpen] = useState(false);
-  const [showNotifPanel, setShowNotifPanel] = useState(false);
-  const [showPwaModal, setShowPwaModal] = useState(false);
+  const { isOpen: isLoginPanelOpen, onToggle: toggleLoginPanel, onClose: closeLoginPanel } = useDisclosure();
+  const { isOpen: showNotifPanel, onToggle: toggleNotifPanel, onClose: closeNotifPanel } = useDisclosure();
+  const { isOpen: showPwaModal, onOpen: openPwaModal, onClose: closePwaModal } = useDisclosure();
   const [isDesktop, setIsDesktop] = useState(false);
 
   useEffect(() => {
@@ -31,107 +38,90 @@ const TopBar = () => {
     return () => window.removeEventListener('resize', checkIsDesktop);
   }, []);
 
-  // This should be replaced with real data from a notifications context or API
-  const unreadCount = 0;
-
-  const handleLoggedOutMenuClick = () => {
-    addToast(t('menuAccessAlert'), 'info');
-  };
-
-  const handleLoggedOutNotificationClick = () => {
-    addToast(t('notificationAlert'), 'info');
-  };
-
-  const handleLoggedInNotificationClick = () => {
-    setShowNotifPanel(p => !p);
-  };
-
-  const handleShowPwaModal = () => {
-    setShowPwaModal(true);
-  };
+  const unreadCount = 0; // Replace with real data
 
   return (
     <>
-      <div
-        className="fixed top-0 left-0 right-0 z-[60] flex items-center justify-between px-1 bg-black text-white border-b border-white/10"
-        style={{
-          height: 'var(--topbar-height)',
-          paddingTop: 'var(--safe-area-top)',
-          transform: 'translateZ(0)',
-        }}
+      <Box
+        position="fixed"
+        top="0"
+        left="0"
+        right="0"
+        zIndex="60"
+        bg="black"
+        color="white"
+        borderBottom="1px solid"
+        borderColor="whiteAlpha.200"
+        h="var(--topbar-height)"
+        pt="var(--safe-area-top)"
+        px="1"
+        transform="translateZ(0)"
       >
-        {!user ? (
-          // --- WIDOK DLA UŻYTKOWNIKÓW NIEZALOGOWANYCH ---
-          <>
-            <div className="flex justify-start">
-              <Button variant="ghost" size="icon" onClick={handleLoggedOutMenuClick} aria-label={t('menuAriaLabel')}>
-                <MenuIcon className="w-6 h-6" />
-              </Button>
-            </div>
-            <div className="flex justify-center flex-1 text-center">
-              <button
-                onClick={() => setIsLoginPanelOpen(panel => !panel)}
-                className="font-semibold text-sm text-white transition-all duration-300 focus:outline-none whitespace-nowrap"
-              >
-                <span>{t('loggedOutText')}</span>
-              </button>
-            </div>
-            <div className="flex justify-end">
-              {isDesktop && (
-                <Button variant="ghost" size="icon" onClick={handleShowPwaModal} aria-label={t('installPwaAriaLabel')}>
-                  <span className="text-sm font-semibold">{t('installAppText')}</span>
-                </Button>
-              )}
-              <Button variant="ghost" size="icon" onClick={handleLoggedOutNotificationClick} aria-label={t('notificationAriaLabel')}>
-                <BellIcon className="w-6 h-6" />
-              </Button>
-            </div>
-          </>
-        ) : (
-          // --- WIDOK DLA ZALOGOWANYCH UŻYTKOWNIKÓW ---
-          <>
-            <div className="flex justify-start">
-              <Button variant="ghost" size="icon" onClick={() => setActiveModal('account')} aria-label={t('accountMenuButton')}>
-                {user.avatar ? (
-                  <Image
-                    src={user.avatar}
-                    alt={t('avatarAlt')}
-                    width={32}
-                    height={32}
-                    className="rounded-full"
-                  />
-                ) : (
-                  <div className="w-8 h-8 rounded-full bg-gray-300 dark:bg-zinc-700" />
-                )}
-              </Button>
-            </div>
-            <div className="flex justify-center flex-1">
-              <span className="font-semibold text-lg text-white">Ting Tong</span>
-            </div>
-            <div className="flex justify-end">
-              {isDesktop && (
-                <Button variant="ghost" size="icon" onClick={handleShowPwaModal} aria-label={t('installPwaAriaLabel')}>
-                  <span className="text-sm font-semibold">{t('installAppText')}</span>
-                </Button>
-              )}
-              <div className="relative">
-                <Button variant="ghost" size="icon" onClick={handleLoggedInNotificationClick} aria-label={t('notificationAriaLabel')}>
-                  <BellIcon className="w-6 h-6" />
-                  {unreadCount > 0 && (
-                    <span className="absolute top-1 right-1 block h-2 w-2 rounded-full ring-2 ring-black bg-pink-500" />
-                  )}
-                </Button>
-                <NotificationPopup
-                  isOpen={showNotifPanel}
-                  onClose={() => setShowNotifPanel(false)}
-                />
-              </div>
-            </div>
-          </>
-        )}
-      </div>
+        <Flex align="center" justify="space-between" h="100%">
+          <IconButton
+            icon={<HamburgerIcon />}
+            variant="ghost"
+            aria-label={t('menuAriaLabel')}
+            onClick={() => setActiveModal('account')}
+          />
 
-      {/* --- Login Panel --- */}
+          <Text
+            flex="1"
+            textAlign="center"
+            fontWeight="semibold"
+            fontSize="lg"
+            cursor="pointer"
+            onClick={toggleLoginPanel}
+          >
+            Ting Tong
+          </Text>
+
+          <Flex align="center">
+            {isDesktop && (
+              <Button variant="ghost" size="icon" onClick={openPwaModal} aria-label={t('installPwaAriaLabel')}>
+                <span className="text-sm font-semibold">{t('installAppText')}</span>
+              </Button>
+            )}
+            <Box position="relative">
+              <IconButton
+                icon={<ChakraBellIcon />}
+                variant="ghost"
+                aria-label={t('notificationAriaLabel')}
+                onClick={toggleNotifPanel}
+              />
+              {unreadCount > 0 && (
+                <Box
+                  position="absolute"
+                  top="1"
+                  right="1"
+                  boxSize="2"
+                  borderRadius="full"
+                  bg="pink.500"
+                  ring="2px"
+                  ringColor="black"
+                />
+              )}
+              <NotificationPopup
+                isOpen={showNotifPanel}
+                onClose={closeNotifPanel}
+              />
+            </Box>
+            <IconButton
+              variant="ghost"
+              aria-label={t('accountMenuButton')}
+              onClick={() => setActiveModal('account')}
+              icon={
+                user?.avatar ? (
+                  <Avatar size="sm" src={user.avatar} />
+                ) : (
+                  <Avatar size="sm" />
+                )
+              }
+            />
+          </Flex>
+        </Flex>
+      </Box>
+
       <AnimatePresence>
         {isLoginPanelOpen && (
           <motion.div
@@ -142,13 +132,12 @@ const TopBar = () => {
             exit={{ opacity: 0, y: '-100%' }}
             transition={{ type: 'spring', stiffness: 300, damping: 30 }}
           >
-            <LoginForm onLoginSuccess={() => setIsLoginPanelOpen(false)} />
+            <LoginForm onLoginSuccess={closeLoginPanel} />
           </motion.div>
         )}
       </AnimatePresence>
 
-      {/* --- PWA Modal --- */}
-      {showPwaModal && <PwaDesktopModal isOpen={showPwaModal} onClose={() => setShowPwaModal(false)} />}
+      {showPwaModal && <PwaDesktopModal isOpen={showPwaModal} onClose={closePwaModal} />}
     </>
   );
 };

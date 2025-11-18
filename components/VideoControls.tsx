@@ -1,7 +1,16 @@
 "use client";
 
 import React from 'react';
-import { Play, Pause, Volume2, VolumeX } from 'lucide-react';
+import { FaPlay, FaPause, FaVolumeUp, FaVolumeMute } from 'react-icons/fa';
+import {
+  Flex,
+  IconButton,
+  Slider,
+  SliderTrack,
+  SliderFilledTrack,
+  SliderThumb,
+  Text,
+} from '@chakra-ui/react';
 
 interface VideoControlsProps {
     currentTime: number;
@@ -29,35 +38,62 @@ const VideoControls: React.FC<VideoControlsProps> = ({
     return `${minutes}:${seconds}`;
   };
 
-  const handleSeek = (e: React.ChangeEvent<HTMLInputElement>) => {
-    onSeek(Number(e.target.value));
+  const handleSeek = (value: number) => {
+    onSeek(value);
   };
 
-  // Don't render controls if duration is 0 or NaN
   if (!duration || isNaN(duration)) {
     return null;
   }
 
   return (
-    <div className="absolute bottom-4 left-4 right-4 flex items-center gap-2 text-white z-20 bg-black/30 p-2 rounded-lg">
-      <button onClick={onTogglePlay} className="p-1">
-        {isPlaying ? <Pause size={20} /> : <Play size={20} />}
-      </button>
-      <span className="text-xs font-mono w-12 text-center">{formatTime(currentTime)}</span>
-      <input
-        type="range"
-        min="0"
+    <Flex
+      position="absolute"
+      bottom="4"
+      left="4"
+      right="4"
+      align="center"
+      gap="2"
+      color="white"
+      zIndex="20"
+      bg="blackAlpha.300"
+      p="2"
+      borderRadius="lg"
+    >
+      <IconButton
+        icon={isPlaying ? <FaPause /> : <FaPlay />}
+        aria-label={isPlaying ? 'Pause' : 'Play'}
+        onClick={onTogglePlay}
+        size="sm"
+        isRound
+      />
+      <Text fontSize="xs" fontFamily="mono" w="12" textAlign="center">
+        {formatTime(currentTime)}
+      </Text>
+      <Slider
+        aria-label="seek-slider"
+        min={0}
         max={duration}
-        step="1"
+        step={1}
         value={currentTime}
         onChange={handleSeek}
-        className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer dark:bg-gray-700"
+      >
+        <SliderTrack bg="gray.700">
+          <SliderFilledTrack bg="white" />
+        </SliderTrack>
+        <SliderThumb boxSize={4} />
+      </Slider>
+      <Text fontSize="xs" fontFamily="mono" w="12" textAlign="center">
+        {formatTime(duration)}
+      </Text>
+      <IconButton
+        icon={isMuted ? <FaVolumeMute /> : <FaVolumeUp />}
+        aria-label={isMuted ? 'Unmute' : 'Mute'}
+        onClick={onToggleMute}
+        size="sm"
+        isRound
       />
-      <span className="text-xs font-mono w-12 text-center">{formatTime(duration)}</span>
-      <button onClick={onToggleMute} className="p-1">
-        {isMuted ? <VolumeX size={20} /> : <Volume2 size={20} />}
-      </button>
-    </div>
+    </Flex>
   );
 };
 

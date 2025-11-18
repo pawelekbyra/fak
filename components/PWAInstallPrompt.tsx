@@ -1,9 +1,8 @@
 "use client";
 
 import { useState, useEffect } from 'react';
-import { Button } from '@/components/ui/button';
-import { Share, PlusSquare, X } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { Box, Flex, Heading, Text, Button, IconButton, Slide, VStack } from '@chakra-ui/react';
+import { FaShare, FaPlusSquare, FaTimes } from 'react-icons/fa';
 import { useTranslation } from '@/context/LanguageContext';
 import PwaDesktopModal from './PwaDesktopModal';
 
@@ -82,45 +81,61 @@ const PWAInstallPrompt = () => {
 
   return (
     <>
-      <AnimatePresence>
-        {isIOS && showInstructions ? (
-          <motion.div
-            className="absolute bottom-0 w-full bg-black/80 backdrop-blur-md text-white p-4 flex flex-col justify-between items-center z-50 rounded-t-2xl"
-            initial={{ y: '100%', opacity: 0 }}
-            animate={{ y: 0, opacity: 1 }}
-            exit={{ y: '100%', opacity: 0 }}
-            transition={{ type: 'spring', stiffness: 400, damping: 40 }}
-            style={{ paddingBottom: 'var(--safe-area-bottom)' }}
-          >
-            <div className="flex w-full justify-between items-center mb-4">
-              <h3 className="text-lg font-bold">Jak zainstalować aplikację</h3>
-              <Button variant="ghost" size="icon" onClick={handleCloseInstructions}>
-                <X />
-              </Button>
-            </div>
-            <div className="flex flex-col items-center space-y-4 text-center text-sm">
-              <p>1. Stuknij ikonę **udostępniania** na pasku przeglądarki Safari.</p>
-              <Share size={32} className="text-white drop-shadow-lg" />
-              <p>2. Z menu, które się pojawi, wybierz **&quot;Dodaj do ekranu początkowego&quot;**.</p>
-              <PlusSquare size={32} className="text-white drop-shadow-lg" />
-              <p>3. Potwierdź, a aplikacja pojawi się na Twoim ekranie!</p>
-            </div>
-          </motion.div>
-        ) : (
-          <div
-            className="fixed bottom-0 left-0 w-full bg-gray-800 text-white p-6 flex flex-row justify-between items-center text-left gap-4 z-[9999]"
-            style={{ height: 'var(--bottombar-height)', paddingBottom: 'calc(1.5rem + var(--safe-area-bottom))' }}
-          >
-            <div>
-              <h3 className="font-bold text-lg">Zainstaluj aplikację!</h3>
-              <p className="text-sm">Uzyskaj pełne wrażenia. Zainstaluj aplikację Ting Tong na swoim urządzeniu.</p>
-            </div>
-            <Button onClick={handleInstallClick} className="w-auto flex-shrink-0 bg-red-500 hover:bg-red-600">
-              Zainstaluj
-            </Button>
-          </div>
-        )}
-      </AnimatePresence>
+      <Slide direction="bottom" in={isIOS && showInstructions} style={{ zIndex: 50 }}>
+        <Box
+          bg="rgba(0,0,0,0.8)"
+          backdropFilter="blur(10px)"
+          color="white"
+          p={4}
+          roundedTop="2xl"
+          pb="var(--safe-area-bottom)"
+        >
+          <Flex w="full" justify="space-between" align="center" mb={4}>
+            <Heading size="lg">Jak zainstalować aplikację</Heading>
+            <IconButton
+              icon={<FaTimes />}
+              aria-label="Close instructions"
+              variant="ghost"
+              onClick={handleCloseInstructions}
+            />
+          </Flex>
+          <VStack spacing={4} textAlign="center" fontSize="sm">
+            <Text>1. Stuknij ikonę **udostępniania** na pasku przeglądarki Safari.</Text>
+            <FaShare size={32} />
+            <Text>2. Z menu, które się pojawi, wybierz **&quot;Dodaj do ekranu początkowego&quot;**.</Text>
+            <FaPlusSquare size={32} />
+            <Text>3. Potwierdź, a aplikacja pojawi się na Twoim ekranie!</Text>
+          </VStack>
+        </Box>
+      </Slide>
+
+      {! (isIOS && showInstructions) && (
+        <Flex
+          position="fixed"
+          bottom="0"
+          left="0"
+          w="full"
+          bg="gray.800"
+          color="white"
+          p={6}
+          justify="space-between"
+          align="center"
+          textAlign="left"
+          gap={4}
+          zIndex={9999}
+          h="var(--bottombar-height)"
+          pb="calc(1.5rem + var(--safe-area-bottom))"
+        >
+          <Box>
+            <Heading size="lg">Zainstaluj aplikację!</Heading>
+            <Text fontSize="sm">Uzyskaj pełne wrażenia. Zainstaluj aplikację Ting Tong na swoim urządzeniu.</Text>
+          </Box>
+          <Button onClick={handleInstallClick} flexShrink={0} colorScheme="red">
+            Zainstaluj
+          </Button>
+        </Flex>
+      )}
+
       <PwaDesktopModal
         isOpen={showPwaModal}
         onClose={() => setShowPwaModal(false)}

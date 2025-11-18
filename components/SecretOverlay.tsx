@@ -2,14 +2,11 @@
 
 import React, { memo } from 'react';
 import { useTranslation } from '@/context/LanguageContext';
-import { useUser } from '@/context/UserContext';
-import { motion } from 'framer-motion';
-import { Button } from './ui/button';
 import { useStore } from '@/store/useStore';
+import { Center, Heading, Text, Button, ScaleFade } from '@chakra-ui/react';
 
 const SecretOverlay: React.FC = memo(() => {
   const { t } = useTranslation();
-  const { login } = useUser();
   const { setActiveModal } = useStore();
 
   const handleLoginClick = () => {
@@ -17,20 +14,27 @@ const SecretOverlay: React.FC = memo(() => {
   };
 
   return (
-    <div className="absolute inset-0 z-10 flex flex-col items-center justify-center p-6 text-center text-white select-none">
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        exit={{ opacity: 0, y: -20 }}
-        transition={{ duration: 0.5 }}
-      >
-        <h2 className="secret-title font-bold leading-tight drop-shadow-md">{t('secretTitle')}</h2>
-        <p className="secret-subtitle opacity-75 drop-shadow-sm mt-1">{t('secretSubtitle')}</p>
-        <Button onClick={handleLoginClick} className="mt-4 px-6 py-3 font-semibold rounded-full" variant="secondary">
+    <Center
+      position="absolute"
+      inset="0"
+      zIndex="10"
+      p="6"
+      textAlign="center"
+      color="white"
+      userSelect="none"
+    >
+      <ScaleFade initialScale={0.9} in={true}>
+        <Heading as="h2" size="2xl" fontWeight="bold" textShadow="0 0 4px rgba(0,0,0,0.8)">
+          {t('secretTitle')}
+        </Heading>
+        <Text opacity="0.75" mt="1" textShadow="0 0 2px rgba(0,0,0,0.8)">
+          {t('secretSubtitle')}
+        </Text>
+        <Button onClick={handleLoginClick} mt="4" px="6" py="3" fontWeight="semibold" borderRadius="full" colorScheme="pink">
           {t('secretLoginText') || 'Log in to watch'}
         </Button>
-      </motion.div>
-    </div>
+      </ScaleFade>
+    </Center>
   );
 });
 

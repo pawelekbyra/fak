@@ -1,7 +1,7 @@
 import React, { useMemo, useRef, useEffect, useState } from 'react';
 import { useInfiniteQuery } from '@tanstack/react-query';
 import Slide from '@/components/Slide';
-import { Skeleton } from '@/components/ui/skeleton';
+import { Box, Skeleton, Center, Text } from '@chakra-ui/react';
 
 const fetchSlides = async ({ pageParam = '' }) => {
   const res = await fetch(`/api/slides?cursor=${pageParam}&limit=5`);
@@ -91,23 +91,39 @@ const MainFeed = () => {
 
 
   if (isLoading && slides.length === 0) {
-    return <div className="w-screen h-screen bg-black flex items-center justify-center"><Skeleton className="w-full h-full" /></div>;
+    return (
+      <Center w="100vw" h="100vh" bg="black">
+        <Skeleton w="100%" h="100%" />
+      </Center>
+    );
   }
 
   if (isError) {
-    return <div className="w-screen h-screen bg-black flex items-center justify-center text-white">Error loading slides.</div>;
+    return (
+      <Center w="100vw" h="100vh" bg="black" color="white">
+        <Text>Error loading slides.</Text>
+      </Center>
+    );
   }
 
   return (
-    <div ref={scrollContainerRef} className="w-full h-screen overflow-y-scroll snap-y snap-mandatory">
-      {isLooping && <div ref={topSentinelRef} />}
+    <Box
+      ref={scrollContainerRef}
+      w="100%"
+      h="100vh"
+      overflowY="scroll"
+      sx={{
+        scrollSnapType: 'y mandatory',
+      }}
+    >
+      {isLooping && <Box ref={topSentinelRef} />}
       {loopedSlides.map((slide, index) => (
-        <div key={`${slide.id}-${index}`} className="h-full w-full snap-start">
+        <Box key={`${slide.id}-${index}`} h="100%" w="100%" sx={{ scrollSnapAlign: 'start' }}>
           <Slide slide={slide} />
-        </div>
+        </Box>
       ))}
-      {isLooping && <div ref={bottomSentinelRef} />}
-    </div>
+      {isLooping && <Box ref={bottomSentinelRef} />}
+    </Box>
   );
 };
 
