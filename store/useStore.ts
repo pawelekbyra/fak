@@ -19,7 +19,9 @@ interface AppState {
 
   // Slide state
   activeSlide: Slide | null;
-  setActiveSlide: (slide: Slide | null) => void;
+  activeSlideIndex: number;
+  activeHlsUrl: string | null;
+  setActiveSlide: (slide: Slide | null, index: number) => void;
   likeChanges: Record<string, LikeState>;
   toggleLike: (slideId: string, initialLikes: number, initialIsLiked: boolean) => void;
 
@@ -45,6 +47,8 @@ export const useStore = create<AppState>((set, get) => ({
   activeModal: null,
   isLoggedIn: false, // Assume user is not logged in initially
   activeSlide: null,
+  activeSlideIndex: 0,
+  activeHlsUrl: null,
   likeChanges: {},
 
   // Video Player
@@ -57,7 +61,13 @@ export const useStore = create<AppState>((set, get) => ({
 
   // --- ACTIONS ---
   setActiveModal: (modal) => set({ activeModal: modal }),
-  setActiveSlide: (slide) => set({ activeSlide: slide }),
+  setActiveSlide: (slide, index) => {
+      let hlsUrl = null;
+      if (slide && slide.type === 'video' && slide.data?.hlsUrl) {
+          hlsUrl = slide.data.hlsUrl;
+      }
+      set({ activeSlide: slide, activeSlideIndex: index, activeHlsUrl: hlsUrl })
+  },
 
   toggleLike: (slideId, initialLikes, initialIsLiked) => set((state) => {
     const currentChanges = state.likeChanges[slideId];

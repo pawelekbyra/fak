@@ -1,8 +1,9 @@
 'use server';
 
 import { put } from '@vercel/blob';
-import { db } from '@/lib/db';
+import { prisma } from '@/lib/prisma';
 import { verifySession } from '@/lib/auth';
+import { Slide } from './types';
 
 export async function uploadAvatar(formData: FormData) {
   const payload = await verifySession();
@@ -22,7 +23,10 @@ export async function uploadAvatar(formData: FormData) {
 
   const avatarUrl = blob.url;
 
-  const updatedUser = await db.updateUser(currentUser.id, { avatar: avatarUrl });
+  const updatedUser = await prisma.users.update({
+      where: { id: currentUser.id },
+      data: { avatar: avatarUrl },
+  });
   if (!updatedUser) {
     return { success: false, message: 'Failed to update user record.' };
   }
@@ -47,7 +51,7 @@ export async function uploadVideo(formData: FormData) {
     access: 'public',
   });
 
-  await db.createSlide({
+  const slideData: Omit<Slide, 'id' | 'createdAt' | 'initialLikes' | 'isLiked' | 'initialComments'> = {
     userId,
     username,
     avatar,
@@ -62,5 +66,19 @@ export async function uploadVideo(formData: FormData) {
       hlsUrl: null,
       poster: '',
     },
-  });
+  };
+
+  await prisma.slides.create({
+      data: {
+          id: `slide_${crypto.randomUUID()}`,
+          userId: slideData.userId,
+          username: slideData.username,
+          x: slideData.x,
+          y: slideData.y,
+          slideType: slideData.type,
+          access: slideData.access,
+          title: slideData.data.title,
+          content: JSON.stringify(slideData.data),
+      }
+  })
 }

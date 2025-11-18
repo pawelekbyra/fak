@@ -1,0 +1,117 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../lib/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model comment_votes {
+  commentId String   @db.Uuid
+  userId    String   @db.Uuid
+  voteType  String   @db.VarChar(10)
+  comments  comments @relation(fields: [commentId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  users     users    @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@id([commentId, userId])
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model comments {
+  id             String          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  entityId       String          @db.VarChar(255)
+  userId         String          @db.Uuid
+  parentId       String?         @db.Uuid
+  content        String?
+  imageUrl       String?
+  gif            Json?
+  repliesCount   Int             @default(0)
+  metadata       Json?
+  createdAt      DateTime?       @default(now()) @db.Timestamptz(6)
+  updatedAt      DateTime?       @default(now()) @db.Timestamptz(6)
+  deletedAt      DateTime?       @db.Timestamptz(6)
+  comment_votes  comment_votes[]
+  slides         slides          @relation(fields: [entityId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  comments       comments?       @relation("commentsTocomments", fields: [parentId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  other_comments comments[]      @relation("commentsTocomments")
+  users          users           @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+}
+
+model likes {
+  slideId String @db.VarChar(255)
+  userId  String @db.Uuid
+  slides  slides @relation(fields: [slideId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  users   users  @relation(fields: [userId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@id([slideId, userId])
+}
+
+model notifications {
+  id                                    String    @id @db.VarChar(255)
+  userId                                String?   @db.Uuid
+  type                                  String    @db.VarChar(50)
+  text                                  String
+  link                                  String?   @db.VarChar(255)
+  fromUserId                            String?   @db.Uuid
+  read                                  Boolean?  @default(false)
+  createdAt                             DateTime? @default(now()) @db.Timestamptz(6)
+  users_notifications_fromUserIdTousers users?    @relation("notifications_fromUserIdTousers", fields: [fromUserId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  users_notifications_userIdTousers     users?    @relation("notifications_userIdTousers", fields: [userId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+}
+
+model password_reset_tokens {
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId    String?  @db.Uuid
+  token     String
+  expiresAt DateTime @db.Timestamptz(6)
+  users     users?   @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+}
+
+model push_subscriptions {
+  id               String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId           String?  @unique @db.Uuid
+  subscription     Json
+  is_pwa_installed Boolean? @default(false)
+  users            users?   @relation(fields: [userId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+}
+
+model slides {
+  id        String     @id @db.VarChar(255)
+  userId    String?    @db.Uuid
+  username  String     @db.VarChar(255)
+  x         Int
+  y         Int
+  slideType String     @db.VarChar(50)
+  access    String?    @default("public") @db.VarChar(50)
+  title     String?    @db.VarChar(255)
+  content   String?
+  createdAt DateTime?  @default(now()) @db.Timestamptz(6)
+  comments  comments[]
+  likes     likes[]
+  users     users?     @relation(fields: [userId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@unique([x, y])
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model users {
+  id                                            String                  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  username                                      String                  @unique @db.VarChar(255)
+  displayName                                   String?                 @db.VarChar(255)
+  email                                         String                  @unique @db.VarChar(255)
+  password                                      String?                 @db.VarChar(255)
+  avatar                                        String?                 @db.VarChar(255)
+  role                                          String?                 @default("PATRON")
+  sessionVersion                                Int?                    @default(1)
+  comment_votes                                 comment_votes[]
+  comments                                      comments[]
+  likes                                         likes[]
+  notifications_notifications_fromUserIdTousers notifications[]         @relation("notifications_fromUserIdTousers")
+  notifications_notifications_userIdTousers     notifications[]         @relation("notifications_userIdTousers")
+  password_reset_tokens                         password_reset_tokens[]
+  push_subscriptions                            push_subscriptions?
+  slides                                        slides[]
+}
