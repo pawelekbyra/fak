@@ -51,13 +51,12 @@ const TopBar = () => {
   };
 
   return (
-    <>
+    <header className="fixed top-0 left-0 right-0 z-[60] md:flex md:justify-center">
       <div
-        className="fixed top-0 left-0 right-0 z-[60] flex items-center justify-between px-1 bg-black text-white border-b border-white/10"
+        className="w-full md:max-w-[400px] flex items-center justify-between px-1 bg-black text-white border-b border-white/10"
         style={{
           height: 'var(--topbar-height)',
           paddingTop: 'var(--safe-area-top)',
-          transform: 'translateZ(0)',
         }}
       >
         {!user ? (
@@ -139,7 +138,7 @@ const TopBar = () => {
 
       {/* --- PWA Modal --- */}
       {showPwaModal && <PwaDesktopModal isOpen={showPwaModal} onClose={() => setShowPwaModal(false)} />}
-    </>
+    </header>
   );
 };
 
