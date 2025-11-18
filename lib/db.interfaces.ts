@@ -9,7 +9,7 @@ export interface User {
   username: string;
   password?: string;
   displayName?: string | null;
-  avatar?: string;
+  avatar?: string | null;
   sessionVersion?: number;
   role?: 'ADMIN' | 'PATRON' | 'TWÓRCA';
   is_profile_complete?: boolean;
