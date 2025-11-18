@@ -8,7 +8,7 @@ export interface User {
   email: string;
   username: string;
   password?: string;
-  displayName?: string;
+  displayName?: string | null;
   avatar?: string;
   sessionVersion?: number;
   role?: 'ADMIN' | 'PATRON' | 'TWÓRCA';
