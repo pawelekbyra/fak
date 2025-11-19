@@ -2,7 +2,7 @@ import { create } from 'zustand';
 import { Slide } from '@/lib/types';
 import React from 'react';
 
-export type ModalType = 'account' | 'comments' | 'info' | 'login' | 'tipping' | null;
+export type ModalType = 'account' | 'comments' | 'info' | 'login' | 'tipping' | 'author' | null;
 
 interface LikeState {
     likes: number;
@@ -13,6 +13,18 @@ interface AppState {
   activeModal: ModalType;
   setActiveModal: (modal: ModalType) => void;
   isAnyModalOpen: () => boolean;
+
+  // Author Profile Modal State
+  isAuthorProfileModalOpen: boolean;
+  authorProfileId: string | null;
+  openAuthorProfileModal: (authorId: string) => void;
+  closeAuthorProfileModal: () => void;
+  jumpToSlide: (slideId: string) => void; // Placeholder as requested by the modal code
+
+  // Tipping Modal State
+  isTippingModalOpen: boolean;
+  openTippingModal: () => void;
+  closeTippingModal: () => void;
 
   // User state
   isLoggedIn: boolean;
@@ -47,6 +59,10 @@ export const useStore = create<AppState>((set, get) => ({
   activeSlide: null,
   likeChanges: {},
 
+  isAuthorProfileModalOpen: false,
+  authorProfileId: null,
+  isTippingModalOpen: false,
+
   // Video Player
   isMuted: true,
   isPlaying: false,
@@ -58,6 +74,13 @@ export const useStore = create<AppState>((set, get) => ({
   // --- ACTIONS ---
   setActiveModal: (modal) => set({ activeModal: modal }),
   setActiveSlide: (slide) => set({ activeSlide: slide }),
+
+  openAuthorProfileModal: (authorId) => set({ isAuthorProfileModalOpen: true, authorProfileId: authorId }),
+  closeAuthorProfileModal: () => set({ isAuthorProfileModalOpen: false, authorProfileId: null }),
+  jumpToSlide: (slideId) => console.log('Jump to slide not implemented globally yet', slideId), // Placeholder
+
+  openTippingModal: () => set({ isTippingModalOpen: true }),
+  closeTippingModal: () => set({ isTippingModalOpen: false }),
 
   toggleLike: (slideId, initialLikes, initialIsLiked) => set((state) => {
     const currentChanges = state.likeChanges[slideId];

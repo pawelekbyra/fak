@@ -35,7 +35,7 @@ const TopBar = () => {
   const unreadCount = 0;
 
   const handleLoggedOutMenuClick = () => {
-    addToast(t('menuAccessAlert'), 'info');
+    setActiveModal('account');
   };
 
   const handleLoggedOutNotificationClick = () => {
@@ -135,12 +135,12 @@ const TopBar = () => {
       <AnimatePresence>
         {isLoginPanelOpen && (
           <motion.div
-            className="absolute left-0 w-full z-[50] bg-black/60 backdrop-blur-sm"
+            className="absolute left-0 w-full z-[50] bg-black/60 backdrop-blur-sm pt-1"
             style={{ top: 'var(--topbar-height)' }}
-            initial={{ opacity: 0, y: '-100%' }}
-            animate={{ opacity: 1, y: '0%' }}
-            exit={{ opacity: 0, y: '-100%' }}
-            transition={{ type: 'spring', stiffness: 300, damping: 30 }}
+            initial={{ y: '-100%' }}
+            animate={{ y: '0%' }}
+            exit={{ y: '-100%' }}
+            transition={{ duration: 0.5, ease: 'easeInOut' }}
           >
             <LoginForm onLoginSuccess={() => setIsLoginPanelOpen(false)} />
           </motion.div>
