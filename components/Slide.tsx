@@ -9,7 +9,6 @@ import {
   VideoSlide,
 } from '@/lib/types';
 import { useStore, ModalType } from '@/store/useStore';
-import VideoPlayer from './VideoPlayer';
 import VideoControls from './VideoControls';
 import { shallow } from 'zustand/shallow';
 import { AnimatePresence, motion } from 'framer-motion';
@@ -169,9 +168,7 @@ const Slide = memo<SlideProps>(({ slide}) => {
     const renderContent = () => {
         switch (slide.type) {
             case 'video':
-                const videoSlide = slide as VideoSlide;
-                if (!videoSlide.data?.hlsUrl) return <div className="w-full h-full bg-black" />;
-                return <VideoPlayer hlsUrl={videoSlide.data.hlsUrl} />;
+                return <div className="w-full h-full bg-black" />;
             case 'html':
                 return <HtmlContent slide={slide as HtmlSlide} />;
             default:
