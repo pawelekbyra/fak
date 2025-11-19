@@ -15,8 +15,25 @@ export default async function SlideManagementPage() {
     redirect('/admin/login');
   }
 
-  const slides = await getAllSlides();
+  const slidesFromDb = await getAllSlides();
   const users: User[] = await getAllUsers();
+
+  // Transform slides to the type expected by the client component
+  const slides: Slide[] = slidesFromDb.map(s => ({
+    id: s.id,
+    x: 0, // Not stored in DB, default to 0
+    y: 0, // Not stored in DB, default to 0
+    userId: s.authorId,
+    username: s.username,
+    avatar: s.author.avatar || '',
+    type: s.type as 'video' | 'image' | 'html',
+    access: 'public', // Default value
+    data: s.data as any, // Cast data, specific types will handle it
+    createdAt: s.createdAt.getTime(),
+    initialLikes: 0, // Placeholder
+    isLiked: false, // Placeholder
+    initialComments: 0, // Placeholder
+  }));
 
   async function createSlideAction(formData: FormData): Promise<{ success: boolean, error?: string }> {
     'use server';
