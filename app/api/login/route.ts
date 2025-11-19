@@ -3,6 +3,7 @@ import { SignJWT } from 'jose';
 import { cookies } from 'next/headers';
 import { db } from '@/lib/db';
 import bcrypt from 'bcrypt';
+import { rateLimit } from '@/lib/rate-limiter';
 
 const FALLBACK_SECRET = 'a_very_long_insecure_key_for_testing_1234567890abcdef';
 const secretToUse = process.env.JWT_SECRET || FALLBACK_SECRET;
@@ -15,6 +16,13 @@ const JWT_SECRET = new TextEncoder().encode(secretToUse);
 const COOKIE_NAME = 'session';
 
 export async function POST(req: NextRequest) {
+  const ip = req.ip ?? '127.0.0.1';
+  const { success, remaining } = await rateLimit(`login:${ip}`, 10, 60);
+
+  if (!success) {
+    return NextResponse.json({ success: false, message: 'Too many requests. Please try again later.' }, { status: 429 });
+  }
+
   try {
     const body = await req.json();
     const { email, password } = body;
