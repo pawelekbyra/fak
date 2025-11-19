@@ -8,8 +8,7 @@
     "start": "next start",
     "lint": "next lint",
     "db:seed": "tsx scripts/seed-kv.ts",
-    "db:init": "dotenv -e .env.local -- tsx scripts/init-db.ts",
-    "admin:create": "dotenv -e .env.local -- tsx scripts/create-admin.ts"
+    "db:seed-test": "dotenv -e .env.local -- tsx scripts/seed-test-accounts.ts"
   },
   "dependencies": {
     "@neondatabase/serverless": "^1.0.1",
@@ -56,7 +55,7 @@
     "@typescript-eslint/eslint-plugin": "^8.41.0",
     "@typescript-eslint/parser": "^8.41.0",
     "bcrypt": "^5.1.1",
-    "dotenv-cli": "^10.0.0",
+    "dotenv-cli": "^11.0.0",
     "eslint": "^8",
     "eslint-config-next": "14.2.3",
     "postcss": "^8.5.6",

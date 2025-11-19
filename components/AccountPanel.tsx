@@ -32,6 +32,8 @@ const AccountPanel: React.FC<AccountPanelProps> = ({ onClose }) => {
       setActiveTab(tab);
   }
 
+  const canPublish = user?.role === 'admin' || user?.role === 'author';
+
   return (
     <motion.div
       className="fixed inset-0 bg-black/80 z-[9999]"
@@ -77,6 +79,21 @@ const AccountPanel: React.FC<AccountPanelProps> = ({ onClose }) => {
           >
             {t('deleteTab')}
           </button>
+        </div>
+
+        <div className="p-4 border-b border-white/10 bg-zinc-900/50">
+           {canPublish ? (
+               <Button className="w-full bg-pink-600 hover:bg-pink-700 text-white" onClick={() => window.location.href = '/admin/slides'}>
+                   {t('publishButton')}
+               </Button>
+           ) : (
+               <Button className="w-full bg-zinc-700 text-white/50 cursor-not-allowed" disabled>
+                   {t('publishButton')}
+               </Button>
+           )}
+           {!canPublish && (
+               <p className="text-xs text-center text-white/40 mt-2">{t('publishButtonInactive')}</p>
+           )}
         </div>
 
         <div className="flex-1 overflow-y-auto">

@@ -170,9 +170,11 @@ export async function getAllUsers(): Promise<User[]> {
 export async function createUser(userData: Omit<User, 'id' | 'sessionVersion' | 'password'> & {password: string | null}): Promise<User> {
     const sql = getDb();
     const { username, displayName, email, password, avatar, role } = userData;
+    // Ensure avatar is NULL if undefined or empty string to differentiate from default URL logic in UI
+    const avatarValue = avatar || null;
     const result = await sql`
         INSERT INTO users (username, "displayName", email, password, avatar, "role")
-        VALUES (${username}, ${displayName}, ${email}, ${password}, ${avatar}, ${role || 'user'})
+        VALUES (${username}, ${displayName}, ${email}, ${password}, ${avatarValue}, ${role || 'user'})
         RETURNING *;
     `;
     return result[0] as User;

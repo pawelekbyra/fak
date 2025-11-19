@@ -58,8 +58,8 @@ const SecretOverlay: React.FC = memo(() => {
         onClick={() => {}}
       />
     );
-  } else if (user?.role !== 'patron') {
-    // Overlay C: Logged in, in PWA, but not a Patron
+  } else if (!['admin', 'author', 'patron'].includes(user?.role || '')) {
+    // Overlay C: Logged in, in PWA, but not a privileged user (Admin, Author, Patron)
     content = (
       <OverlayContent
         title="Odblokuj dostęp"

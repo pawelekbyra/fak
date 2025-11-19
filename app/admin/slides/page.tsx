@@ -11,7 +11,8 @@ export const dynamic = 'force-dynamic';
 
 export default async function SlideManagementPage() {
   const session = await verifySession();
-  if (!session || session.user.role !== 'admin') {
+  // Allow admin and author to access
+  if (!session || !['admin', 'author'].includes(session.user.role || '')) {
     redirect('/admin/login');
   }
 
@@ -22,7 +23,8 @@ export default async function SlideManagementPage() {
   async function createSlideAction(formData: FormData): Promise<{ success: boolean, error?: string }> {
     'use server';
     const session = await verifySession();
-    if (!session?.user || session.user.role !== 'admin') {
+    // Allow admin and author to create slides
+    if (!session?.user || !['admin', 'author'].includes(session.user.role || '')) {
       return { success: false, error: 'Unauthorized' };
     }
     try {
@@ -72,7 +74,8 @@ export default async function SlideManagementPage() {
   async function updateSlideAction(formData: FormData): Promise<{ success: boolean, error?: string }> {
     'use server';
     const session = await verifySession();
-    if (session?.user?.role !== 'admin') {
+    // Allow admin and author to update slides
+    if (!session?.user || !['admin', 'author'].includes(session.user.role || '')) {
       return { success: false, error: 'Unauthorized' };
     }
     try {
@@ -110,7 +113,8 @@ export default async function SlideManagementPage() {
   async function deleteSlideAction(formData: FormData): Promise<{ success: boolean, error?: string }>{
     'use server';
     const session = await verifySession();
-    if (session?.user?.role !== 'admin') {
+    // Allow admin and author to delete slides
+    if (!session?.user || !['admin', 'author'].includes(session.user.role || '')) {
       return { success: false, error: 'Unauthorized' };
     }
     try {

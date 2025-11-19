@@ -21,7 +21,7 @@ export default async function AdminLayout({
   // Standardowa weryfikacja sesji dla środowiska produkcyjnego
   const session = await verifySession();
 
-  if (!session?.user || session.user.role !== 'admin') {
+  if (!session?.user || !['admin', 'author'].includes(session.user.role || '')) {
     redirect('/admin/login');
   }
 
