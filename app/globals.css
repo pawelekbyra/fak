@@ -70,6 +70,17 @@
     user-select: none;
     -webkit-user-select: none;
   }
+
+  /* Hide scrollbar for Chrome, Safari and Opera */
+  .no-scrollbar::-webkit-scrollbar {
+      display: none;
+  }
+
+  /* Hide scrollbar for IE, Edge and Firefox */
+  .no-scrollbar {
+      -ms-overflow-style: none;  /* IE and Edge */
+      scrollbar-width: none;  /* Firefox */
+  }
 body {
     @apply bg-zinc-900 text-foreground;
     background-image: radial-gradient(ellipse at center, hsl(0 0% 15%) 0%, hsl(0 0% 5%) 100%);

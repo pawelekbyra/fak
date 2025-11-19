@@ -22,7 +22,7 @@ export default async function SlideManagementPage() {
   async function createSlideAction(formData: FormData): Promise<{ success: boolean, error?: string }> {
     'use server';
     const session = await verifySession();
-    if (!session?.user || session.user.role !== 'admin') {
+    if (!session?.user || (session.user.role !== 'admin' && session.user.role !== 'author')) {
       return { success: false, error: 'Unauthorized' };
     }
     try {
@@ -72,7 +72,7 @@ export default async function SlideManagementPage() {
   async function updateSlideAction(formData: FormData): Promise<{ success: boolean, error?: string }> {
     'use server';
     const session = await verifySession();
-    if (session?.user?.role !== 'admin') {
+    if (!session?.user || (session.user.role !== 'admin' && session.user.role !== 'author')) {
       return { success: false, error: 'Unauthorized' };
     }
     try {
@@ -110,7 +110,7 @@ export default async function SlideManagementPage() {
   async function deleteSlideAction(formData: FormData): Promise<{ success: boolean, error?: string }>{
     'use server';
     const session = await verifySession();
-    if (session?.user?.role !== 'admin') {
+    if (!session?.user || (session.user.role !== 'admin' && session.user.role !== 'author')) {
       return { success: false, error: 'Unauthorized' };
     }
     try {

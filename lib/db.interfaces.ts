@@ -9,7 +9,7 @@ export interface User {
   displayName?: string;
   avatar?: string;
   sessionVersion?: number;
-  role?: 'user' | 'admin' | 'patron';
+  role?: 'user' | 'admin' | 'patron' | 'author';
 }
 
 export interface Comment {

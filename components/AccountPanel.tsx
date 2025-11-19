@@ -20,6 +20,7 @@ const AccountPanel: React.FC<AccountPanelProps> = ({ onClose }) => {
   const [activeTab, setActiveTab] = useState<Tab>('profile');
   const { t } = useTranslation();
   const { user } = useUser();
+  const isContentCreator = user?.role === 'admin' || user?.role === 'author';
 
   useEffect(() => {
     // If the user logs out while this panel is open, close it automatically.
@@ -78,6 +79,19 @@ const AccountPanel: React.FC<AccountPanelProps> = ({ onClose }) => {
             {t('deleteTab')}
           </button>
         </div>
+
+        {isContentCreator && (
+          <div className="flex-shrink-0 p-4 border-b border-white/10 bg-zinc-900">
+              <Button
+                  variant="default"
+                  className="w-full bg-blue-600 hover:bg-blue-700"
+                  onClick={() => { console.log('Publish action: NOT IMPLEMENTED'); }}
+                  disabled
+              >
+                  {t('publishButtonText') || 'Publikuj'}
+              </Button>
+          </div>
+        )}
 
         <div className="flex-1 overflow-y-auto">
             {activeTab === 'profile' && <ProfileTab onClose={onClose} />}

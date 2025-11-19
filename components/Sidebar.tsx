@@ -1,6 +1,7 @@
 import React, { memo, useEffect } from 'react';
-import { Heart, MessageSquare, Rat, FileQuestion, Share } from 'lucide-react';
+import { Heart, MessageSquare, User, Wallet, Share2 } from 'lucide-react';
 import { motion } from 'framer-motion';
+import Image from 'next/image';
 import Ably from 'ably';
 import { ably } from '@/lib/ably-client';
 import { useToast } from '@/context/ToastContext';
@@ -14,6 +15,7 @@ interface SidebarProps {
   initialIsLiked: boolean;
   slideId: string;
   commentsCount: number;
+  avatarUrl?: string;
 }
 
 const Sidebar: React.FC<SidebarProps> = ({
@@ -21,6 +23,7 @@ const Sidebar: React.FC<SidebarProps> = ({
   initialIsLiked,
   slideId,
   commentsCount,
+  avatarUrl,
 }) => {
   const { addToast } = useToast();
   const { t } = useTranslation();
@@ -87,8 +90,18 @@ const Sidebar: React.FC<SidebarProps> = ({
       }}
     >
       <div className="relative w-12 h-12 mb-1.5">
-        <button onClick={() => setActiveModal('account')} className="w-full h-full flex items-center justify-center text-white">
-          <Rat size={48} strokeWidth={1.4} />
+        <button onClick={() => setActiveModal('account')} className="w-full h-full flex items-center justify-center text-white overflow-hidden rounded-full bg-zinc-800/50 border border-white/20">
+          {avatarUrl ? (
+            <Image
+              src={avatarUrl}
+              alt="Author"
+              width={48}
+              height={48}
+              className="w-full h-full object-cover"
+            />
+          ) : (
+            <User size={32} strokeWidth={1.4} />
+          )}
         </button>
         {!isLoggedIn && (
           <div
@@ -104,6 +117,7 @@ const Sidebar: React.FC<SidebarProps> = ({
         onClick={handleLike}
         className="flex flex-col items-center gap-0.5 text-white text-xs font-semibold"
         data-slide-id={slideId}
+        data-action="toggle-like"
         whileTap={{ scale: 0.9 }}
       >
         <Heart
@@ -117,6 +131,7 @@ const Sidebar: React.FC<SidebarProps> = ({
 
       <motion.button
         data-testid="comments-button"
+        data-action="open-comments-modal"
         onClick={() => setActiveModal('comments')}
         className="flex flex-col items-center gap-0.5 text-white text-xs font-semibold"
         whileTap={{ scale: 0.9 }}
@@ -125,14 +140,21 @@ const Sidebar: React.FC<SidebarProps> = ({
         <span className="icon-label">{formatCount(commentsCount)}</span>
       </motion.button>
 
-      <button onClick={handleShare} className="flex flex-col items-center gap-0.5 text-white text-xs font-semibold">
-        <Share size={32} strokeWidth={1.4} className="stroke-white" style={{ filter: 'drop-shadow(0 0 3px rgba(0,0,0,0.5))' }}/>
+      <button
+        onClick={handleShare}
+        data-action="share"
+        className="flex flex-col items-center gap-0.5 text-white text-xs font-semibold"
+      >
+        <Share2 size={32} strokeWidth={1.4} className="stroke-white" style={{ filter: 'drop-shadow(0 0 3px rgba(0,0,0,0.5))' }}/>
         <span className="icon-label">{t('shareText') || 'Share'}</span>
       </button>
 
-      <button onClick={() => setActiveModal('info')} className="flex flex-col items-center gap-0.5 text-white text-xs font-semibold mt-4">
-        <FileQuestion size={32} strokeWidth={1.4} className="stroke-white" style={{ filter: 'drop-shadow(0 0 3px rgba(0,0,0,0.5))' }}/>
-        <span className="icon-label">WTF?!</span>
+      <button
+        data-action="show-tip-jar"
+        className="flex flex-col items-center gap-0.5 text-white text-xs font-semibold mt-4 opacity-50 cursor-not-allowed"
+      >
+        <Wallet size={32} strokeWidth={1.4} className="stroke-white" style={{ filter: 'drop-shadow(0 0 3px rgba(0,0,0,0.5))' }}/>
+        <span className="icon-label">Napiwek</span>
       </button>
     </aside>
   );

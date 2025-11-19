@@ -689,6 +689,13 @@
   resolved "https://registry.npmjs.org/@types/react-dom/-/react-dom-18.3.7.tgz"
   integrity sha512-MEe3UeoENYVFXzoXEWsvcpg6ZvlrFNlOQ7EOsvhI3CfAXwzPfO8Qwuxd40nepsYKqyyVQnTdEfv68q91yLcKrQ==
 
+"@types/react-window@^2.0.0":
+  version "2.0.0"
+  resolved "https://registry.yarnpkg.com/@types/react-window/-/react-window-2.0.0.tgz#9fe45015d6f98ec98a069362518c855fcc1fa8d0"
+  integrity sha512-E8hMDtImEpMk1SjswSvqoSmYvk7GEtyVaTa/GJV++FdDNuMVVEzpAClyJ0nqeKYBrMkGiyH6M1+rPLM0Nu1exQ==
+  dependencies:
+    react-window "*"
+
 "@types/react@18.3.24", "@types/react@^18":
   version "18.3.24"
   resolved "https://registry.yarnpkg.com/@types/react/-/react-18.3.24.tgz#f6a5a4c613242dfe3af0dcee2b4ec47b92d9b6bd"
@@ -3721,6 +3728,11 @@ react-is@^16.13.1:
   dependencies:
     "@types/use-sync-external-store" "^0.0.6"
     use-sync-external-store "^1.4.0"
+
+react-window@*, react-window@^2.2.3:
+  version "2.2.3"
+  resolved "https://registry.yarnpkg.com/react-window/-/react-window-2.2.3.tgz#f8ffdddbb612ccd3e1314b59fce79af85d3f15e3"
+  integrity sha512-gTRqQYC8ojbiXyd9duYFiSn2TJw0ROXCgYjenOvNKITWzK0m0eCvkUsEUM08xvydkMh7ncp+LE0uS3DeNGZxnQ==
 
 react@^18:
   version "18.3.1"
