@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { verifySession } from '@/lib/auth';
+import { ably } from '@/lib/ably-server';
 
 export const dynamic = 'force-dynamic';
 
@@ -24,6 +25,9 @@ export async function POST(request: NextRequest) {
     }
 
     const result = await db.toggleLike(slideId, currentUser.id);
+
+    const channel = ably.channels.get(`likes:${slideId}`);
+    await channel.publish('update', { likeCount: result.likeCount });
 
     return NextResponse.json({
       success: true,

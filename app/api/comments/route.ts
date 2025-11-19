@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { verifySession } from '@/lib/auth';
 import { sanitize } from '@/lib/sanitize';
+import { rateLimit } from '@/lib/rate-limiter';
+import { ably } from '@/lib/ably-server';
 export const dynamic = 'force-dynamic';
 
 export async function GET(request: NextRequest) {
@@ -28,6 +30,12 @@ export async function POST(request: NextRequest) {
   }
   const currentUser = payload.user;
 
+  const { success, remaining } = await rateLimit(`comment:${currentUser.id}`, 5, 60);
+
+  if (!success) {
+    return NextResponse.json({ success: false, message: 'You are posting comments too quickly. Please try again later.' }, { status: 429 });
+  }
+
   try {
     const { slideId, text, parentId } = await request.json();
 
@@ -51,6 +59,9 @@ export async function POST(request: NextRequest) {
 
     // Pass parentId to db.addComment
     const newComment = await db.addComment(slideId, currentUser.id, sanitizedText, parentId || null);
+
+    const channel = ably.channels.get(`comments:${slideId}`);
+    await channel.publish('new-comment', newComment);
 
     return NextResponse.json({ success: true, comment: newComment }, { status: 201 });
 

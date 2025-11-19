@@ -1,6 +1,8 @@
-import React, { memo } from 'react';
+import React, { memo, useEffect } from 'react';
 import { Heart, MessageSquare, Rat, FileQuestion, Share } from 'lucide-react';
 import { motion } from 'framer-motion';
+import Ably from 'ably';
+import { ably } from '@/lib/ably-client';
 import { useToast } from '@/context/ToastContext';
 import { useTranslation } from '@/context/LanguageContext';
 import { useStore } from '@/store/useStore';
@@ -35,8 +37,24 @@ const Sidebar: React.FC<SidebarProps> = ({
   }), shallow);
 
   const likeState = likeChanges[slideId];
-  const currentLikes = likeState ? likeState.likes : initialLikes;
+  const [liveLikes, setLiveLikes] = React.useState(initialLikes);
+  const currentLikes = likeState ? likeState.likes : liveLikes;
   const isLiked = likeState ? likeState.isLiked : initialIsLiked;
+
+  useEffect(() => {
+    setLiveLikes(initialLikes);
+    const channel = ably.channels.get(`likes:${slideId}`);
+
+    const onLikeUpdate = (message: Ably.Message) => {
+      setLiveLikes((message.data as { likeCount: number }).likeCount);
+    };
+
+    channel.subscribe('update', onLikeUpdate);
+
+    return () => {
+      channel.unsubscribe('update', onLikeUpdate);
+    };
+  }, [initialLikes, slideId]);
 
   const handleLike = () => {
     if (!isLoggedIn) {

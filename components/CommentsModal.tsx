@@ -4,6 +4,8 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Heart, MessageSquare, Loader2 } from 'lucide-react';
 import Image from 'next/image';
+import Ably from 'ably';
+import { ably } from '@/lib/ably-client';
 import { useTranslation } from '@/context/LanguageContext';
 import { useUser } from '@/context/UserContext';
 // This type is now aligned with the backend response
@@ -122,6 +124,14 @@ const CommentsModal: React.FC<CommentsModalProps> = ({ isOpen, onClose, slideId,
 
   useEffect(() => {
     if (isOpen && slideId) {
+      const channel = ably.channels.get(`comments:${slideId}`);
+
+      const onNewComment = (message: Ably.Message) => {
+        addCommentOptimistically(message.data as Comment);
+      };
+
+      channel.subscribe('new-comment', onNewComment);
+
       setIsLoading(true);
       setError(null);
       fetch(`/api/comments?slideId=${slideId}`)
@@ -133,7 +143,21 @@ const CommentsModal: React.FC<CommentsModalProps> = ({ isOpen, onClose, slideId,
         })
         .then(data => {
           if (data.success) {
-            setComments(data.comments);
+            const comments: Comment[] = data.comments;
+            const commentMap = new Map<string, Comment>(comments.map((c: Comment) => [c.id, { ...c, replies: [] }]));
+            const rootComments: Comment[] = [];
+
+            for (const comment of comments) {
+              if (comment.parentId && commentMap.has(comment.parentId)) {
+                const parentComment = commentMap.get(comment.parentId);
+                if (parentComment) {
+                  parentComment.replies?.push(commentMap.get(comment.id)!);
+                }
+              } else {
+                rootComments.push(commentMap.get(comment.id)!);
+              }
+            }
+            setComments(rootComments);
           } else {
             throw new Error(data.message || 'Failed to fetch comments');
           }
@@ -144,6 +168,10 @@ const CommentsModal: React.FC<CommentsModalProps> = ({ isOpen, onClose, slideId,
         .finally(() => {
           setIsLoading(false);
         });
+
+      return () => {
+        channel.unsubscribe('new-comment', onNewComment);
+      };
     }
   }, [isOpen, slideId]);
 
@@ -339,7 +367,7 @@ const CommentsModal: React.FC<CommentsModalProps> = ({ isOpen, onClose, slideId,
       <div className="flex-1 overflow-y-auto p-4">
         <AnimatePresence>
           <motion.div layout className="space-y-4">
-            {comments.map(comment => (
+            {comments.map((comment: Comment) => (
               <CommentItem
                 key={comment.id}
                 comment={comment}
