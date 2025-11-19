@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { findUserByEmail, createPasswordResetToken } from '@/lib/db';
+import { db } from '@/lib/db';
 import { randomBytes } from 'crypto';
 import { sendPasswordResetLinkEmail } from '@/lib/email';
 
@@ -7,7 +7,7 @@ export async function POST(request: NextRequest) {
   try {
     const { email } = await request.json();
 
-    const user = await findUserByEmail(email);
+    const user = await db.findUserByEmail(email);
     if (!user) {
       // Don't reveal that the user doesn't exist.
       // Still return a success message to prevent user enumeration attacks.
@@ -17,7 +17,7 @@ export async function POST(request: NextRequest) {
     const token = randomBytes(32).toString('hex');
     const expiresAt = new Date(Date.now() + 3600000); // 1 hour from now
 
-    await createPasswordResetToken(user.id, token, expiresAt);
+    await db.createPasswordResetToken(user.id, token, expiresAt);
 
     const resetLink = `${process.env.NEXT_PUBLIC_BASE_URL}/reset-password?token=${token}`;
 

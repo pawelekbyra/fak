@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getNotifications, getUnreadNotificationCount, savePushSubscription } from '@/lib/db';
+import { db } from '@/lib/db';
 import { verifySession } from '@/lib/auth';
 
 export const dynamic = 'force-dynamic';
@@ -11,8 +11,8 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    const notifications = await getNotifications(payload.user.id);
-    const unreadCount = await getUnreadNotificationCount(payload.user.id);
+    const notifications = await db.getNotifications(payload.user.id);
+    const unreadCount = await db.getUnreadNotificationCount(payload.user.id);
     return NextResponse.json({ success: true, notifications, unreadCount }, {
       headers: {
         'Cache-Control': 'no-cache, no-store, must-revalidate',
@@ -30,14 +30,10 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ success: false, message: 'Authentication required.' }, { status: 401 });
     }
 
-    const { subscription } = await request.json();
-
-    if (!subscription) {
-        return NextResponse.json({ success: false, message: 'Subscription object is required.' }, { status: 400 });
-    }
+    const { subscription, isPwaInstalled } = await request.json();
 
     try {
-        await savePushSubscription(payload.user.id, subscription);
+        await db.savePushSubscription(payload.user.id, subscription, isPwaInstalled);
         return NextResponse.json({ success: true });
     } catch (error) {
         console.error('Error saving push subscription:', error);

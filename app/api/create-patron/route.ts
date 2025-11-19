@@ -1,6 +1,7 @@
 // app/api/create-patron/route.ts
+// app/api/create-patron/route.ts
 import { NextRequest, NextResponse } from 'next/server';
-import { findUserByEmail, createUser, createPasswordResetToken } from '@/lib/db';
+import { db } from '@/lib/db';
 import bcrypt from 'bcrypt';
 import { sendPasswordResetLinkEmail } from '@/lib/email';
 import { randomBytes } from 'crypto';
@@ -10,7 +11,7 @@ export async function POST(request: NextRequest) {
         const { email } = await request.json();
 
         // Sprawdzenie, czy użytkownik już istnieje
-        const existingUser = await findUserByEmail(email);
+        const existingUser = await db.findUserByEmail(email);
         if (existingUser) {
             return NextResponse.json({ success: false, message: 'Użytkownik z tym adresem email już istnieje.' }, { status: 409 });
         }
@@ -19,19 +20,19 @@ export async function POST(request: NextRequest) {
         const tempPassword = randomBytes(32).toString('hex');
         const hashedPassword = await bcrypt.hash(tempPassword, 10);
 
-        const newUser = await createUser({
+        const newUser = await db.createUser({
             email,
             password: hashedPassword,
             username: email.split('@')[0],
             displayName: `Patron ${email.split('@')[0]}`,
-            role: 'PATRON',
+            role: 'user',
         });
 
         // Generate password reset token
         const token = randomBytes(32).toString('hex');
         const expiresAt = new Date(Date.now() + 3600000); // 1 hour
 
-        await createPasswordResetToken(newUser.id, token, expiresAt);
+        await db.createPasswordResetToken(newUser.id, token, expiresAt);
 
         // Send password reset link
         const resetLink = `${process.env.NEXT_PUBLIC_BASE_URL}/reset-password?token=${token}`;

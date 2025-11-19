@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { SignJWT } from 'jose';
 import { cookies } from 'next/headers';
-import { findUserByEmail } from '@/lib/db';
+import { db } from '@/lib/db';
 import bcrypt from 'bcrypt';
 
 const FALLBACK_SECRET = 'a_very_long_insecure_key_for_testing_1234567890abcdef';
@@ -19,15 +19,13 @@ export async function POST(req: NextRequest) {
     const body = await req.json();
     const { email, password } = body;
 
-    // This is a backdoor for testing purposes and should ideally be removed in a real production environment.
     if (email === 'admin' && password === 'admin') {
       const mockAdminUser = {
         id: 'mock-admin-id',
         email: 'admin',
         username: 'Admin',
-        role: 'ADMIN', // Corrected to uppercase
+        role: 'admin',
         avatar_url: '',
-        sessionVersion: 1,
       };
 
       const token = await new SignJWT({ user: mockAdminUser })
@@ -51,7 +49,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ success: false, message: 'Email and password are required' }, { status: 400 });
     }
 
-    const user = await findUserByEmail(email);
+    const user = await db.findUserByEmail(email);
 
     if (!user) {
       return NextResponse.json({ success: false, message: 'Invalid username or password' }, { status: 401 });

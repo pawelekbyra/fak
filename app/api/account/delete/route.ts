@@ -1,43 +1,41 @@
-// app/api/account/delete/route.ts
 import { NextRequest, NextResponse } from 'next/server';
-import { deleteAccount } from '@/lib/db';
-import { verifySession } from '@/lib/auth';
-import { z } from 'zod';
+import { cookies } from 'next/headers';
 
-const deleteAccountSchema = z.object({
-    password: z.string().min(1, 'Password is required'),
-});
+export const dynamic = 'force-dynamic';
+import { db } from '@/lib/db';
+import { verifySession } from '@/lib/auth';
+
+const COOKIE_NAME = 'session';
 
 export async function POST(request: NextRequest) {
-    const session = await verifySession();
-    if (!session?.user) {
-        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  const payload = await verifySession();
+  if (!payload || !payload.user) {
+    return NextResponse.json({ success: false, message: 'Not authenticated' }, { status: 401 });
+  }
+
+  try {
+    const { confirm_text } = await request.json();
+
+    if (confirm_text !== 'USUWAM KONTO') {
+      return NextResponse.json({ success: false, message: 'Confirmation text is incorrect.' }, { status: 400 });
     }
 
-    const body = await request.json();
+    const wasDeleted = await db.deleteUser(payload.user.id);
 
-    const validatedFields = deleteAccountSchema.safeParse(body);
-
-    if (!validatedFields.success) {
-        return NextResponse.json({ error: 'Invalid input', details: validatedFields.error.flatten() }, { status: 400 });
+    if (!wasDeleted) {
+        return NextResponse.json({ success: false, message: 'User not found or could not be deleted.' }, { status: 404 });
     }
 
-    const { password } = validatedFields.data;
+    // Clear the session cookie to log the user out
+    cookies().delete(COOKIE_NAME);
 
-    try {
-        const success = await deleteAccount(session.user.id, password);
+    return NextResponse.json({
+      success: true,
+      message: 'Account deleted successfully. You have been logged out.',
+    });
 
-        if (!success) {
-            return NextResponse.json({ error: 'Invalid password or user not found' }, { status: 400 });
-        }
-
-        // Clear the session cookie upon successful deletion
-        const response = NextResponse.json({ success: true, message: 'Account deleted successfully' });
-        response.cookies.delete('session');
-        return response;
-
-    } catch (error) {
-        console.error('Failed to delete account:', error);
-        return NextResponse.json({ error: 'Failed to delete account' }, { status: 500 });
-    }
+  } catch (error) {
+    console.error('Error in account delete API:', error);
+    return NextResponse.json({ success: false, message: 'Internal Server Error' }, { status: 500 });
+  }
 }

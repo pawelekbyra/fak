@@ -1,5 +1,5 @@
 import React, { memo } from 'react';
-import { MessageSquareHeart, DollarSign, Share2, CircleUser, Bell, Heart } from 'lucide-react';
+import { Heart, MessageSquare, Rat, FileQuestion, Share } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useToast } from '@/context/ToastContext';
 import { useTranslation } from '@/context/LanguageContext';
@@ -38,22 +38,6 @@ const Sidebar: React.FC<SidebarProps> = ({
   const currentLikes = likeState ? likeState.likes : initialLikes;
   const isLiked = likeState ? likeState.isLiked : initialIsLiked;
 
-  const handleOpenAccount = () => {
-    setActiveModal('account');
-  };
-
-  const handleOpenNotifications = () => {
-    setActiveModal('notifications');
-  };
-
-  const handleOpenComments = () => {
-    setActiveModal('comments');
-  };
-
-  const handleOpenTip = () => {
-    setActiveModal('tip');
-  };
-
   const handleLike = () => {
     if (!isLoggedIn) {
       setActiveModal('login');
@@ -85,8 +69,8 @@ const Sidebar: React.FC<SidebarProps> = ({
       }}
     >
       <div className="relative w-12 h-12 mb-1.5">
-        <button onClick={handleOpenAccount} className="w-full h-full flex items-center justify-center text-white">
-          <CircleUser size={48} strokeWidth={1.4} />
+        <button onClick={() => setActiveModal('account')} className="w-full h-full flex items-center justify-center text-white">
+          <Rat size={48} strokeWidth={1.4} />
         </button>
         {!isLoggedIn && (
           <div
@@ -115,35 +99,22 @@ const Sidebar: React.FC<SidebarProps> = ({
 
       <motion.button
         data-testid="comments-button"
-        onClick={handleOpenComments}
+        onClick={() => setActiveModal('comments')}
         className="flex flex-col items-center gap-0.5 text-white text-xs font-semibold"
         whileTap={{ scale: 0.9 }}
       >
-        <MessageSquareHeart size={32} strokeWidth={1.4} className="stroke-white" style={{ filter: 'drop-shadow(0 0 3px rgba(0,0,0,0.5))' }}/>
+        <MessageSquare size={32} strokeWidth={1.4} className="stroke-white" style={{ filter: 'drop-shadow(0 0 3px rgba(0,0,0,0.5))' }}/>
         <span className="icon-label">{formatCount(commentsCount)}</span>
       </motion.button>
 
-      <motion.button
-        onClick={handleOpenNotifications}
-        className="flex flex-col items-center gap-0.5 text-white text-xs font-semibold"
-        whileTap={{ scale: 0.9 }}
-      >
-        <Bell size={32} strokeWidth={1.4} className="stroke-white" style={{ filter: 'drop-shadow(0 0 3px rgba(0,0,0,0.5))' }}/>
-        <span className="icon-label">0</span>
-      </motion.button>
-
-      <motion.button
-        onClick={handleOpenTip}
-        className="flex flex-col items-center gap-0.5 text-white text-xs font-semibold"
-        whileTap={{ scale: 0.9 }}
-      >
-        <DollarSign size={32} strokeWidth={1.4} className="stroke-white" style={{ filter: 'drop-shadow(0 0 3px rgba(0,0,0,0.5))' }}/>
-        <span className="icon-label">{t('tip') || 'Tip'}</span>
-      </motion.button>
-
       <button onClick={handleShare} className="flex flex-col items-center gap-0.5 text-white text-xs font-semibold">
-        <Share2 size={32} strokeWidth={1.4} className="stroke-white" style={{ filter: 'drop-shadow(0 0 3px rgba(0,0,0,0.5))' }}/>
+        <Share size={32} strokeWidth={1.4} className="stroke-white" style={{ filter: 'drop-shadow(0 0 3px rgba(0,0,0,0.5))' }}/>
         <span className="icon-label">{t('shareText') || 'Share'}</span>
+      </button>
+
+      <button onClick={() => setActiveModal('info')} className="flex flex-col items-center gap-0.5 text-white text-xs font-semibold mt-4">
+        <FileQuestion size={32} strokeWidth={1.4} className="stroke-white" style={{ filter: 'drop-shadow(0 0 3px rgba(0,0,0,0.5))' }}/>
+        <span className="icon-label">WTF?!</span>
       </button>
     </aside>
   );

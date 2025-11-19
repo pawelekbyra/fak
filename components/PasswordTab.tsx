@@ -5,31 +5,19 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Loader2 } from 'lucide-react';
 import { useTranslation } from '@/context/LanguageContext';
-import { useToast } from '@/context/ToastContext';
 
 const PasswordTab: React.FC = () => {
   const { t } = useTranslation();
-  const { addToast } = useToast();
+  const [status, setStatus] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
   const [isSaving, setIsSaving] = useState(false);
 
   const handlePasswordSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setIsSaving(true);
+    setStatus(null);
 
     const formData = new FormData(event.currentTarget);
     const data = Object.fromEntries(formData.entries());
-
-    if (data.newPassword !== data.confirmPassword) {
-        addToast(t('passwordsDoNotMatch'), 'error');
-        setIsSaving(false);
-        return;
-    }
-
-    if ((data.newPassword as string).length < 8) {
-        addToast(t('passwordMinLength'), 'error');
-        setIsSaving(false);
-        return;
-    }
 
     try {
       const res = await fetch('/api/password/change', {
@@ -41,13 +29,13 @@ const PasswordTab: React.FC = () => {
       const result = await res.json();
 
       if (res.ok && result.success) {
-        addToast(result.message || t('passwordChangeSuccess'), 'success');
+        setStatus({ type: 'success', message: result.message || t('passwordChangeSuccess') });
         (event.target as HTMLFormElement).reset();
       } else {
-        throw new Error(result.error || t('passwordChangeError'));
+        throw new Error(result.message || t('passwordChangeError'));
       }
     } catch (error: any) {
-      addToast(error.message, 'error');
+      setStatus({ type: 'error', message: error.message });
     } finally {
       setIsSaving(false);
     }

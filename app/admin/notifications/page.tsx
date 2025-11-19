@@ -7,7 +7,7 @@ export const dynamic = 'force-dynamic';
 
 export default async function AdminNotificationsPage() {
   const payload = await verifySession();
-  if (!payload || payload.user.role !== 'ADMIN') {
+  if (!payload || payload.user.role !== 'admin') {
     redirect('/admin/login');
   }
 

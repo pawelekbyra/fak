@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { markNotificationsAsRead } from '@/lib/db';
+import { db } from '@/lib/db';
 import { verifySession } from '@/lib/auth';
+import { kv } from '@/lib/kv';
 
 export async function POST(request: NextRequest) {
   const payload = await verifySession();
@@ -10,18 +11,24 @@ export async function POST(request: NextRequest) {
   const userId = payload.user.id;
 
   try {
-    const { notificationIds } = await request.json();
+    const { notificationId } = await request.json();
 
-    if (!notificationIds || !Array.isArray(notificationIds) || notificationIds.length === 0) {
-      return NextResponse.json({ success: false, message: 'notificationIds is required and must be a non-empty array of strings' }, { status: 400 });
+    if (!notificationId || typeof notificationId !== 'string') {
+      return NextResponse.json({ success: false, message: 'notificationId is required and must be a string' }, { status: 400 });
     }
 
-    await markNotificationsAsRead(notificationIds, userId);
+    // Security check: Ensure the notification belongs to the user trying to mark it as read.
+    const notification = await kv!.get(`notification:${notificationId}`);
+    if (!notification || (notification as any).userId !== userId) {
+        return NextResponse.json({ success: false, message: 'Notification not found or access denied.' }, { status: 404 });
+    }
+
+    await db.markNotificationAsRead(notificationId);
 
     return NextResponse.json({ success: true });
 
   } catch (error) {
-    console.error('Error marking notifications as read:', error);
+    console.error('Error marking notification as read:', error);
     return NextResponse.json({ success: false, message: 'Internal Server Error' }, { status: 500 });
   }
 }

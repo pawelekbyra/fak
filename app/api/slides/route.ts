@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getSlidesWithCursor } from '@/lib/db';
+import { db } from '@/lib/db';
 import { verifySession } from '@/lib/auth';
 
 export const dynamic = 'force-dynamic';
@@ -13,11 +13,16 @@ export async function GET(request: NextRequest) {
     const session = await verifySession();
     const currentUserId = session?.user?.id;
 
-    const slides = await getSlidesWithCursor(cursor, limit, currentUserId);
+    if (!db.getSlides) {
+        return NextResponse.json({ error: 'db.getSlides is not a function' }, { status: 500 });
+    }
+
+    const slides = await db.getSlides({ limit, cursor, currentUserId });
 
     let nextCursor: string | null = null;
     if (slides.length === limit) {
-      nextCursor = slides[slides.length - 1].id;
+      const lastSlide = slides[slides.length - 1];
+      nextCursor = lastSlide.createdAt.toString();
     }
 
     return NextResponse.json({

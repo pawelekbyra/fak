@@ -6,7 +6,6 @@ import { useUser } from '@/context/UserContext';
 import ProfileTab from './ProfileTab';
 import PasswordTab from './PasswordTab';
 import DeleteTab from './DeleteTab';
-import PublishTab from './PublishTab';
 import { useTranslation } from '@/context/LanguageContext';
 import { X } from 'lucide-react';
 import { Button } from './ui/button';
@@ -15,13 +14,12 @@ interface AccountPanelProps {
   onClose: () => void;
 }
 
-type Tab = 'profile' | 'password' | 'delete' | 'publish';
+type Tab = 'profile' | 'password' | 'delete';
 
 const AccountPanel: React.FC<AccountPanelProps> = ({ onClose }) => {
   const [activeTab, setActiveTab] = useState<Tab>('profile');
   const { t } = useTranslation();
   const { user } = useUser();
-  const isCreator = user?.role === 'TWÓRCA';
 
   useEffect(() => {
     // If the user logs out while this panel is open, close it automatically.
@@ -79,21 +77,12 @@ const AccountPanel: React.FC<AccountPanelProps> = ({ onClose }) => {
           >
             {t('deleteTab')}
           </button>
-          {isCreator && (
-            <button
-              onClick={() => handleTabClick('publish')}
-              className={`flex-1 p-3.5 text-sm font-semibold border-b-2 transition-colors ${activeTab === 'publish' ? 'bg-zinc-700 text-white border-pink-500' : 'text-white/60 border-transparent hover:bg-white/5'}`}
-            >
-              Publikuj
-            </button>
-          )}
         </div>
 
         <div className="flex-1 overflow-y-auto">
             {activeTab === 'profile' && <ProfileTab onClose={onClose} />}
             {activeTab === 'password' && <PasswordTab />}
             {activeTab === 'delete' && <DeleteTab />}
-            {activeTab === 'publish' && <PublishTab />}
         </div>
       </motion.div>
     </motion.div>

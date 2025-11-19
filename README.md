@@ -1,69 +1,52 @@
-# Ting Tong - Aplikacja Społecznościowa
+# Aplikacja do skrolowania typu tiktok z pionowym feedem z modelem dostepu do sekretnych slajdow po wplacie napiwka przez bramke stripe.
 
-## Opis Projektu
+## Priorytetowy Plan Wdrożenia (Wersja Punktowa)
 
-Ting Tong to nowoczesna aplikacja internetowa typu PWA (Progressive Web App) inspirowana popularnymi platformami społecznościowymi. Umożliwia użytkownikom dzielenie się krótkimi treściami wideo i tekstowymi, komentowanie oraz interakcje z innymi. Aplikacja została zbudowana w oparciu o najnowsze technologie webowe, z silnym naciskiem na real-time'owe doświadczenia użytkownika.
+### Faza I: 🏗️ Fundament Architektoniczny i Danych (Szkielet MVP)
+To jest ABSOLUTNA PODSTAWA – projekt bez tego nie ruszy.
 
-## Architektura i Technologie
+1.  **Fundament Technologiczny**: Ustanowienie szkieletu projektu (Next.js App Router, TypeScript).
+2.  **Typowanie Kodu**: Pełne wdrożenie TypeScript dla modeli danych (User, Comment, Slide, Donation).
+3.  **Baza Danych**: Weryfikacja i stabilizacja połączenia z Neon (PostgreSQL), optymalizacja pod Serverless (connection pooling).
+4.  **PRIORYTET WIZUALNY**: Pełne wdrożenie Tailwind CSS i przyjęcie Shadcn UI dla wszystkich standardowych komponentów (spójność i dostępność).
+5.  **Konfiguracja Globalna**: Wczesna konfiguracja Internacjonalizacji (next-intl) i routingu pod obsługę języków (/[lang]/app/*).
 
-Aplikacja została zbudowana na solidnym, nowoczesnym stosie technologicznym, który zapewnia wydajność, skalowalność i doskonałe doświadczenia deweloperskie.
+### Faza II: 🔐 Core Backendu, Autoryzacja i Czytanie Danych
+Celem jest bezpieczeństwo i wyświetlenie głównego feedu wideo.
 
-*   **Framework:** [Next.js](https://nextjs.org/) (App Router) - Umożliwia renderowanie po stronie serwera (SSR), generowanie statycznych stron (SSG) i tworzenie API w jednym miejscu.
-*   **Język:** [TypeScript](https://www.typescriptlang.org/) - Zapewnia bezpieczeństwo typów i ułatwia pracę z dużym kodem.
-*   **Baza Danych:** [PostgreSQL](https://www.postgresql.org/) (zarządzana przez [Vercel Postgres](https://vercel.com/storage/postgres)) - Wydajna i niezawodna relacyjna baza danych.
-*   **ORM:** [Prisma](https://www.prisma.io/) - Nowoczesny ORM, który ułatwia interakcje z bazą danych i zapewnia bezpieczeństwo typów.
-*   **Stylowanie:** [Tailwind CSS](https://tailwindcss.com/) - Umożliwia szybkie i spójne stylowanie komponentów bez opuszczania kodu HTML.
-*   **Komponenty UI:** [shadcn/ui](https://ui.shadcn.com/) - Zestaw gotowych, konfigurowalnych komponentów, które przyspieszają pracę.
-*   **Zarządzanie Stanem:** [Zustand](https://zustand-demo.pmnd.rs/) - Prosta i wydajna biblioteka do zarządzania globalnym stanem aplikacji.
-*   **Testowanie:** [Jest](https://jestjs.io/) & [React Testing Library](https://testing-library.com/docs/react-testing-library/intro/) - Standard branżowy do testowania aplikacji React.
+1.  **System Autoryzacji**: Wdrożenie Custom JWT i Next.js Middleware do weryfikacji sesji i ochrony ścieżek.
+2.  **Logika Uwierzytelniania**: Przeniesienie tworzenia konta/logowania do Route Handlers (/api/auth/).
+3.  **Pobieranie Danych (Server-First)**: Przeniesienie głównej logiki pobierania danych (SLIDES, USERS) do asynchronicznych Server Components (read-only), wykorzystując fetch i Next.js Caching.
+4.  **Wymuszenie Profilu**: Implementacja logiki wymuszenia uzupełnienia profilu (First Login Modal).
 
-## Uruchomienie Projektu Lokalnie
+### Faza III: 💰 Płatności, Mutacje i Infrastruktura Wideo (Krytyczna Konwersja)
+Faza kluczowa dla modelu biznesowego (płatności) i podstawowej funkcjonalności (dostarczanie wideo).
 
-Aby uruchomić projekt na swoim komputerze, postępuj zgodnie z poniższymi krokami:
+1.  **Infrastruktura Wideo (KRYTYCZNE)**: Wdrożenie CDN (Cloudflare Stream/AWS S3), ustawienie transkodowania Adaptive Streaming (HLS/DASH).
+    *   **Brakujące Narzędzie**: Wdrożenie dedykowanego odtwarzacza wideo (np. hls.js).
+2.  **Storage Assetów**: Migracja Avatars/Wideo/Obrazów na Oddzielny Storage (S3/Vercel Blob) i wdrożenie next/image.
+    *   **Brakujące Narzędzie**: SDK dla chmury (@aws-sdk/client-s3 lub @vercel/blob).
+3.  **Modal Napiwku (Płatności)**: Odtworzenie TippingModal.tsx i integracja z logiką Stripe (kontrola dostępu do sekretnych slajdów na podstawie modelu Donation).
+4.  **PRIORYTET ZAPISU**: Przekształcenie logiki POST/PUT/DELETE (polubienia, komentarze, aktualizacje) na Next.js Server Actions ('use server').
+5.  **Rewalidacja Danych**: Wdrożenie revalidatePath i revalidateTag w Server Actions.
+6.  **Ograniczenie Częstości**: Zaimplementowanie Rate Limiting na krytycznych Server Actions i API Routes.
+    *   **Brakujące Narzędzie**: Dedykowana biblioteka (np. rate-limiter-flexible lub upstash/redis).
+7.  **Komentarze**: Konwersja logiki Własnego Systemu Komentarzy na Server Actions.
 
-1.  **Sklonuj repozytorium:**
-    ```bash
-    git clone https://github.com/twoja-nazwa-uzytkownika/ting-tong-next.git
-    cd ting-tong-next
-    ```
+### Faza IV: ✨ Funkcjonalności Zaawansowane i Stan
+Wdrożenie interaktywności i zarządzania stanem.
 
-2.  **Zainstaluj zależności:**
-    Projekt używa `yarn` jako menedżera pakietów.
-    ```bash
-    yarn install
-    ```
+1.  **Zarządzanie Stanem UI**: Wdrożenie Zustand do zarządzania lekkim stanem (modal komentarzy, stan gracza wideo).
+2.  **Walidacja Formularzy**: Wdrożenie React Hook Form do walidacji i kontroli pól formularzy.
+3.  **Komponent Komentarzy**: Odtworzenie CommentsSection.jsx i integracja z Server Actions / Real-Time.
+4.  **Real-Time Updates**: Integracja zewnętrznego serwisu (Pusher/Ably) dla polubień slajdów i komentarzy.
+5.  **Web Push**: Pełne wdrożenie Notyfikacji Web Push (Service Worker, UI oraz logika subskrypcji).
 
-3.  **Skonfiguruj zmienne środowiskowe:**
-    Skopiuj plik `.env.example` do `.env` i uzupełnij go odpowiednimi wartościami. Będziesz potrzebować co najmniej `DATABASE_URL` do połączenia z bazą danych oraz `JWT_SECRET` do uwierzytelniania.
-    ```bash
-    cp .env.example .env
-    ```
+### Faza V: ✅ Optymalizacja i Finalizacja (Produkcja)
+Finalne szlify przed wdrożeniem i dbałość o jakość produkcyjną.
 
-4.  **Uruchom migracje bazy danych:**
-    Aby zsynchronizować schemat bazy danych z modelem Prisma, uruchom poniższą komendę:
-    ```bash
-    npx prisma migrate dev
-    ```
-
-5.  **Uruchom serwer deweloperski:**
-    ```bash
-    yarn dev
-    ```
-    Aplikacja będzie dostępna pod adresem `http://localhost:3000`.
-
-## Dostępne Skrypty
-
-*   `yarn dev`: Uruchamia aplikację w trybie deweloperskim.
-*   `yarn build`: Buduje aplikację do wersji produkcyjnej.
-*   `yarn start`: Uruchamia zbudowaną aplikację w trybie produkcyjnym.
-*   `yarn test`: Uruchamia testy jednostkowe i integracyjne.
-*   `yarn lint`: Analizuje kod w poszukiwaniu błędów i problemów ze stylem.
-
-## Rekomendacje i Dalszy Rozwój
-
-Chociaż aplikacja jest funkcjonalna, istnieje kilka obszarów, które można by ulepszyć w przyszłości:
-
-*   **Rozbudowa Testów:** Obecnie projekt ma tylko podstawową konfigurację testów. Należy zwiększyć pokrycie kodu testami, zwłaszcza dla krytycznych ścieżek użytkownika.
-*   **Obsługa `onDelete: Cascade`:** W schemacie Prisma powszechnie używane jest `onDelete: Cascade`, co stwarza ryzyko przypadkowej utraty danych. Warto rozważyć implementację mechanizmu "soft delete" (miękkiego usuwania) lub archiwizacji.
-*   **Walidacja Danych Wejściowych:** Należy wprowadzić rygorystyczną walidację wszystkich danych przychodzących od użytkownika (np. za pomocą biblioteki `Zod`), aby zwiększyć bezpieczeństwo i stabilność aplikacji.
-*   **Refaktoryzacja Komponentów:** Niektóre komponenty (np. `MainFeed.tsx`) są dość rozbudowane. Warto je podzielić na mniejsze, bardziej wyspecjalizowane części, aby poprawić czytelność i ułatwić utrzymanie kodu.
+1.  **Monitorowanie Błędów**: Zintegrowanie Sentry do monitorowania błędów serwera (Server Actions) i klienta.
+2.  **Analityka**: Dodanie Google Analytics 4 / Amplitude w app/layout.tsx.
+3.  **SEO/Metadane**: Wprowadzenie Dynamicznych Metadanych Next.js (Open Graph/Twitter Cards).
+4.  **Internacjonalizacja**: Uzupełnienie wszystkich brakujących tłumaczeń (i18n).
+5.  **Generowanie Zasobów**: Automatyczne generowanie map witryny (sitemaps) i kanałów RSS.

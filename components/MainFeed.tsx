@@ -1,33 +1,23 @@
-"use client";
-
-import React, { useRef, useEffect } from 'react';
+import React, { useMemo, useRef, useEffect, useState } from 'react';
 import { useInfiniteQuery } from '@tanstack/react-query';
-import { useVirtualizer } from '@tanstack/react-virtual';
-import { Slide } from '@/lib/types';
-import VideoSlide from './VideoSlide';
-import { useInView } from 'react-intersection-observer';
-import { useStore } from '@/store/useStore';
-import { shallow } from 'zustand/shallow';
-import { Skeleton } from './ui/skeleton';
+import Slide from '@/components/Slide';
+import { Skeleton } from '@/components/ui/skeleton';
 
 const fetchSlides = async ({ pageParam = '' }) => {
-  const res = await fetch(`/api/slides?cursor=${pageParam}`);
+  const res = await fetch(`/api/slides?cursor=${pageParam}&limit=5`);
   if (!res.ok) {
-    throw new Error('Network response was not ok');
+    throw new Error('Failed to fetch slides');
   }
-  return res.json();
+  const data = await res.json();
+  return data;
 };
 
-export default function MainFeed() {
-  const parentRef = useRef<HTMLDivElement>(null);
-  const { activeSlide, setActiveSlide, videoState } = useStore(
-    (state) => ({
-      activeSlide: state.activeSlide,
-      setActiveSlide: state.setActiveSlide,
-      videoState: state.videoState,
-    }),
-    shallow
-  );
+const MainFeed = () => {
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const topSentinelRef = useRef<HTMLDivElement>(null);
+  const bottomSentinelRef = useRef<HTMLDivElement>(null);
+  const [isLooping, setIsLooping] = useState(false);
+  const isJumping = useRef(false);
 
   const {
     data,
@@ -38,113 +28,87 @@ export default function MainFeed() {
   } = useInfiniteQuery({
     queryKey: ['slides'],
     queryFn: fetchSlides,
-    getNextPageParam: (lastPage) => lastPage.nextCursor,
     initialPageParam: '',
+    getNextPageParam: (lastPage) => lastPage.nextCursor,
   });
 
-  const slides = data?.pages.flatMap((page) => page.slides) ?? [];
+  const slides = useMemo(() => {
+    return data?.pages.flatMap(page => page.slides) ?? [];
+  }, [data]);
 
-  const rowVirtualizer = useVirtualizer({
-      count: hasNextPage ? slides.length + 1 : slides.length,
-      getScrollElement: () => parentRef.current,
-      estimateSize: () => parentRef.current?.clientHeight || 0,
-  });
-
-  const { ref: lastSlideRef, inView } = useInView();
+  const loopedSlides = useMemo(() => {
+      if (!isLooping || slides.length === 0) return slides;
+      return [...slides, ...slides, ...slides];
+  }, [slides, isLooping]);
 
   useEffect(() => {
-    if (inView && hasNextPage) {
+    if (hasNextPage) {
       fetchNextPage();
+    } else if (slides.length > 0) {
+        setIsLooping(true);
     }
-  }, [inView, hasNextPage, fetchNextPage]);
+  }, [hasNextPage, fetchNextPage, slides.length]);
 
   useEffect(() => {
-    const items = rowVirtualizer.getVirtualItems();
-    if (videoState.isManuallyPaused) return;
+    if (isLooping && scrollContainerRef.current) {
+        const slideHeight = scrollContainerRef.current.clientHeight;
+        const initialScrollTop = slides.length * slideHeight;
+        scrollContainerRef.current.scrollTop = initialScrollTop;
+    }
+  }, [isLooping, slides.length]);
 
-    // Autoplay logic based on viewport visibility
-    const handleScroll = () => {
-        const currentItems = rowVirtualizer.getVirtualItems();
-        if (currentItems.length === 0) return;
+  useEffect(() => {
+      if (!isLooping) return;
 
-        // Find the most visible item
-        let mostVisibleIndex = -1;
-        let maxVisibility = -1;
+      const observer = new IntersectionObserver(
+          (entries) => {
+              if (isJumping.current) return;
+              entries.forEach(entry => {
+                  if (entry.isIntersecting) {
+                      const slideHeight = scrollContainerRef.current!.clientHeight;
+                      isJumping.current = true;
+                      if (entry.target === topSentinelRef.current) {
+                          const newScrollTop = scrollContainerRef.current!.scrollTop + (slides.length * slideHeight);
+                          scrollContainerRef.current!.scrollTop = newScrollTop;
+                      } else if (entry.target === bottomSentinelRef.current) {
+                          const newScrollTop = scrollContainerRef.current!.scrollTop - (slides.length * slideHeight);
+                          scrollContainerRef.current!.scrollTop = newScrollTop;
+                      }
+                      setTimeout(() => { isJumping.current = false; }, 100);
+                  }
+              });
+          },
+          { root: scrollContainerRef.current, threshold: 0.1 }
+      );
 
-        for (const item of currentItems) {
-            const itemTop = item.start;
-            const itemBottom = item.start + item.size;
-            const viewportTop = parentRef.current?.scrollTop || 0;
-            const viewportBottom = viewportTop + (parentRef.current?.clientHeight || 0);
+      if (topSentinelRef.current) observer.observe(topSentinelRef.current);
+      if (bottomSentinelRef.current) observer.observe(bottomSentinelRef.current);
 
-            const visibleTop = Math.max(itemTop, viewportTop);
-            const visibleBottom = Math.min(itemBottom, viewportBottom);
-
-            const visibility = Math.max(0, visibleBottom - visibleTop);
-            if (visibility > maxVisibility) {
-                maxVisibility = visibility;
-                mostVisibleIndex = item.index;
-            }
-        }
-
-        if (mostVisibleIndex !== -1 && mostVisibleIndex !== activeSlide) {
-            setActiveSlide(slides[mostVisibleIndex], mostVisibleIndex);
-        }
-    };
-
-    const currentParentRef = parentRef.current;
-    currentParentRef?.addEventListener('scroll', handleScroll, { passive: true });
-    // Initial check
-    handleScroll();
-
-    return () => currentParentRef?.removeEventListener('scroll', handleScroll);
-}, [rowVirtualizer, setActiveSlide, activeSlide, videoState.isManuallyPaused, slides]);
+      return () => {
+          observer.disconnect();
+      };
+  }, [isLooping, slides]);
 
 
-  if (isLoading) return <Skeleton className="w-full h-full" />;
-  if (isError) return <div>Error loading slides</div>;
+  if (isLoading && slides.length === 0) {
+    return <div className="w-screen h-screen bg-black flex items-center justify-center"><Skeleton className="w-full h-full" /></div>;
+  }
+
+  if (isError) {
+    return <div className="w-screen h-screen bg-black flex items-center justify-center text-white">Error loading slides.</div>;
+  }
 
   return (
-    <div ref={parentRef} className="h-full w-full overflow-y-auto snap-y snap-mandatory scroll-smooth">
-      <div
-        style={{
-          height: `${rowVirtualizer.getTotalSize()}px`,
-          width: '100%',
-          position: 'relative',
-        }}
-      >
-        {rowVirtualizer.getVirtualItems().map((virtualItem) => {
-          const isLoaderRow = virtualItem.index > slides.length - 1;
-          const slide = slides[virtualItem.index];
-
-          return (
-            <div
-              key={virtualItem.key}
-              ref={virtualItem.index === slides.length - 1 ? lastSlideRef : null}
-              style={{
-                position: 'absolute',
-                top: 0,
-                left: 0,
-                width: '100%',
-                height: `${virtualItem.size}px`,
-                transform: `translateY(${virtualItem.start}px)`,
-              }}
-              className="snap-start"
-            >
-              {isLoaderRow ? (
-                <div className="h-full w-full flex items-center justify-center">
-                    <Skeleton className="w-full h-full" />
-                </div>
-              ) : (
-                <VideoSlide
-                  slide={slide}
-                  isActive={virtualItem.index === activeSlide}
-                />
-              )}
-            </div>
-          );
-        })}
-      </div>
+    <div ref={scrollContainerRef} className="w-full h-screen overflow-y-scroll snap-y snap-mandatory">
+      {isLooping && <div ref={topSentinelRef} />}
+      {loopedSlides.map((slide, index) => (
+        <div key={`${slide.id}-${index}`} className="h-full w-full snap-start">
+          <Slide slide={slide} />
+        </div>
+      ))}
+      {isLooping && <div ref={bottomSentinelRef} />}
     </div>
   );
-}
+};
+
+export default MainFeed;

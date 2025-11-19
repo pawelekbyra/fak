@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { db } from '@/lib/db';
 import { verifySession } from '@/lib/auth';
-import { toggleCommentVote } from '@/lib/db';
 
 export const dynamic = 'force-dynamic';
 
@@ -12,23 +12,25 @@ export async function POST(request: NextRequest) {
   const userId = payload.user.id;
 
   try {
-    const { commentId, voteType } = await request.json();
+    const { commentId } = await request.json();
 
-    if (!commentId || !voteType || !['upvote', 'downvote'].includes(voteType)) {
-      return NextResponse.json({ success: false, message: 'commentId and voteType (upvote/downvote) are required' }, { status: 400 });
+    if (!commentId || typeof commentId !== 'string') {
+      return NextResponse.json({ success: false, message: 'commentId is required and must be a string' }, { status: 400 });
     }
 
-    const result = await toggleCommentVote(commentId, userId, voteType);
+    const result = await db.toggleCommentLike(commentId, userId);
 
     return NextResponse.json({
       success: true,
-      newStatus: result.newStatus,
-      upvotesCount: result.upvotesCount,
-      downvotesCount: result.downvotesCount,
+      status: result.newStatus,
+      likeCount: result.likeCount,
     });
 
   } catch (error) {
-    console.error('Error toggling comment vote:', error);
+    console.error('Error liking comment:', error);
+    if (error instanceof Error && error.message === 'Comment not found') {
+        return NextResponse.json({ success: false, message: 'Comment not found' }, { status: 404 });
+    }
     return NextResponse.json({ success: false, message: 'Internal Server Error' }, { status: 500 });
   }
 }

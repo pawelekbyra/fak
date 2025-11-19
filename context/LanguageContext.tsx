@@ -149,25 +149,7 @@ const translations: Record<string, Record<string, string>> = {
         installPwaAriaLabel: 'Pobierz aplikację',
         installAppText: 'Pobierz',
         pwaModalTitle: 'Doświadczenie Ting Tong czeka na telefonie!',
-        pwaModalBody: 'Zeskanuj kod QR poniżej lub odwiedź nas na telefonie, aby pobrać aplikację i cieszyć się pełnią możliwości.',
-
-        // Tipping Modal
-        tippingStep1Desc: 'Opcje Konta/Email',
-        tippingCreateAccountLabel: 'Załóż konto Patrona',
-        errorEmailRequired: 'Email jest wymagany.',
-        errorInvalidEmail: 'Nieprawidłowy adres email.',
-        tippingStep2Desc: 'Kwota i Regulamin',
-        errorMinTipAmount: 'Minimalna kwota napiwku to {minAmount} {currency}.',
-        errorTermsNotAccepted: 'Musisz zaakceptować regulamin.',
-        tippingAcceptTerms: 'Akceptuję',
-        termsLink: 'regulamin',
-        tippingNext: 'Dalej',
-        tippingSummaryLabel: 'Podsumowanie Płatności',
-        amount: 'Kwota',
-        termsTitle: 'Regulamin',
-        termsContent1: 'To jest przykładowy regulamin.',
-        termsContent2: 'Proszę go zaakceptować, aby kontynuować.',
-        back: 'Powrót'
+        pwaModalBody: 'Zeskanuj kod QR poniżej lub odwiedź nas na telefonie, aby pobrać aplikację i cieszyć się pełnią możliwości.'
     },
     en: {
         loggedOutText: "Don't have the guts to log in",
@@ -315,25 +297,7 @@ const translations: Record<string, Record<string, string>> = {
         installPwaAriaLabel: 'Download App',
         installAppText: 'Download',
         pwaModalTitle: 'The full Ting Tong experience is on your phone!',
-        pwaModalBody: 'Scan the QR code below or visit us on your phone to download the app and unlock the full experience.',
-
-        // Tipping Modal
-        tippingStep1Desc: 'Account/Email Options',
-        tippingCreateAccountLabel: 'Create a Patron account',
-        errorEmailRequired: 'Email is required.',
-        errorInvalidEmail: 'Invalid email address.',
-        tippingStep2Desc: 'Amount and Terms',
-        errorMinTipAmount: 'The minimum tip amount is {minAmount} {currency}.',
-        errorTermsNotAccepted: 'You must accept the terms and conditions.',
-        tippingAcceptTerms: 'I accept the',
-        termsLink: 'terms and conditions',
-        tippingNext: 'Next',
-        tippingSummaryLabel: 'Payment Summary',
-        amount: 'Amount',
-        termsTitle: 'Terms and Conditions',
-        termsContent1: 'This is a sample terms and conditions document.',
-        termsContent2: 'Please accept to continue.',
-        back: 'Back'
+        pwaModalBody: 'Scan the QR code below or visit us on your phone to download the app and unlock the full experience.'
     }
 };
 

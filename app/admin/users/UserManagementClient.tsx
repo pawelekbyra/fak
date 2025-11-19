@@ -33,8 +33,8 @@ export default function UserManagementClient({ users, deleteUserAction }: UserMa
                     type="submit"
                     className="bg-red-600 hover:bg-red-700 text-white text-xs font-bold py-1 px-2 rounded disabled:opacity-50"
                     // Prevent admin from deleting themselves
-                     disabled={user.role === 'ADMIN'}
-                     title={user.role === 'ADMIN' ? "Cannot delete an admin account" : "Delete user"}
+                     disabled={user.role === 'admin'}
+                     title={user.role === 'admin' ? "Cannot delete an admin account" : "Delete user"}
                   >
                     Delete
                   </button>

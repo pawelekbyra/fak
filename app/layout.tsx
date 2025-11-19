@@ -6,7 +6,6 @@ import { Providers } from "@/components/Providers";
 import AppLayout from "@/components/AppLayout";
 import PWAInstallPrompt from "@/components/PWAInstallPrompt";
 import Script from "next/script";
-import { CommentsModal } from "@/components/comments/CommentsModal";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -21,7 +20,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="pl" suppressHydrationWarning data-theme="dark">
+    <html lang="pl" suppressHydrationWarning>
       <head>
           {/* Poprawiona meta tag viewport */}
           <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
@@ -31,7 +30,6 @@ export default function RootLayout({
         <Providers>
           <AppLayout>{children}</AppLayout>
           <PWAInstallPrompt />
-          <CommentsModal />
         </Providers>
         <Script
           data-name="BMC-Widget"

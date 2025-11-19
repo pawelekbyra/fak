@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getSlideById, toggleLike } from '@/lib/db';
+import { db } from '@/lib/db';
 import { verifySession } from '@/lib/auth';
-import { checkRateLimit } from '@/lib/rate-limiter';
 
 export const dynamic = 'force-dynamic';
 
@@ -12,11 +11,6 @@ export async function POST(request: NextRequest) {
   }
   const currentUser = payload.user;
 
-  const rateLimitResult = await checkRateLimit(currentUser.id);
-  if (!rateLimitResult.success) {
-    return NextResponse.json({ success: false, message: rateLimitResult.message }, { status: 429 });
-  }
-
   try {
     const { slideId } = await request.json();
 
@@ -24,16 +18,17 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ success: false, message: 'slideId is required' }, { status: 400 });
     }
 
-    const slide = await getSlideById(slideId);
+    const slide = await db.getSlide(slideId);
     if (!slide) {
       return NextResponse.json({ success: false, message: 'Slide not found' }, { status: 404 });
     }
 
-    const result = await toggleLike(slideId, currentUser.id);
+    const result = await db.toggleLike(slideId, currentUser.id);
 
     return NextResponse.json({
       success: true,
-      newStatus: result.liked ? 'liked' : 'unliked',
+      newStatus: result.newStatus,
+      likeCount: result.likeCount,
     });
 
   } catch (error) {

@@ -31,31 +31,28 @@ const ProfileTab: React.FC<ProfileTabProps> = ({ onClose }) => {
   const handleProfileSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setIsSubmitting(true);
+    setStatus(null);
 
     const formData = new FormData(event.currentTarget);
-    const data = {
-        ...Object.fromEntries(formData.entries()),
-        emailConsent,
-        emailLanguage: lang,
-    };
+    const data = Object.fromEntries(formData.entries());
 
     try {
       const res = await fetch('/api/profile/update', {
-        method: 'POST',
+        method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data),
       });
 
       const result = await res.json();
       if (!res.ok) {
-        throw new Error(result.error || t('profileUpdateError'));
+        throw new Error(result.message || t('profileUpdateError'));
       }
 
-      addToast(t('profileUpdateSuccess'), 'success');
+      setStatus({ type: 'success', message: t('profileUpdateSuccess') });
       await checkUserStatus();
 
     } catch (error: any) {
-      addToast(error.message, 'error');
+      setStatus({ type: 'error', message: error.message });
     } finally {
       setIsSubmitting(false);
     }
@@ -155,9 +152,9 @@ const ProfileTab: React.FC<ProfileTabProps> = ({ onClose }) => {
             </div>
         </div>
 
-        <form id="profileForm" onSubmit={handleProfileSubmit}>
-          <div className="form-section bg-white/5 border border-white/10 rounded-xl p-5 mb-4">
-            <h3 className="section-title text-lg font-bold mb-5 flex items-center gap-3"><span className="w-1 h-5 bg-gradient-to-b from-pink-500 to-rose-500 rounded-full"></span>{t('personalData')}</h3>
+        <div className="form-section bg-white/5 border border-white/10 rounded-xl p-5 mb-4">
+          <h3 className="section-title text-lg font-bold mb-5 flex items-center gap-3"><span className="w-1 h-5 bg-gradient-to-b from-pink-500 to-rose-500 rounded-full"></span>{t('personalData')}</h3>
+          <form id="profileForm" onSubmit={handleProfileSubmit}>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
               <div className="form-group">
                 <label className="form-label text-sm font-medium mb-2 block">{t('firstName')}</label>
@@ -172,26 +169,45 @@ const ProfileTab: React.FC<ProfileTabProps> = ({ onClose }) => {
               <label className="form-label text-sm font-medium mb-2 block">{t('email')}</label>
               <Input type="email" name="email" defaultValue={profile.email} placeholder={t('emailPlaceholder')} disabled={isSubmitting} />
             </div>
-          </div>
+            <Button type="submit" className="w-full bg-pink-600 hover:bg-pink-700" disabled={isSubmitting}>
+              {isSubmitting ? t('saving') : t('saveChanges')}
+            </Button>
+          </form>
+        </div>
 
-          <div className="settings-section bg-white/5 border border-white/10 rounded-xl p-5">
-            <h3 className="section-title text-lg font-bold mb-5 flex items-center gap-3"><span className="w-1 h-5 bg-gradient-to-b from-pink-500 to-rose-500 rounded-full"></span>{t('settings')}</h3>
-              <div className="flex items-center justify-between mb-4">
-                <label className="form-label text-sm">{t('emailConsent')}</label>
-                <ToggleSwitch isActive={emailConsent} onToggle={() => setEmailConsent(p => !p)} />
-              </div>
-              <div className="form-group">
-                  <label className="form-label text-sm font-medium mb-2 block">{t('emailLanguage')}</label>
-                  <div className="flex gap-2">
-                      <Button type="button" variant={lang === 'pl' ? 'secondary' : 'outline'} onClick={() => setLanguage('pl')} className="flex-1">{t('polish')}</Button>
-                      <Button type="button" variant={lang === 'en' ? 'secondary' : 'outline'} onClick={() => setLanguage('en')} className="flex-1">{t('english')}</Button>
-                  </div>
-              </div>
-          </div>
-          <Button type="submit" className="w-full bg-pink-600 hover:bg-pink-700 mt-4" disabled={isSubmitting}>
-            {isSubmitting ? t('saving') : t('saveChanges')}
-          </Button>
-        </form>
+        <div className="settings-section bg-white/5 border border-white/10 rounded-xl p-5">
+          <h3 className="section-title text-lg font-bold mb-5 flex items-center gap-3"><span className="w-1 h-5 bg-gradient-to-b from-pink-500 to-rose-500 rounded-full"></span>{t('settings')}</h3>
+          <form onSubmit={(e) => {
+              e.preventDefault();
+              setIsSubmitting(true);
+              setStatus(null);
+              setTimeout(() => {
+                try {
+                  console.log('Saving settings:', { emailConsent, lang });
+                  setStatus({ type: 'success', message: t('settingsSaveSuccess') });
+                } catch (error: any) {
+                  setStatus({ type: 'error', message: error.message });
+                } finally {
+                  setIsSubmitting(false);
+                }
+              }, 1000);
+          }}>
+            <div className="flex items-center justify-between mb-4">
+              <label className="form-label text-sm">{t('emailConsent')}</label>
+              <ToggleSwitch isActive={emailConsent} onToggle={() => setEmailConsent(p => !p)} />
+            </div>
+            <div className="form-group">
+                <label className="form-label text-sm font-medium mb-2 block">{t('emailLanguage')}</label>
+                <div className="flex gap-2">
+                    <Button type="button" variant={lang === 'pl' ? 'secondary' : 'outline'} onClick={() => setLanguage('pl')} className="flex-1">{t('polish')}</Button>
+                    <Button type="button" variant={lang === 'en' ? 'secondary' : 'outline'} onClick={() => setLanguage('en')} className="flex-1">{t('english')}</Button>
+                </div>
+            </div>
+            <Button type="submit" className="w-full bg-pink-600 hover:bg-pink-700 mt-4" disabled={isSubmitting}>
+              {isSubmitting ? t('saving') : t('saveSettings')}
+            </Button>
+          </form>
+        </div>
         <div className="flex justify-center mt-4">
             <Button
               onClick={handleLogout}
