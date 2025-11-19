@@ -26,7 +26,7 @@ export default async function SlideManagementPage() {
       return { success: false, error: 'Unauthorized' };
     }
     try {
-      const type = formData.get('type') as 'video' | 'image' | 'html';
+      const type = formData.get('type') as 'video' | 'html';
       const authorId = formData.get('author_id') as string;
       const author = await db.findUserById(authorId);
 
@@ -53,9 +53,6 @@ export default async function SlideManagementPage() {
         case 'video':
           newSlide = { ...commonData, type: 'video', data: { mp4Url: commonData.data.content, hlsUrl: null, poster: '', title: commonData.data.title, description: '' } };
           break;
-        case 'image':
-          newSlide = { ...commonData, type: 'image', data: { imageUrl: commonData.data.content, altText: commonData.data.title } };
-          break;
         case 'html':
           newSlide = { ...commonData, type: 'html', data: { htmlContent: sanitize(commonData.data.content) } };
           break;
@@ -80,7 +77,7 @@ export default async function SlideManagementPage() {
     }
     try {
       const slideId = formData.get('id') as string;
-      const type = formData.get('type') as 'video' | 'image' | 'html';
+      const type = formData.get('type') as 'video' | 'html';
       const title = formData.get('title') as string;
       const content = formData.get('content') as string;
 
@@ -89,9 +86,6 @@ export default async function SlideManagementPage() {
       switch (type) {
         case 'video':
           updatedData = { mp4Url: content, hlsUrl: null, poster: '', title: title, description: '' };
-          break;
-        case 'image':
-          updatedData = { imageUrl: content, altText: title };
           break;
         case 'html':
           updatedData = { htmlContent: sanitize(content) };

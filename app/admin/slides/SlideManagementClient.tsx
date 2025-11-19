@@ -57,7 +57,6 @@ export default function SlideManagementClient({ slides, users, createSlideAction
 
   const getSlideDescription = (slide: Slide) => {
     if (slide.type === 'video') return slide.data?.title || 'Video';
-    if (slide.type === 'image') return slide.data?.altText || 'Image';
     if (slide.type === 'html') return 'HTML Content';
     return 'N/A';
   }
