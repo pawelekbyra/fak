@@ -16,7 +16,7 @@ export default function SlideEditModal({ isOpen, onClose, onSubmit, slide, users
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const [type, setType] = useState<'video' | 'image' | 'html'>('video');
+  const [type, setType] = useState<'video' | 'html'>('video');
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
   const [authorId, setAuthorId] = useState('');
@@ -28,9 +28,6 @@ export default function SlideEditModal({ isOpen, onClose, onSubmit, slide, users
       if (slide.type === 'video' && slide.data?.mp4Url) {
         setTitle(slide.data.title || '');
         setContent(slide.data.mp4Url);
-      } else if (slide.type === 'image' && slide.data?.imageUrl) {
-        setTitle(slide.data.altText || '');
-        setContent(slide.data.imageUrl);
       } else if (slide.type === 'html' && slide.data?.htmlContent) {
         setTitle('HTML Content'); // HTML slides don't have a title in the same way
         setContent(slide.data.htmlContent);
@@ -85,7 +82,6 @@ export default function SlideEditModal({ isOpen, onClose, onSubmit, slide, users
               className="mt-1 block w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-pink-500 focus:border-pink-500"
             >
               <option value="video">Video</option>
-              <option value="image">Image</option>
               <option value="html">HTML</option>
             </select>
           </div>
@@ -130,7 +126,6 @@ export default function SlideEditModal({ isOpen, onClose, onSubmit, slide, users
               className="mt-1 block w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-pink-500 focus:border-pink-500"
               placeholder={
                 type === 'video' ? 'Enter video URL' :
-                type === 'image' ? 'Enter image URL' :
                 'Enter HTML content'
               }
             />

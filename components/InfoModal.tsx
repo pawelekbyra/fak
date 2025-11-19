@@ -26,20 +26,18 @@ const InfoModal: React.FC<InfoModalProps> = ({ isOpen, onClose }) => {
         // Poniższa logika jest konceptualna i powinna być wywołana przez webhooka płatności.
         // Dla celów demonstracyjnych, udajemy, że płatność się powiodła.
         setTimeout(async () => {
-            const mockEmail = 'patron@example.com';
-            const mockPassword = 'password123';
+            const mockEmail = `patron-${Date.now()}@example.com`;
 
             try {
                 // Poniżej znajduje się koncepcyjne wywołanie API, które powinno stworzyć konto
                 const res = await fetch('/api/create-patron', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ email: mockEmail, password: mockPassword }),
+                    body: JSON.stringify({ email: mockEmail }),
                 });
                 const data = await res.json();
                 if (data.success) {
-                    addToast(`Twoje konto zostało utworzone! Login: ${mockEmail}`, 'success');
-                    await login({ email: mockEmail, password: mockPassword });
+                    addToast(data.message, 'success');
                     onClose(); // Close modal on success
                 } else {
                     throw new Error(data.message);

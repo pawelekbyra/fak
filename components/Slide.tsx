@@ -6,7 +6,6 @@ import DOMPurify from 'dompurify';
 import {
   Slide as SlideUnionType,
   HtmlSlide,
-  ImageSlide,
   VideoSlide,
 } from '@/lib/types';
 import { useStore, ModalType } from '@/store/useStore';
@@ -22,9 +21,6 @@ import Sidebar from './Sidebar';
 interface HtmlContentProps {
   slide: HtmlSlide;
 }
-interface ImageContentProps {
-  slide: ImageSlide;
-}
 interface SlideUIProps {
     slide: SlideUnionType;
 }
@@ -39,21 +35,6 @@ const HtmlContent = ({ slide }: HtmlContentProps) => {
       className="w-full h-full overflow-y-auto bg-white"
       dangerouslySetInnerHTML={{ __html: sanitizedHtml }}
     />
-  );
-};
-
-const ImageContent = ({ slide }: ImageContentProps) => {
-  if (!slide.data?.imageUrl) return null;
-  return (
-    <div className="relative w-full h-full bg-black">
-      <Image
-        src={slide.data.imageUrl}
-        alt={slide.data.altText || 'Slide image'}
-        layout="fill"
-        objectFit="contain"
-        unoptimized
-      />
-    </div>
   );
 };
 
@@ -193,8 +174,6 @@ const Slide = memo<SlideProps>(({ slide}) => {
                 return <VideoPlayer hlsUrl={videoSlide.data.hlsUrl} />;
             case 'html':
                 return <HtmlContent slide={slide as HtmlSlide} />;
-            case 'image':
-                return <ImageContent slide={slide as ImageSlide} />;
             default:
                 return <div className="w-full h-full bg-gray-800 flex items-center justify-center"><p>Unsupported slide type</p></div>;
         }
