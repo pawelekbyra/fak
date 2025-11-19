@@ -1,5 +1,5 @@
 import { getAllSlides, getAllUsers, findUserById, createSlide, updateSlide, deleteSlide, User } from '@/lib/db';
-import { Slide } from '@prisma/client';
+import { Slide } from '@/lib/types';
 import React from 'react';
 import { verifySession } from '@/lib/auth';
 import { revalidatePath } from 'next/cache';
@@ -34,15 +34,19 @@ export default async function SlideManagementPage() {
       }
 
       const commonData = {
-        authorId: author.id,
+        userId: author.id,
         username: author.username,
+        avatar: author.avatar || '',
+        x: 0, // Default value
+        y: 0, // Default value
+        access: 'public' as const,
         data: {
           title: formData.get('title') as string,
           content: formData.get('content') as string,
         },
       };
 
-      let newSlide: Omit<Slide, 'id' | 'createdAt'>;
+      let newSlide: Omit<Slide, 'id' | 'createdAt' | 'initialLikes' | 'isLiked' | 'initialComments'>;
 
       switch (type) {
         case 'video':
@@ -95,7 +99,7 @@ export default async function SlideManagementPage() {
           return { success: false, error: 'Invalid slide type' };
       }
 
-      const updatedSlide: Partial<Omit<Slide, 'id' | 'createdAt' | 'authorId' | 'username'>> = {
+      const updatedSlide: Partial<Omit<Slide, 'id' | 'createdAt' | 'userId' | 'username' | 'x' | 'y'>> = {
         data: updatedData
       };
 

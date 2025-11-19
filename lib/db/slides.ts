@@ -86,18 +86,79 @@ export const toggleLike = async (slideId: string, userId: string) => {
   }
 };
 
+import { Slide as PrismaSlide } from '@prisma/client';
+import { Slide } from '@/lib/types';
+
 /**
- * Gets all slides.
+ * Gets all slides and transforms them to the frontend Slide type.
  */
-export const getAllSlides = async () => {
-  return prisma.slide.findMany({
+export const getAllSlides = async (userId?: string): Promise<Slide[]> => {
+  const slidesFromDb = await prisma.slide.findMany({
     orderBy: {
       createdAt: 'desc',
     },
     include: {
       author: true,
+      likes: {
+        where: {
+          userId: userId,
+        },
+      },
+      _count: {
+        select: {
+          comments: true,
+          likes: true,
+        },
+      },
     },
   });
+
+  // Transform the Prisma Slide[] to the frontend Slide[]
+  const transformedSlides: Slide[] = slidesFromDb.map((slide) => {
+
+    // Explicitly type the data field for safety
+    const slideData: any = slide.data;
+
+    const baseSlide = {
+      id: slide.id,
+      x: 0, // Default value as the schema doesn't support it
+      y: 0, // Default value
+      userId: slide.authorId,
+      username: slide.author.username,
+      avatar: slide.author.avatar || '',
+      access: 'public' as const, // Default value
+      createdAt: slide.createdAt.getTime(),
+      initialLikes: slide._count.likes,
+      isLiked: slide.likes.length > 0,
+      initialComments: slide._count.comments,
+    };
+
+    switch (slide.type) {
+      case 'video':
+        return {
+          ...baseSlide,
+          type: 'video',
+          data: slideData,
+        };
+      case 'image':
+        return {
+          ...baseSlide,
+          type: 'image',
+          data: slideData,
+        };
+      case 'html':
+        return {
+          ...baseSlide,
+          type: 'html',
+          data: slideData,
+        };
+      default:
+        // Handle unknown slide type if necessary
+        return null;
+    }
+  }).filter((slide): slide is Slide => slide !== null); // Filter out any nulls from unknown types
+
+  return transformedSlides;
 };
 
 /**
