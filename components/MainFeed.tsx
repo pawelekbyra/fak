@@ -2,6 +2,7 @@ import React, { useMemo, useRef, useEffect, useState } from 'react';
 import { useInfiniteQuery } from '@tanstack/react-query';
 import Slide from '@/components/Slide';
 import { Skeleton } from '@/components/ui/skeleton';
+import { useStore } from '@/store/useStore';
 
 const fetchSlides = async ({ pageParam = '' }) => {
   const res = await fetch(`/api/slides?cursor=${pageParam}&limit=5`);
@@ -18,6 +19,9 @@ const MainFeed = () => {
   const bottomSentinelRef = useRef<HTMLDivElement>(null);
   const [isLooping, setIsLooping] = useState(false);
   const isJumping = useRef(false);
+  const setActiveSlide = useStore(state => state.setActiveSlide);
+  const playVideo = useStore(state => state.playVideo);
+  const slideRefs = useRef<(HTMLDivElement | null)[]>([]);
 
   const {
     data,
@@ -89,6 +93,34 @@ const MainFeed = () => {
       };
   }, [isLooping, slides]);
 
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            const slideId = (entry.target as HTMLElement).dataset.slideId;
+            const slide = slides.find(s => s.id === slideId);
+            if (slide) {
+              setActiveSlide(slide);
+              if (slide.type === 'video') {
+                playVideo();
+              }
+            }
+          }
+        });
+      },
+      { root: scrollContainerRef.current, threshold: 0.5 }
+    );
+
+    slideRefs.current.forEach((ref) => {
+      if (ref) observer.observe(ref);
+    });
+
+    return () => {
+      observer.disconnect();
+    };
+  }, [slides, setActiveSlide]);
+
 
   if (isLoading && slides.length === 0) {
     return <div className="w-screen h-screen bg-black flex items-center justify-center"><Skeleton className="w-full h-full" /></div>;
@@ -102,7 +134,12 @@ const MainFeed = () => {
     <div ref={scrollContainerRef} className="w-full h-screen overflow-y-scroll snap-y snap-mandatory">
       {isLooping && <div ref={topSentinelRef} />}
       {loopedSlides.map((slide, index) => (
-        <div key={`${slide.id}-${index}`} className="h-full w-full snap-start">
+        <div
+          key={`${slide.id}-${index}`}
+          className="h-full w-full snap-start"
+          ref={el => { slideRefs.current[index] = el; }}
+          data-slide-id={slide.id}
+        >
           <Slide slide={slide} />
         </div>
       ))}
