@@ -117,7 +117,7 @@ export default async function SlideManagementPage() {
   async function deleteSlideAction(formData: FormData): Promise<{ success: boolean, error?: string }>{
     'use server';
     const session = await verifySession();
-    if (session?.user?.role !== 'admin') {
+    if (session?.user?.role !== UserRole.ADMIN) {
       return { success: false, error: 'Unauthorized' };
     }
     try {
