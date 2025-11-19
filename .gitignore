@@ -16,6 +16,7 @@ yarn-error.log*
 jules-scratch/
 
 # Local environment files
+.env
 .env.local
 .env.development.local
 .env.test.local
@@ -28,3 +29,5 @@ jules-scratch/
 test-db.ts
 cookie.txt
 package-lock.json
+
+/lib/generated/prisma
