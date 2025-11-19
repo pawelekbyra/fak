@@ -8,13 +8,10 @@ import { useTranslation } from '@/context/LanguageContext';
 import { useToast } from '@/context/ToastContext';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
+import { useStore } from '@/store/useStore';
+import { X } from 'lucide-react';
 
 const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PK!);
-
-interface TippingModalProps {
-  isOpen: boolean;
-  onClose: () => void;
-}
 
 const CheckoutForm = ({ clientSecret, onClose }: { clientSecret: string, onClose: () => void }) => {
     const stripe = useStripe();
@@ -56,10 +53,11 @@ const CheckoutForm = ({ clientSecret, onClose }: { clientSecret: string, onClose
     );
 };
 
-const TippingModal: React.FC<TippingModalProps> = ({ isOpen, onClose }) => {
+const TippingModal = () => {
   const { isLoggedIn, user } = useUser();
-  const { t, language } = useTranslation();
+  const { t, lang } = useTranslation();
   const { addToast } = useToast();
+  const { isTippingModalOpen, closeTippingModal } = useStore();
 
   const [currentStep, setCurrentStep] = useState(0);
   const [formData, setFormData] = useState({
@@ -84,7 +82,7 @@ const TippingModal: React.FC<TippingModalProps> = ({ isOpen, onClose }) => {
     }
   }, [isLoggedIn, user]);
 
-  if (!isOpen) return null;
+  if (!isTippingModalOpen) return null;
 
   const handleNext = async () => {
     // Step 0 -> 1: Email validation
@@ -126,7 +124,7 @@ const TippingModal: React.FC<TippingModalProps> = ({ isOpen, onClose }) => {
                 countryCodeHint: 'PL',
                 email: formData.email,
                 createAccount: formData.create_account,
-                language: language
+                language: lang
             }),
         });
         const data = await res.json();
@@ -209,7 +207,7 @@ const TippingModal: React.FC<TippingModalProps> = ({ isOpen, onClose }) => {
           <Elements stripe={stripePromise} options={options}>
             <h2 className="text-xl font-bold mb-4">{t('tippingSummaryLabel')}</h2>
             <p>{t('amount')}: {formData.amount.toFixed(2)} {formData.currency}</p>
-            <CheckoutForm clientSecret={clientSecret} onClose={onClose}/>
+            <CheckoutForm clientSecret={clientSecret} onClose={closeTippingModal}/>
           </Elements>
         );
       case 3:
@@ -220,11 +218,11 @@ const TippingModal: React.FC<TippingModalProps> = ({ isOpen, onClose }) => {
   };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-gray-800 p-6 rounded-lg shadow-lg text-white w-full max-w-md">
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[70]">
+      <div className="bg-gray-800 p-6 rounded-lg shadow-lg text-white w-full max-w-md relative">
         <div className="flex justify-between items-center mb-4">
           <h2 className="text-xl font-bold">{t('tipTitle')}</h2>
-          <button onClick={onClose} className="text-white">&times;</button>
+          <button onClick={closeTippingModal} className="text-white p-1 hover:bg-gray-700 rounded-full"><X size={24} /></button>
         </div>
         <div>{renderStep()}</div>
         {currentStep < 2 && !isTermsVisible && (

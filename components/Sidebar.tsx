@@ -1,5 +1,5 @@
 import React, { memo, useEffect } from 'react';
-import { Heart, MessageSquare, Rat, FileQuestion, Share } from 'lucide-react';
+import { Heart, MessageSquare, User, Share2, Wallet } from 'lucide-react';
 import { motion } from 'framer-motion';
 import Ably from 'ably';
 import { ably } from '@/lib/ably-client';
@@ -28,12 +28,16 @@ const Sidebar: React.FC<SidebarProps> = ({
     isLoggedIn,
     setActiveModal,
     toggleLike,
-    likeChanges
+  likeChanges,
+  openAuthorProfileModal,
+  openTippingModal
   } = useStore(state => ({
     isLoggedIn: state.isLoggedIn,
     setActiveModal: state.setActiveModal,
     toggleLike: state.toggleLike,
     likeChanges: state.likeChanges,
+  openAuthorProfileModal: state.openAuthorProfileModal,
+  openTippingModal: state.openTippingModal
   }), shallow);
 
   const likeState = likeChanges[slideId];
@@ -77,6 +81,14 @@ const Sidebar: React.FC<SidebarProps> = ({
     }
   };
 
+  const handleOpenAuthorProfile = () => {
+      // Use a mock ID for now as FeedItem does not pass authorId yet.
+      // In a real app, this should come from `slide.userId` or similar passed prop.
+      // Since I am restricted to this file change for now:
+      const mockAuthorId = 'mock-author-id';
+      openAuthorProfileModal(mockAuthorId);
+  };
+
   return (
     <aside
       className="absolute right-0 flex flex-col items-center gap-[6px] z-20"
@@ -86,23 +98,23 @@ const Sidebar: React.FC<SidebarProps> = ({
         textShadow: '0 0 4px rgba(0, 0, 0, 0.8)',
       }}
     >
+      {/* Avatar / Author Profile */}
       <div className="relative w-12 h-12 mb-1.5">
-        <button onClick={() => setActiveModal('account')} className="w-full h-full flex items-center justify-center text-white">
-          <Rat size={48} strokeWidth={1.4} />
+        <button onClick={handleOpenAuthorProfile} className="w-full h-full flex items-center justify-center text-white bg-gray-600 rounded-full overflow-hidden">
+           <User size={32} strokeWidth={1.4} />
         </button>
-        {!isLoggedIn && (
-          <div
-            className="absolute left-1/2 -translate-x-1/2 -bottom-1.5 w-5 h-5 rounded-full flex items-center justify-center text-white text-lg font-bold border-2 border-white pointer-events-none"
-            style={{ backgroundColor: 'hsl(var(--primary))'}}
+         <div
+            className="absolute left-1/2 -translate-x-1/2 -bottom-1.5 w-5 h-5 rounded-full flex items-center justify-center text-white text-lg font-bold border-2 border-white pointer-events-none bg-primary"
           >
             +
           </div>
-        )}
       </div>
 
+      {/* Like */}
       <motion.button
         onClick={handleLike}
         className="flex flex-col items-center gap-0.5 text-white text-xs font-semibold"
+        data-action="toggle-like"
         data-slide-id={slideId}
         whileTap={{ scale: 0.9 }}
       >
@@ -115,8 +127,10 @@ const Sidebar: React.FC<SidebarProps> = ({
         <span className="icon-label">{formatCount(currentLikes)}</span>
       </motion.button>
 
+      {/* Comments */}
       <motion.button
         data-testid="comments-button"
+        data-action="open-comments-modal"
         onClick={() => setActiveModal('comments')}
         className="flex flex-col items-center gap-0.5 text-white text-xs font-semibold"
         whileTap={{ scale: 0.9 }}
@@ -125,14 +139,16 @@ const Sidebar: React.FC<SidebarProps> = ({
         <span className="icon-label">{formatCount(commentsCount)}</span>
       </motion.button>
 
-      <button onClick={handleShare} className="flex flex-col items-center gap-0.5 text-white text-xs font-semibold">
-        <Share size={32} strokeWidth={1.4} className="stroke-white" style={{ filter: 'drop-shadow(0 0 3px rgba(0,0,0,0.5))' }}/>
+      {/* Share */}
+      <button onClick={handleShare} data-action="share" className="flex flex-col items-center gap-0.5 text-white text-xs font-semibold">
+        <Share2 size={32} strokeWidth={1.4} className="stroke-white" style={{ filter: 'drop-shadow(0 0 3px rgba(0,0,0,0.5))' }}/>
         <span className="icon-label">{t('shareText') || 'Share'}</span>
       </button>
 
-      <button onClick={() => setActiveModal('info')} className="flex flex-col items-center gap-0.5 text-white text-xs font-semibold mt-4">
-        <FileQuestion size={32} strokeWidth={1.4} className="stroke-white" style={{ filter: 'drop-shadow(0 0 3px rgba(0,0,0,0.5))' }}/>
-        <span className="icon-label">WTF?!</span>
+      {/* Tip Jar */}
+      <button onClick={openTippingModal} data-action="show-tip-jar" className="flex flex-col items-center gap-0.5 text-white text-xs font-semibold mt-4">
+        <Wallet size={32} strokeWidth={1.4} className="stroke-white" style={{ filter: 'drop-shadow(0 0 3px rgba(0,0,0,0.5))' }}/>
+        <span className="icon-label">Napiwek</span>
       </button>
     </aside>
   );

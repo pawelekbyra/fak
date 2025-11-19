@@ -30,7 +30,7 @@ export async function POST(request: NextRequest) {
   }
   const currentUser = payload.user;
 
-  const { success, remaining } = await rateLimit(`comment:${currentUser.id}`, 5, 60);
+  const { success } = await rateLimit(`comment:${currentUser.id}`, 3, 30);
 
   if (!success) {
     return NextResponse.json({ success: false, message: 'You are posting comments too quickly. Please try again later.' }, { status: 429 });

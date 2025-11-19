@@ -30,6 +30,8 @@ export function AuthorProfileModal() {
                     if (res.ok) {
                         const data = await res.json();
                         setProfile(data);
+                    } else {
+                        console.error("Failed to fetch author profile", res.statusText);
                     }
                 } catch (error) {
                     console.error("Failed to fetch author profile", error);
@@ -46,6 +48,7 @@ export function AuthorProfileModal() {
         closeAuthorProfileModal();
     };
 
+    if (!isAuthorProfileModalOpen) return null;
 
     return (
         <AnimatePresence>
@@ -54,7 +57,7 @@ export function AuthorProfileModal() {
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     exit={{ opacity: 0 }}
-                    className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm"
+                    className="fixed inset-0 z-[70] flex items-center justify-center bg-black/60 backdrop-blur-sm"
                     onClick={closeAuthorProfileModal}
                 >
                     <motion.div
@@ -62,23 +65,29 @@ export function AuthorProfileModal() {
                         animate={{ scale: 1, opacity: 1 }}
                         exit={{ scale: 0.9, opacity: 0 }}
                         transition={{ type: 'spring', damping: 20, stiffness: 250 }}
-                        className="relative flex flex-col w-full max-w-md bg-neutral-900 text-white rounded-2xl shadow-lg border border-neutral-700 mx-4"
+                        className="relative flex flex-col w-full max-w-md bg-neutral-900 text-white rounded-2xl shadow-lg border border-neutral-700 mx-4 max-h-[80vh] overflow-hidden"
                         onClick={(e) => e.stopPropagation()}
                     >
-                        <header className="relative flex items-center justify-center p-4 border-b border-neutral-800">
+                        <header className="relative flex items-center justify-center p-4 border-b border-neutral-800 shrink-0">
                             <h2 className="text-lg font-semibold">Author Profile</h2>
                             <button onClick={closeAuthorProfileModal} className="absolute p-1 right-3 top-3 rounded-full hover:bg-neutral-700">
                                 <X size={20} />
                             </button>
                         </header>
 
-                        <main className="flex-1 p-6">
+                        <main className="flex-1 p-6 overflow-y-auto">
                             {isLoading ? (
                                 <AuthorProfileSkeleton />
                             ) : profile ? (
                                 <>
                                     <div className="flex items-center space-x-4 mb-6">
-                                        <Image src={profile.avatarUrl || '/avatars/default.png'} alt={profile.username} width={80} height={80} className="rounded-full border-2 border-pink-500" />
+                                        <Image
+                                          src={profile.avatarUrl || '/avatars/default.png'}
+                                          alt={profile.username}
+                                          width={80}
+                                          height={80}
+                                          className="rounded-full border-2 border-pink-500 object-cover"
+                                        />
                                         <div>
                                             <h3 className="text-2xl font-bold">{profile.username}</h3>
                                             <p className="text-neutral-400 text-sm mt-1">{profile.bio}</p>
@@ -102,7 +111,14 @@ export function AuthorProfileModal() {
                                         ))}
                                     </div>
                                 </>
-                            ) : <p>Could not load profile.</p>}
+                            ) : (
+                                <div className="flex flex-col items-center justify-center h-full space-y-4">
+                                    <p>Could not load profile.</p>
+                                    <div className="text-xs text-gray-500">
+                                        (This is likely because /api/author/[id] is not implemented or DB is empty)
+                                    </div>
+                                </div>
+                            )}
                         </main>
                     </motion.div>
                 </motion.div>

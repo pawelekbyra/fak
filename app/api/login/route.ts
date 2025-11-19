@@ -16,8 +16,8 @@ const JWT_SECRET = new TextEncoder().encode(secretToUse);
 const COOKIE_NAME = 'session';
 
 export async function POST(req: NextRequest) {
-  const ip = req.ip ?? '127.0.0.1';
-  const { success, remaining } = await rateLimit(`login:${ip}`, 10, 60);
+  const ip = req.headers.get('x-forwarded-for') || req.headers.get('x-real-ip') || req.ip || '127.0.0.1';
+  const { success } = await rateLimit(`login:${ip}`, 5, 60);
 
   if (!success) {
     return NextResponse.json({ success: false, message: 'Too many requests. Please try again later.' }, { status: 429 });

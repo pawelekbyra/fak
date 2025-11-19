@@ -7,6 +7,8 @@ import TopBar from './TopBar';
 import { useStore } from '@/store/useStore';
 import { shallow } from 'zustand/shallow';
 import GlobalVideoPlayer from './GlobalVideoPlayer';
+import { AuthorProfileModal } from './AuthorProfileModal';
+import TippingModal from './TippingModal';
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   useEffect(() => {
@@ -26,6 +28,8 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
       <div className="flex-1 overflow-auto z-10">
         {children}
       </div>
+      <AuthorProfileModal />
+      <TippingModal />
     </div>
   );
 }

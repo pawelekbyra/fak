@@ -1,20 +1,26 @@
 import { redis } from './kv';
 
-export async function rateLimit(
-  identifier: string,
-  limit: number,
-  duration: number
-): Promise<{ success: boolean; remaining: number }> {
-  const key = `rate_limit:${identifier}`;
+interface RateLimitResult {
+  success: boolean;
+  limit: number;
+  remaining: number;
+}
+
+export async function rateLimit(key: string, limit: number, duration: number): Promise<RateLimitResult> {
+  const requestKey = `${key}:requests`;
 
   const pipeline = redis.pipeline();
-  pipeline.incr(key);
-  pipeline.expire(key, duration, 'NX');
+  pipeline.incr(requestKey);
+  pipeline.expire(requestKey, duration);
 
-  const [count] = await pipeline.exec<[number, number]>();
+  const result = await pipeline.exec<[number, number]>();
+  const count = result[0] as number; // The result of incr
 
-  const remaining = limit - count;
-  const success = remaining >= 0;
+  const remaining = Math.max(0, limit - count);
 
-  return { success, remaining };
+  return {
+    success: count <= limit,
+    limit: limit,
+    remaining: remaining,
+  };
 }
