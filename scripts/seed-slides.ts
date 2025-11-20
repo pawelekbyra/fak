@@ -1,103 +1,109 @@
+import { config } from 'dotenv';
+import { prisma } from '../lib/prisma';
 
-import { PrismaClient } from '@prisma/client';
-import * as bcrypt from '@node-rs/bcrypt';
+config({ path: '.env.local' });
 
-const prisma = new PrismaClient();
+async function seedSlides() {
+  console.log('Starting Slide Seeding...');
 
-const slides = [
-  {
-    title: "Poznaj Świat Lamy i Alpaki",
-    videoUrl: "https://stream.bunny.net/3582a720-4352-472d-b922-a6327b7c8430/playlist.m3u8",
-    thumbnailUrl: "https://i.imgur.com/34j6QP3.jpeg",
-  },
-  {
-    title: "Innowacyjna Platforma Edukacyjna",
-    videoUrl: "https://stream.bunny.net/8390b395-5fa1-4560-84a1-12c44824b081/playlist.m3u8",
-    thumbnailUrl: "https://i.imgur.com/n1yQ37M.jpeg",
-  },
-  {
-    title: "Sztuka i Kreatywność w Harmony",
-    videoUrl: "https://stream.bunny.net/41fe1b3a-0e93-4a64-ba8d-29170e5abb07/playlist.m3u8",
-    thumbnailUrl: "https://i.imgur.com/rSCTJmF.jpeg",
-  },
-  {
-    title: "Przygoda z QuantumVerse",
-    videoUrl: "https://stream.bunny.net/73f1d3c1-b01c-4b53-b26a-360a875d7422/playlist.m3u8",
-    thumbnailUrl: "https://i.imgur.com/j1v2X3P.jpeg",
-  },
-  {
-    title: "Cyberbezpieczeństwo w Praktyce",
-    videoUrl: "https://stream.bunny.net/ca2490b4-1c6f-474d-9669-7c98031d23cb/playlist.m3u8",
-    thumbnailUrl: "https://i.imgur.com/lO7S9z3.jpeg",
-  },
-  {
-    title: "Odkryj Potęgę BioInformatyki",
-    videoUrl: "https://stream.bunny.net/77656910-2f95-467f-85f0-63462f6b4052/playlist.m3u8",
-    thumbnailUrl: "https://i.imgur.com/2K1z60R.jpeg",
-  },
-  {
-    title: "Zrównoważony Rozwój z EcoTech",
-    videoUrl: "https://stream.bunny.net/3505c8d3-0b1c-43a3-a00c-71b5634568e6/playlist.m3u8",
-    thumbnailUrl: "https://i.imgur.com/4fX8j6S.jpeg",
-  },
-  {
-    title: "Finanse i Inwestycje z FinFuture",
-    videoUrl: "https://stream.bunny.net/f6f7b1c4-2d9f-4e3a-8b8a-3e5f2e3f0e1c/playlist.m3u8",
-    thumbnailUrl: "https://i.imgur.com/9v8N7dY.jpeg",
-  },
-  {
-    title: "Kulinarna Podróż z GastroGo",
-    videoUrl: "https://stream.bunny.net/1f9b0c6e-8a3a-4f2e-8c3b-9d4f0b2a1a0e/playlist.m3u8",
-    thumbnailUrl: "https://i.imgur.com/uT2d5zI.jpeg",
-  },
-];
-
-async function main() {
-  console.log('Seeding database...');
-
-  // 1. Delete old slides
-  await prisma.slide.deleteMany({});
-  console.log('Deleted all existing slides.');
-
-  // 2. Create author user if it doesn't exist
-  let author = await prisma.user.findUnique({
-    where: { email: 'author@example.com' },
-  });
-
-  if (!author) {
-    const hashedPassword = await bcrypt.hash('author123', 10);
-    author = await prisma.user.create({
-      data: {
-        email: 'author@example.com',
-        name: 'Author',
-        password: hashedPassword,
-      },
+  try {
+    // 1. Find the Author
+    const authorEmail = 'autor@autor.pl';
+    const author = await prisma.user.findUnique({
+      where: { email: authorEmail },
     });
-    console.log('Created author user.');
-  } else {
-    console.log('Author user already exists.');
-  }
 
-  // 3. Insert new slides
-  for (const slide of slides) {
-    await prisma.slide.create({
-      data: {
-        ...slide,
-        authorId: author.id,
-        public: true,
-      },
-    });
-  }
-  console.log(`Inserted ${slides.length} slides.`);
+    if (!author) {
+      console.error(`❌ Author not found (${authorEmail}). Run seed-test-accounts.ts first.`);
+      process.exit(1);
+    }
 
-  console.log('Seeding complete.');
+    console.log(`Found author: ${author.displayName} (${author.id})`);
+
+    // 2. Define External Video Links (Safe for Vercel, hosted externally)
+    const videos = [
+        {
+            title: "Big Buck Bunny",
+            mp4: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4",
+            hls: "https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8", // Example HLS
+            poster: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/images/BigBuckBunny.jpg"
+        },
+        {
+            title: "Elephant Dream",
+            mp4: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ElephantsDream.mp4",
+            hls: null,
+            poster: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/images/ElephantsDream.jpg"
+        },
+        {
+            title: "For Bigger Blazes",
+            mp4: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4",
+            hls: null,
+            poster: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/images/ForBiggerBlazes.jpg"
+        }
+    ];
+
+    // 3. Create Slides
+    // We use a loop and create them. Since we don't have unique constraints on Title,
+    // we can't easily "upsert" based on title without a custom where.
+    // We will delete existing slides for this author to prevent duplication on reset,
+    // OR we just create them. Since this is usually run after db:reset, it's fine.
+    // But to be "Safe Seed", we should check if they exist.
+
+    for (const [index, video] of videos.entries()) {
+        const slideTitle = video.title;
+
+        // Check if slide exists for this author with this title
+        const existing = await prisma.slide.findFirst({
+            where: {
+                userId: author.id,
+                title: slideTitle
+            }
+        });
+
+        if (existing) {
+            console.log(`Skipping existing slide: ${slideTitle}`);
+            continue;
+        }
+
+        // Construct the JSON content structure expected by the app
+        // Based on lib/db-postgres.ts structure: { access, data: { title, mp4Url, ... }, avatar }
+        const contentJson = JSON.stringify({
+            access: 'public',
+            avatar: author.avatar || '', // Should be empty or set
+            data: {
+                title: video.title,
+                mp4Url: video.mp4,
+                hlsUrl: video.hls, // Can be null
+                poster: video.poster,
+                description: `Seeded video: ${video.title}`
+            }
+        });
+
+        await prisma.slide.create({
+            data: {
+                userId: author.id,
+                username: author.username, // Denormalized
+                title: video.title,
+                content: contentJson,
+                slideType: 'video',
+                x: 0,
+                y: index, // Vertical stack
+                // Fill standard fields too for compatibility if we ever switch back
+                videoUrl: video.mp4,
+                thumbnailUrl: video.poster,
+                public: true
+            }
+        });
+
+        console.log(`✅ Created slide: ${slideTitle}`);
+    }
+
+    console.log('Slides seeded successfully.');
+
+  } catch (error) {
+    console.error('Error seeding slides:', error);
+    process.exit(1);
+  }
 }
 
-main()
-  .catch((e) => {
-    console.error(e);
-    process.exit(1);
-  })
-  .finally(async () => {
-    await prisma.$disconnect();
-  });
+seedSlides();

@@ -7,6 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
+    "db:reset": "dotenv -e .env.local -- prisma db push --force-reset && npm run db:seed-test && dotenv -e .env.local -- tsx scripts/seed-slides.ts",
     "db:seed": "tsx scripts/seed-kv.ts",
     "db:seed-test": "dotenv -e .env.local -- tsx scripts/seed-test-accounts.ts"
   },
