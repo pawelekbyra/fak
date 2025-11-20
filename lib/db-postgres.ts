@@ -305,14 +305,42 @@ export async function toggleCommentLike(commentId: string, userId: string): Prom
 // --- Comment Functions ---
 export async function getComments(slideId: string): Promise<Comment[]> {
     const sql = getDb();
-    // This query needs to be recursive to fetch replies.
-    // For now, it fetches all comments and they can be nested on the client.
+    // Optimized to fetch likes and return the structure expected by DTOs
     const result = await sql`
-        SELECT c.*, u.username, u."displayName", u.avatar FROM comments c
+        SELECT
+            c.*,
+            u.username,
+            u."displayName",
+            u.avatar,
+            COALESCE(
+                ARRAY_REMOVE(ARRAY_AGG(cl."userId"), NULL),
+                ARRAY[]::uuid[]
+            ) as "likedBy"
+        FROM comments c
         JOIN users u ON c."userId" = u.id
-        WHERE "slideId" = ${slideId} ORDER BY "createdAt" DESC;
+        LEFT JOIN comment_likes cl ON c.id = cl."commentId"
+        WHERE c."slideId" = ${slideId}
+        GROUP BY c.id, u.id
+        ORDER BY c."createdAt" DESC;
     `;
-    return (result as unknown as any[]).map(c => ({ ...c, user: { displayName: c.displayName, avatar: c.avatar } }));
+
+    return (result as unknown as any[]).map(c => ({
+        ...c,
+        // Map database columns to the nested structure expected by frontend DTOs
+        user: {
+            displayName: c.displayName,
+            avatar: c.avatar,
+            username: c.username,
+            id: c.userId
+        },
+        author: { // Provide both for compatibility/transition
+            id: c.userId,
+            displayName: c.displayName,
+            avatar: c.avatar,
+            username: c.username
+        },
+        likedBy: c.likedBy || []
+    }));
 }
 
 export async function addComment(slideId: string, userId:string, text: string, parentId: string | null = null): Promise<Comment> {
@@ -329,13 +357,22 @@ export async function addComment(slideId: string, userId:string, text: string, p
     `;
     const newCommentData = result[0];
     const { displayName, username, avatar, ...commentData } = newCommentData;
+
     return {
         ...commentData,
         user: {
             displayName: displayName || username,
-            avatar: avatar || ''
-        }
-    } as Comment;
+            avatar: avatar || '',
+            id: userId
+        },
+        author: {
+             id: userId,
+             displayName: displayName || username,
+             avatar: avatar || '',
+             username
+        },
+        likedBy: []
+    } as unknown as Comment;
 }
 
 // --- Notification Functions ---

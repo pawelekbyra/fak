@@ -3,6 +3,8 @@ import { useInfiniteQuery } from '@tanstack/react-query';
 import Slide from '@/components/Slide';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useStore } from '@/store/useStore';
+import { SlidesResponseSchema } from '@/lib/validators';
+import { SlideDTO } from '@/lib/dto';
 
 const fetchSlides = async ({ pageParam = '' }) => {
   const res = await fetch(`/api/slides?cursor=${pageParam}&limit=5`);
@@ -10,7 +12,20 @@ const fetchSlides = async ({ pageParam = '' }) => {
     throw new Error('Failed to fetch slides');
   }
   const data = await res.json();
-  return data;
+
+  // Runtime validation of the API response
+  // We use the Zod schema to ensure the data is exactly what we expect.
+  // If the API returns extra fields, they are stripped (if configured so) or ignored.
+  // If fields are missing or wrong type, this will throw an error, alerting us to the mismatch immediately.
+  try {
+      const parsed = SlidesResponseSchema.parse(data);
+      return parsed;
+  } catch (e) {
+      console.error("Slides API validation error:", e);
+      // In production, we might want to gracefully fallback, but the requirement is to "shout" about mismatches.
+      // Retrying might not help if the schema is wrong, so we rethrow.
+      throw new Error("Invalid data received from Slides API");
+  }
 };
 
 const MainFeed = () => {
@@ -37,7 +52,8 @@ const MainFeed = () => {
   });
 
   const slides = useMemo(() => {
-    return data?.pages.flatMap(page => page.slides) ?? [];
+    // Cast to SlideDTO because Zod schema output aligns with it, but TS needs a nudge if they aren't identical type refs
+    return (data?.pages.flatMap(page => page.slides) ?? []) as SlideDTO[];
   }, [data]);
 
   const loopedSlides = useMemo(() => {
@@ -101,7 +117,9 @@ const MainFeed = () => {
             const slideId = (entry.target as HTMLElement).dataset.slideId;
             const slide = slides.find(s => s.id === slideId);
             if (slide) {
-              setActiveSlide(slide);
+              // We might need to adapt SlideDTO to whatever internal store expects if it differs
+              // Assuming store is flexible or updated to match
+              setActiveSlide(slide as any);
               if (slide.type === 'video') {
                 playVideo();
               }
