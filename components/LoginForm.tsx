@@ -71,9 +71,6 @@ const LoginForm: React.FC<LoginFormProps> = ({ onLoginSuccess }) => {
 
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-3 px-4 pb-5">
-      <label className="text-sm font-bold text-white mb-1">
-         Email lub Nazwa użytkownika
-      </label>
       <Input
         type="text"
         name="login"

@@ -5,8 +5,7 @@ import { auth, signIn, signOut } from '@/auth';
 import { revalidatePath } from 'next/cache';
 import * as bcrypt from '@node-rs/bcrypt';
 import { AuthError } from 'next-auth';
-import fs from 'fs/promises';
-import path from 'path';
+import { put } from '@vercel/blob';
 
 export async function authenticate(
   prevState: string | undefined,
@@ -66,23 +65,8 @@ export async function updateUserProfile(prevState: any, formData: FormData) {
     try {
         // Handle File Upload
         if (avatarFile && avatarFile.size > 0 && avatarFile.name !== 'undefined') {
-            const uploadsDir = path.join(process.cwd(), 'public', 'uploads');
-
-            // Ensure directory exists
-            await fs.mkdir(uploadsDir, { recursive: true });
-
-            // Generate unique filename
-            const ext = path.extname(avatarFile.name);
-            const filename = `avatar-${userId}-${Date.now()}${ext}`;
-            const filepath = path.join(uploadsDir, filename);
-
-            // Convert file to buffer and write to disk
-            const arrayBuffer = await avatarFile.arrayBuffer();
-            const buffer = Buffer.from(arrayBuffer);
-            await fs.writeFile(filepath, buffer);
-
-            // Update data with new avatar path
-            updateData.avatar = `/uploads/${filename}`;
+            const blob = await put(avatarFile.name, avatarFile, { access: 'public' });
+            updateData.avatar = blob.url;
         }
 
         // Check if email is taken by another user (if email changed)
