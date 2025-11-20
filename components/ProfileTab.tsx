@@ -11,6 +11,7 @@ import Image from 'next/image';
 import { useTranslation } from '@/context/LanguageContext';
 import { useToast } from '@/context/ToastContext';
 import { updateUserProfile } from '@/lib/actions';
+import CropModal from './CropModal';
 
 interface ProfileTabProps {
     onClose: () => void;
@@ -30,6 +31,10 @@ const ProfileTab: React.FC<ProfileTabProps> = ({ onClose }) => {
   const [emailConsent, setEmailConsent] = useState(false);
   const [emailLanguage, setEmailLanguage] = useState('pl');
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+
+  const [isCropOpen, setIsCropOpen] = useState(false);
+  const [selectedImage, setSelectedImage] = useState<string | null>(null);
+  const [croppedFile, setCroppedFile] = useState<File | null>(null);
 
   // Initialize state from profile when available
   useEffect(() => {
@@ -65,9 +70,33 @@ const ProfileTab: React.FC<ProfileTabProps> = ({ onClose }) => {
   const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
-      const url = URL.createObjectURL(file);
-      setPreviewUrl(url);
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        if (e.target?.result) {
+          setSelectedImage(e.target.result as string);
+          setIsCropOpen(true);
+        }
+      };
+      reader.readAsDataURL(file);
+      // Reset input so the same file can be selected again
+      event.target.value = '';
     }
+  };
+
+  const handleCropSave = (croppedBlob: Blob | null) => {
+    if (croppedBlob) {
+      const file = new File([croppedBlob], 'avatar.png', { type: 'image/png' });
+      setCroppedFile(file);
+      setPreviewUrl(URL.createObjectURL(file));
+    }
+    setIsCropOpen(false);
+  };
+
+  const handleSubmit = (formData: FormData) => {
+    if (croppedFile) {
+      formData.set('avatar', croppedFile);
+    }
+    formAction(formData);
   };
 
   if (!profile) {
@@ -78,7 +107,7 @@ const ProfileTab: React.FC<ProfileTabProps> = ({ onClose }) => {
 
   return (
     <div className="tab-pane active p-4" id="profile-tab">
-      <form action={formAction} id="profileForm" className="space-y-4">
+      <form action={handleSubmit} id="profileForm" className="space-y-4">
 
         {/* Avatar Section */}
         <div className="bg-white/5 border border-white/10 rounded-xl p-6 flex flex-col items-center text-center">
@@ -212,6 +241,15 @@ const ProfileTab: React.FC<ProfileTabProps> = ({ onClose }) => {
           </div>
         </div>
       </form>
+
+      {isCropOpen && (
+        <CropModal
+          isOpen={isCropOpen}
+          onClose={() => setIsCropOpen(false)}
+          imageSrc={selectedImage}
+          onCropComplete={handleCropSave}
+        />
+      )}
     </div>
   );
 };

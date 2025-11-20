@@ -135,21 +135,6 @@ const TopBar = () => {
                   </PopoverContent>
               </Popover>
 
-              {/* User Avatar */}
-               <div className="ml-2 flex items-center">
-                {user.avatar ? (
-                  <Image
-                    src={user.avatar}
-                    alt={t('avatarAlt')}
-                    width={32}
-                    height={32}
-                    className="rounded-full"
-                  />
-                ) : (
-                  <div className="w-8 h-8 rounded-full bg-gray-300 dark:bg-zinc-700" />
-                )}
-               </div>
-
             </div>
             <div className="flex justify-center flex-1">
               <span className="font-semibold text-lg text-white">{loggedInTitle}</span>
@@ -181,12 +166,11 @@ const TopBar = () => {
       <AnimatePresence>
         {isLoginPanelOpen && (
           <motion.div
-            className="absolute left-0 w-full z-[50] bg-black pt-1 border-b border-zinc-800"
+            className="absolute left-0 w-full z-[50] bg-black/80 backdrop-blur-md pt-0 border-b border-zinc-800"
             style={{ top: 'var(--topbar-height)' }}
             initial={{ y: '-100%' }}
-            animate={{ y: '0%' }}
-            exit={{ y: '-100%' }}
-            transition={{ type: 'spring', stiffness: 300, damping: 25 }}
+            animate={{ y: '0%', transition: { type: 'spring', stiffness: 200, damping: 30 } }}
+            exit={{ y: '-100%', transition: { ease: 'easeInOut', duration: 0.5 } }}
           >
             <LoginForm onLoginSuccess={() => setIsLoginPanelOpen(false)} />
           </motion.div>
