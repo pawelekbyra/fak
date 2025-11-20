@@ -6,9 +6,16 @@ import { Button } from '@/components/ui/button';
 import { Loader2 } from 'lucide-react';
 import { useUser } from '@/context/UserContext';
 import { useTranslation } from '@/context/LanguageContext';
+import { deleteAccount } from '@/lib/actions';
+import { useToast } from '@/context/ToastContext';
 
-const DeleteTab: React.FC = () => {
+interface DeleteTabProps {
+    onClose?: () => void;
+}
+
+const DeleteTab: React.FC<DeleteTabProps> = ({ onClose }) => {
   const { t } = useTranslation();
+  const { addToast } = useToast();
   const DELETE_CONFIRM_TEXT = t('deleteAccountConfirmText');
 
   const [confirmation, setConfirmation] = useState('');
@@ -20,31 +27,39 @@ const DeleteTab: React.FC = () => {
     event.preventDefault();
     if (confirmation !== DELETE_CONFIRM_TEXT) {
       setStatus({ type: 'error', message: t('deleteAccountConfirmError') });
+      addToast(t('deleteAccountConfirmError'), 'error');
       return;
     }
 
     setIsSaving(true);
     setStatus(null);
 
+    const formData = new FormData(event.currentTarget);
+    // Ensure the key matches what the server action expects ('confirm_text')
+    // The input has name="confirm_text", so formData already contains it.
+    // But we append it manually just in case or if logic required it (redundant but safe).
+    if (!formData.get('confirm_text')) {
+         formData.append('confirm_text', confirmation);
+    }
+
     try {
-      const res = await fetch('/api/account/delete', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ confirm_text: confirmation }),
-      });
+      const result = await deleteAccount(null, formData);
 
-      const result = await res.json();
-
-      if (res.ok && result.success) {
+      if (result.success) {
         setStatus({ type: 'success', message: result.message });
+        addToast(result.message, 'success');
+
+        // Smooth transition: wait a bit, then logout and close
         setTimeout(() => {
           logout();
+          if (onClose) onClose();
         }, 2000);
       } else {
         throw new Error(result.message || t('deleteAccountError'));
       }
     } catch (error: any) {
       setStatus({ type: 'error', message: error.message });
+      addToast(error.message || t('deleteAccountError'), 'error');
       setIsSaving(false);
     }
   };
@@ -66,6 +81,7 @@ const DeleteTab: React.FC = () => {
               type="text"
               placeholder={DELETE_CONFIRM_TEXT}
               id="deleteConfirmation"
+              name="confirm_text"
               value={confirmation}
               onChange={(e) => setConfirmation(e.target.value)}
             />

@@ -5,19 +5,19 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import ToggleSwitch from './ui/ToggleSwitch';
 import CropModal from './CropModal';
-import { Crown } from 'lucide-react';
+import { Crown, Loader2 } from 'lucide-react';
 import { useUser } from '@/context/UserContext';
 import Image from 'next/image';
 import { useTranslation } from '@/context/LanguageContext';
 import { useToast } from '@/context/ToastContext';
-import { uploadAvatar } from '@/lib/actions';
+import { uploadAvatar, updateUserProfile } from '@/lib/actions';
 
 interface ProfileTabProps {
     onClose: () => void;
 }
 
 const ProfileTab: React.FC<ProfileTabProps> = ({ onClose }) => {
-  const { user: profile, checkUserStatus, logout } = useUser();
+  const { user: profile, checkUserStatus } = useUser();
   const { t, setLanguage, lang } = useTranslation();
   const { addToast } = useToast();
   const [emailConsent, setEmailConsent] = useState(true);
@@ -34,25 +34,22 @@ const ProfileTab: React.FC<ProfileTabProps> = ({ onClose }) => {
     setStatus(null);
 
     const formData = new FormData(event.currentTarget);
-    const data = Object.fromEntries(formData.entries());
 
     try {
-      const res = await fetch('/api/profile/update', {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data),
-      });
+      // Using Server Action directly
+      const result = await updateUserProfile(null, formData);
 
-      const result = await res.json();
-      if (!res.ok) {
+      if (!result.success) {
         throw new Error(result.message || t('profileUpdateError'));
       }
 
       setStatus({ type: 'success', message: t('profileUpdateSuccess') });
+      addToast(t('profileUpdateSuccess'), 'success');
       await checkUserStatus();
 
     } catch (error: any) {
       setStatus({ type: 'error', message: error.message });
+      addToast(error.message || t('profileUpdateError'), 'error');
     } finally {
       setIsSubmitting(false);
     }
@@ -86,6 +83,7 @@ const ProfileTab: React.FC<ProfileTabProps> = ({ onClose }) => {
     formData.append('avatar', avatarBlob, 'avatar.png');
 
     setStatus(null);
+    setIsSubmitting(true);
     try {
       const result = await uploadAvatar(formData);
 
@@ -94,19 +92,16 @@ const ProfileTab: React.FC<ProfileTabProps> = ({ onClose }) => {
       }
 
       setStatus({ type: 'success', message: t('avatarUploadSuccess') });
+      addToast(t('avatarUploadSuccess'), 'success');
       await checkUserStatus();
     } catch (error: any) {
       setStatus({ type: 'error', message: error.message });
+      addToast(error.message || t('avatarUploadError'), 'error');
     } finally {
       setIsCropModalOpen(false);
       setImageToCrop(null);
+      setIsSubmitting(false);
     }
-  };
-
-  const handleLogout = async () => {
-    await logout();
-    addToast(t('logoutSuccess'), 'success');
-    onClose();
   };
 
   if (!profile) {
@@ -131,8 +126,8 @@ const ProfileTab: React.FC<ProfileTabProps> = ({ onClose }) => {
                         <span className="text-4xl text-gray-500">{profile.displayName?.charAt(0).toUpperCase()}</span>
                     )}
                 </div>
-                <button onClick={handleAvatarEditClick} className="absolute -bottom-2 left-1/2 -translate-x-1/2 w-7 h-7 bg-pink-600 border-2 border-[#2d2d2d] rounded-full text-white text-lg font-bold flex items-center justify-center" id="avatarEditBtn" title={t('changeAvatarTitle')}>
-                    +
+                <button onClick={handleAvatarEditClick} className="absolute -bottom-2 left-1/2 -translate-x-1/2 w-7 h-7 bg-pink-600 border-2 border-[#2d2d2d] rounded-full text-white text-lg font-bold flex items-center justify-center" id="avatarEditBtn" title={t('changeAvatarTitle')} disabled={isSubmitting}>
+                    {isSubmitting ? <Loader2 size={14} className="animate-spin" /> : "+"}
                 </button>
                 <input
                     type="file"
@@ -170,6 +165,7 @@ const ProfileTab: React.FC<ProfileTabProps> = ({ onClose }) => {
               <Input type="email" name="email" defaultValue={profile.email} placeholder={t('emailPlaceholder')} disabled={isSubmitting} />
             </div>
             <Button type="submit" className="w-full bg-pink-600 hover:bg-pink-700" disabled={isSubmitting}>
+              {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
               {isSubmitting ? t('saving') : t('saveChanges')}
             </Button>
           </form>
@@ -185,8 +181,10 @@ const ProfileTab: React.FC<ProfileTabProps> = ({ onClose }) => {
                 try {
                   console.log('Saving settings:', { emailConsent, lang });
                   setStatus({ type: 'success', message: t('settingsSaveSuccess') });
+                  addToast(t('settingsSaveSuccess'), 'success');
                 } catch (error: any) {
                   setStatus({ type: 'error', message: error.message });
+                  addToast(error.message, 'error');
                 } finally {
                   setIsSubmitting(false);
                 }
@@ -204,17 +202,10 @@ const ProfileTab: React.FC<ProfileTabProps> = ({ onClose }) => {
                 </div>
             </div>
             <Button type="submit" className="w-full bg-pink-600 hover:bg-pink-700 mt-4" disabled={isSubmitting}>
+              {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
               {isSubmitting ? t('saving') : t('saveSettings')}
             </Button>
           </form>
-        </div>
-        <div className="flex justify-center mt-4">
-            <Button
-              onClick={handleLogout}
-              className="w-full bg-black hover:bg-zinc-900 border border-zinc-800 text-zinc-400 hover:text-zinc-100 transition-colors"
-            >
-              {t('logoutLink')}
-            </Button>
         </div>
       </div>
 

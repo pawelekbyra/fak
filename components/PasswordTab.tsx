@@ -5,9 +5,12 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Loader2 } from 'lucide-react';
 import { useTranslation } from '@/context/LanguageContext';
+import { changePassword } from '@/lib/actions';
+import { useToast } from '@/context/ToastContext';
 
 const PasswordTab: React.FC = () => {
   const { t } = useTranslation();
+  const { addToast } = useToast();
   const [status, setStatus] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
   const [isSaving, setIsSaving] = useState(false);
 
@@ -17,25 +20,20 @@ const PasswordTab: React.FC = () => {
     setStatus(null);
 
     const formData = new FormData(event.currentTarget);
-    const data = Object.fromEntries(formData.entries());
 
     try {
-      const res = await fetch('/api/password/change', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data),
-      });
+      const result = await changePassword(null, formData);
 
-      const result = await res.json();
-
-      if (res.ok && result.success) {
+      if (result.success) {
         setStatus({ type: 'success', message: result.message || t('passwordChangeSuccess') });
+        addToast(result.message || t('passwordChangeSuccess'), 'success');
         (event.target as HTMLFormElement).reset();
       } else {
         throw new Error(result.message || t('passwordChangeError'));
       }
     } catch (error: any) {
       setStatus({ type: 'error', message: error.message });
+      addToast(error.message || t('passwordChangeError'), 'error');
     } finally {
       setIsSaving(false);
     }

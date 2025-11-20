@@ -81,26 +81,19 @@ const AccountPanel: React.FC<AccountPanelProps> = ({ onClose }) => {
           </button>
         </div>
 
-        <div className="p-4 border-b border-white/10 bg-zinc-900/50">
-           {canPublish ? (
-               <Button className="w-full bg-pink-600 hover:bg-pink-700 text-white" onClick={() => window.location.href = '/admin/slides'}>
-                   {t('publishButton')}
-               </Button>
-           ) : (
-               <Button className="w-full bg-zinc-700 text-white/50 cursor-not-allowed" disabled>
-                   {t('publishButton')}
-               </Button>
-           )}
-           {!canPublish && (
-               <p className="text-xs text-center text-white/40 mt-2">{t('publishButtonInactive')}</p>
-           )}
-        </div>
-
         <div className="flex-1 overflow-y-auto">
             {activeTab === 'profile' && <ProfileTab onClose={onClose} />}
             {activeTab === 'password' && <PasswordTab />}
-            {activeTab === 'delete' && <DeleteTab />}
+            {activeTab === 'delete' && <DeleteTab onClose={onClose} />}
         </div>
+
+        {canPublish && (
+          <div className="p-4 border-t border-white/10 bg-zinc-900/80 backdrop-blur-md flex-shrink-0">
+             <Button className="w-full bg-pink-600 hover:bg-pink-700 text-white" onClick={() => window.location.href = '/admin/slides'}>
+                 {t('publishButton')}
+             </Button>
+          </div>
+        )}
       </motion.div>
     </motion.div>
   );
