@@ -10,6 +10,7 @@ import GlobalVideoPlayer from './GlobalVideoPlayer';
 import { AuthorProfileModal } from './AuthorProfileModal';
 import TippingModal from './TippingModal';
 import CommentsModal from './CommentsModal';
+import AccountPanel from './AccountPanel';
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   const {
@@ -47,6 +48,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         slideId={activeSlide?.id}
         initialCommentsCount={activeSlide?.initialComments || 0}
       />
+      {activeModal === 'account' && <AccountPanel onClose={() => setActiveModal(null)} />}
     </div>
   );
 }

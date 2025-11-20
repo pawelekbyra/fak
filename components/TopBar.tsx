@@ -111,21 +111,21 @@ const TopBar = () => {
                         <MenuIcon className="w-6 h-6" />
                     </Button>
                   </PopoverTrigger>
-                  <PopoverContent align="start" sideOffset={5} className="w-64 p-2 bg-zinc-900 border-zinc-800 text-white shadow-xl rounded-xl">
-                      <div className="grid grid-cols-2 gap-2">
+                  <PopoverContent align="start" sideOffset={5} className="w-24 p-2 bg-zinc-900 border-zinc-800 text-white shadow-xl rounded-xl">
+                      <div className="flex flex-col gap-2">
                           <button
                             onClick={handleOpenAccount}
-                            className="flex flex-col items-center justify-center gap-2 p-4 bg-zinc-800 hover:bg-zinc-700 rounded-lg transition-colors aspect-square"
+                            className="flex flex-col items-center justify-center gap-1 p-2 bg-zinc-800 hover:bg-zinc-700 rounded-lg transition-colors w-full"
                           >
-                              <User size={24} className="text-blue-400" />
-                              <span className="text-xs font-medium">{t('account')}</span>
+                              <User size={20} className="text-blue-400" />
+                              <span className="text-[10px] font-medium">{t('account')}</span>
                           </button>
                           <button
                             onClick={handleLogout}
-                            className="flex flex-col items-center justify-center gap-2 p-4 bg-zinc-800 hover:bg-zinc-700 rounded-lg transition-colors aspect-square"
+                            className="flex flex-col items-center justify-center gap-1 p-2 bg-zinc-800 hover:bg-zinc-700 rounded-lg transition-colors w-full"
                           >
-                              <LogOut size={24} className="text-red-400" />
-                              <span className="text-xs font-medium">{t('logout')}</span>
+                              <LogOut size={20} className="text-red-400" />
+                              <span className="text-[10px] font-medium">{t('logout')}</span>
                           </button>
                       </div>
                   </PopoverContent>
