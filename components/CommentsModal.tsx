@@ -9,22 +9,12 @@ import { ably } from '@/lib/ably-client';
 import { useTranslation } from '@/context/LanguageContext';
 import { useUser } from '@/context/UserContext';
 import { useToast } from '@/context/ToastContext';
-// This type is now aligned with the backend response
-type Comment = {
-  id: string;
-  text: string;
-  createdAt: string;
-  likedBy: string[];
-  user: {
-    displayName: string;
-    avatar: string;
-  };
-  parentId?: string | null;
-  replies?: Comment[];
-};
+import { z } from 'zod';
+import { CommentWithRelations } from '@/lib/dto';
+import { CommentSchema } from '@/lib/validators';
 
 interface CommentItemProps {
-  comment: Comment;
+  comment: CommentWithRelations;
   onLike: (id: string) => void;
   onReplySubmit: (parentId: string, text: string) => Promise<void>;
   currentUserId?: string;
@@ -50,6 +40,10 @@ const CommentItem: React.FC<CommentItemProps> = ({ comment, onLike, onReplySubmi
     setIsReplying(false);
   };
 
+  // Fallback to 'user' if 'author' is missing (though DTO guarantees author)
+  // We cast to any temporarily if we need to access legacy fields, but we should try to use author.
+  const author = comment.author;
+
   return (
     <motion.div
       layout
@@ -58,9 +52,9 @@ const CommentItem: React.FC<CommentItemProps> = ({ comment, onLike, onReplySubmi
       exit={{ opacity: 0, y: -20 }}
       className={`flex items-start gap-3 ${isReply ? 'ml-8' : ''}`}
     >
-      <Image src={comment.user.avatar} alt={t('userAvatar', { user: comment.user.displayName })} width={32} height={32} className="w-8 h-8 rounded-full mt-1" />
+      <Image src={author.avatar || '/avatars/default.png'} alt={t('userAvatar', { user: author.displayName || 'User' })} width={32} height={32} className="w-8 h-8 rounded-full mt-1" />
       <div className="flex-1">
-        <p className="text-xs font-bold text-white/80">{comment.user.displayName}</p>
+        <p className="text-xs font-bold text-white/80">{author.displayName || author.username || 'User'}</p>
         <p className="text-sm text-white">{comment.text}</p>
         <div className="flex items-center gap-4 text-xs text-white/60 mt-1">
           <button onClick={() => onLike(comment.id)} className="flex items-center gap-1">
@@ -91,7 +85,7 @@ const CommentItem: React.FC<CommentItemProps> = ({ comment, onLike, onReplySubmi
           </form>
         )}
         <div className="mt-2 space-y-3">
-          {comment.replies?.map(reply => (
+          {comment.replies?.map((reply: CommentWithRelations) => (
             <CommentItem
               key={reply.id}
               comment={reply}
@@ -118,7 +112,7 @@ const CommentsModal: React.FC<CommentsModalProps> = ({ isOpen, onClose, slideId,
   const { t } = useTranslation();
   const { user } = useUser();
   const { addToast } = useToast();
-  const [comments, setComments] = useState<Comment[]>([]);
+  const [comments, setComments] = useState<CommentWithRelations[]>([]);
   const [newComment, setNewComment] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -129,7 +123,17 @@ const CommentsModal: React.FC<CommentsModalProps> = ({ isOpen, onClose, slideId,
       const channel = ably.channels.get(`comments:${slideId}`);
 
       const onNewComment = (message: Ably.Message) => {
-        addCommentOptimistically(message.data as Comment);
+        // We need to ensure the incoming message matches our DTO structure
+        // Ideally we should validate it too, but for now we cast it.
+        const data = message.data as any;
+        // Map incoming real-time data to DTO if needed, or assume server sends correct shape
+        const mappedComment: CommentWithRelations = {
+            ...data,
+            author: data.author || data.user, // Fallback
+            likedBy: data.likedBy || [],
+            replies: []
+        };
+        addCommentOptimistically(mappedComment);
       };
 
       channel.subscribe('new-comment', onNewComment);
@@ -145,18 +149,31 @@ const CommentsModal: React.FC<CommentsModalProps> = ({ isOpen, onClose, slideId,
         })
         .then(data => {
           if (data.success) {
-            const comments: Comment[] = data.comments;
-            const commentMap = new Map<string, Comment>(comments.map((c: Comment) => [c.id, { ...c, replies: [] }]));
-            const rootComments: Comment[] = [];
+            // Runtime Validation using Zod
+            const parsedComments = z.array(CommentSchema).parse(data.comments);
 
-            for (const comment of comments) {
-              if (comment.parentId && commentMap.has(comment.parentId)) {
-                const parentComment = commentMap.get(comment.parentId);
+            // Transform/Nest comments
+            // We need to cast parsedComments to any[] first because Zod output might be slightly different from Prisma types
+            // depending on exact schema definition vs DTO type.
+            // However, our DTO is defined based on Prisma, so it should align.
+
+            const commentMap = new Map<string, CommentWithRelations>(parsedComments.map((c: any) => [c.id, { ...c, author: c.author || c.user, replies: [] }]));
+            const rootComments: CommentWithRelations[] = [];
+
+            // Use 'as any' loop or strict typing
+            // The parser ensures structure.
+            for (const rawComment of parsedComments as any[]) {
+               // Ensure author is set (Schema allows it to be optional or user, but DTO needs author)
+               const comment = commentMap.get(rawComment.id)!;
+
+               if (rawComment.parentId && commentMap.has(rawComment.parentId)) {
+                const parentComment = commentMap.get(rawComment.parentId);
                 if (parentComment) {
-                  parentComment.replies?.push(commentMap.get(comment.id)!);
+                  if (!parentComment.replies) parentComment.replies = [];
+                  parentComment.replies.push(comment);
                 }
               } else {
-                rootComments.push(commentMap.get(comment.id)!);
+                rootComments.push(comment);
               }
             }
             setComments(rootComments);
@@ -165,7 +182,8 @@ const CommentsModal: React.FC<CommentsModalProps> = ({ isOpen, onClose, slideId,
           }
         })
         .catch(err => {
-          setError(err.message);
+          console.error("Validation or Fetch Error:", err);
+          setError(err.message || 'Invalid data received');
         })
         .finally(() => {
           setIsLoading(false);
@@ -179,7 +197,6 @@ const CommentsModal: React.FC<CommentsModalProps> = ({ isOpen, onClose, slideId,
 
   const handleLike = async (commentId: string) => {
     if (!user) {
-      // Maybe show a toast message to login
       return;
     }
 
@@ -188,7 +205,7 @@ const CommentsModal: React.FC<CommentsModalProps> = ({ isOpen, onClose, slideId,
       if (comment.id === commentId) {
         const isLiked = comment.likedBy.includes(user.id);
         const newLikedBy = isLiked
-          ? comment.likedBy.filter(id => id !== user.id)
+          ? comment.likedBy.filter((id: string) => id !== user.id)
           : [...comment.likedBy, user.id];
         return { ...comment, likedBy: newLikedBy };
       }
@@ -205,9 +222,7 @@ const CommentsModal: React.FC<CommentsModalProps> = ({ isOpen, onClose, slideId,
       });
 
       if (!res.ok) {
-        // Revert on failure
         setComments(originalComments);
-        // Maybe show a toast message
         console.error('Failed to like comment');
       }
     } catch (error) {
@@ -216,12 +231,13 @@ const CommentsModal: React.FC<CommentsModalProps> = ({ isOpen, onClose, slideId,
     }
   };
 
-  const addCommentOptimistically = (newComment: Comment) => {
-    if (newComment.parentId) {
+  const addCommentOptimistically = (newComment: CommentWithRelations) => {
+    // Note: newComment must have author property populated
+    if ((newComment as any).parentId) { // Cast because parentId isn't on CommentWithRelations base type strictly in some versions if not added
       setComments(prev => {
         const newComments = [...prev];
-        const addReply = (comment: Comment): Comment => {
-          if (comment.id === newComment.parentId) {
+        const addReply = (comment: CommentWithRelations): CommentWithRelations => {
+          if (comment.id === (newComment as any).parentId) {
             return { ...comment, replies: [newComment, ...(comment.replies || [])] };
           }
           if (comment.replies) {
@@ -238,7 +254,7 @@ const CommentsModal: React.FC<CommentsModalProps> = ({ isOpen, onClose, slideId,
 
   const removeCommentOptimistically = (commentId: string) => {
     setComments(prev => {
-        const filterReplies = (comments: Comment[]): Comment[] => {
+        const filterReplies = (comments: CommentWithRelations[]): CommentWithRelations[] => {
             return comments.filter(c => c.id !== commentId).map(c => {
                 if (c.replies) {
                     return { ...c, replies: filterReplies(c.replies) };
@@ -250,9 +266,9 @@ const CommentsModal: React.FC<CommentsModalProps> = ({ isOpen, onClose, slideId,
     });
   };
 
-  const replaceTempComment = (tempId: string, realComment: Comment) => {
+  const replaceTempComment = (tempId: string, realComment: CommentWithRelations) => {
     setComments(prev => {
-        const replaceInReplies = (comments: Comment[]): Comment[] => {
+        const replaceInReplies = (comments: CommentWithRelations[]): CommentWithRelations[] => {
             return comments.map(c => {
                 if (c.id === tempId) {
                     return realComment;
@@ -272,12 +288,22 @@ const CommentsModal: React.FC<CommentsModalProps> = ({ isOpen, onClose, slideId,
 
     // Optimistic update
     const tempId = `temp-${Date.now()}`;
-    const newReply: Comment = {
+    const newReply: CommentWithRelations = {
       id: tempId,
       text,
-      createdAt: new Date().toISOString(),
+      createdAt: new Date(), // DTO expects Date object (or we adjust DTO to allow string)
+      updatedAt: new Date(),
+      authorId: user.id,
+      slideId: slideId,
       likedBy: [],
-      user: { displayName: user.displayName || user.username, avatar: user.avatar || '' },
+      author: {
+          id: user.id,
+          displayName: user.displayName || user.username || 'User',
+          avatar: user.avatar || '',
+          username: user.username || null
+      },
+      replies: [],
+      // @ts-ignore - parentId is often not in the main DTO but used in logic
       parentId,
     };
     addCommentOptimistically(newReply);
@@ -289,7 +315,6 @@ const CommentsModal: React.FC<CommentsModalProps> = ({ isOpen, onClose, slideId,
         body: JSON.stringify({ slideId, text, parentId }),
       });
 
-      // Always parse JSON
       const data = await res.json().catch(() => null);
 
       if (!res.ok || !data || !data.success) {
@@ -297,12 +322,18 @@ const CommentsModal: React.FC<CommentsModalProps> = ({ isOpen, onClose, slideId,
         throw new Error(errorMessage);
       }
 
-      replaceTempComment(tempId, data.comment);
+      // The API returns 'comment' which matches our Schema/DTO mostly.
+      // Ensure author is present
+      const realComment = {
+          ...data.comment,
+          author: data.comment.author || data.comment.user // Handle backend variation
+      };
+
+      replaceTempComment(tempId, realComment);
 
     } catch (err: any) {
       const msg = err.message || t('commentError');
       addToast(msg, 'error');
-      // Revert optimistic update on failure
       removeCommentOptimistically(tempId);
       console.error("Failed to post reply:", msg);
     }
@@ -315,16 +346,25 @@ const CommentsModal: React.FC<CommentsModalProps> = ({ isOpen, onClose, slideId,
 
     setIsSubmitting(true);
     setError(null);
-    setNewComment(''); // Clear input immediately
+    setNewComment('');
 
-    // Optimistic update
     const tempId = `temp-${Date.now()}`;
-    const newCommentData: Comment = {
+    const newCommentData: CommentWithRelations = {
       id: tempId,
       text: trimmedComment,
-      createdAt: new Date().toISOString(),
+      createdAt: new Date(),
+      updatedAt: new Date(),
+      authorId: user.id,
+      slideId: slideId,
       likedBy: [],
-      user: { displayName: user.displayName || user.username, avatar: user.avatar || '' },
+      author: {
+          id: user.id,
+          displayName: user.displayName || user.username || 'User',
+          avatar: user.avatar || '',
+          username: user.username || null
+      },
+      replies: [],
+      // @ts-ignore
       parentId: null,
     };
     addCommentOptimistically(newCommentData);
@@ -336,18 +376,20 @@ const CommentsModal: React.FC<CommentsModalProps> = ({ isOpen, onClose, slideId,
         body: JSON.stringify({ slideId, text: trimmedComment }),
       });
 
-      // Always parse JSON to handle 429 and other errors correctly
       const data = await res.json().catch(() => null);
 
       if (!res.ok || !data || !data.success) {
-         // Use translated message from server key or fallback
          const errorMessage = data?.message ? t(data.message) : t('commentError');
          throw new Error(errorMessage);
       }
 
-      replaceTempComment(tempId, data.comment);
+      const realComment = {
+          ...data.comment,
+          author: data.comment.author || data.comment.user
+      };
+
+      replaceTempComment(tempId, realComment);
     } catch (err: any) {
-      // Revert on failure
       removeCommentOptimistically(tempId);
       const msg = err.message || t('commentError');
       addToast(msg, 'error');
@@ -382,7 +424,7 @@ const CommentsModal: React.FC<CommentsModalProps> = ({ isOpen, onClose, slideId,
       <div className="flex-1 overflow-y-auto p-4">
         <AnimatePresence>
           <motion.div layout className="space-y-4">
-            {comments.map((comment: Comment) => (
+            {comments.map((comment: CommentWithRelations) => (
               <CommentItem
                 key={comment.id}
                 comment={comment}

@@ -1,6 +1,7 @@
 import { neon, NeonQueryFunction } from '@neondatabase/serverless';
 import { User, Comment, Notification } from './db.interfaces';
 import { Slide } from './types';
+import { prisma } from './prisma';
 
 let sql: NeonQueryFunction<false, false>;
 
@@ -289,53 +290,104 @@ export async function toggleLike(slideId: string, userId: string): Promise<{ new
 }
 
 export async function toggleCommentLike(commentId: string, userId: string): Promise<{ newStatus: 'liked' | 'unliked', likeCount: number }> {
-    const sql = getDb();
-    const isLikedResult = await sql`SELECT 1 FROM comment_likes WHERE "commentId" = ${commentId} AND "userId" = ${userId};`;
-    const isLiked = isLikedResult.length > 0;
-    if (isLiked) {
-        await sql`DELETE FROM comment_likes WHERE "commentId" = ${commentId} AND "userId" = ${userId};`;
+    // Switch to Prisma logic as requested by the user for 'Like Logic'
+    // "Ensure the backend logic actually writes to the CommentLike table."
+    const existingLike = await prisma.commentLike.findUnique({
+        where: {
+            userId_commentId: {
+                userId,
+                commentId,
+            },
+        },
+    });
+
+    if (existingLike) {
+        await prisma.commentLike.delete({
+            where: {
+                id: existingLike.id,
+            },
+        });
     } else {
-        await sql`INSERT INTO comment_likes ("commentId", "userId") VALUES (${commentId}, ${userId});`;
+        await prisma.commentLike.create({
+            data: {
+                userId,
+                commentId,
+            },
+        });
     }
-    const likeCountResult = await sql`SELECT COUNT(*) as count FROM comment_likes WHERE "commentId" = ${commentId};`;
-    const likeCount = likeCountResult[0].count as number;
-    return { newStatus: isLiked ? 'unliked' : 'liked', likeCount };
+
+    const likeCount = await prisma.commentLike.count({
+        where: {
+            commentId
+        }
+    });
+
+    return { newStatus: existingLike ? 'unliked' : 'liked', likeCount };
 }
 
 // --- Comment Functions ---
+
+// Helper to map Prisma result to our DTO
+const mapComment = (c: any) => ({
+    ...c,
+    authorId: c.author.id,
+    likedBy: c.likes.map((l: any) => l.userId),
+    // Map 'likes' relation to 'likedBy' array
+    likes: undefined, // Remove raw relation if needed, or keep it. DTO doesn't have 'likes' array of objects, but '_count'.
+    _count: { likes: c.likes.length },
+    replies: c.replies ? c.replies.map(mapComment) : []
+});
+
 export async function getComments(slideId: string): Promise<Comment[]> {
-    const sql = getDb();
-    // This query needs to be recursive to fetch replies.
-    // For now, it fetches all comments and they can be nested on the client.
-    const result = await sql`
-        SELECT c.*, u.username, u."displayName", u.avatar FROM comments c
-        JOIN users u ON c."userId" = u.id
-        WHERE "slideId" = ${slideId} ORDER BY "createdAt" DESC;
-    `;
-    return (result as unknown as any[]).map(c => ({ ...c, user: { displayName: c.displayName, avatar: c.avatar } }));
+    // Use Prisma Client as requested
+    const comments = await prisma.comment.findMany({
+        where: {
+            slideId: slideId,
+            parentId: null, // Fetch root comments
+        },
+        include: {
+            author: true,
+            likes: true, // To map to likedBy
+            replies: {
+                include: {
+                    author: true,
+                    likes: true,
+                    replies: { // fetch deeper level? Or stick to 1 level nesting?
+                               // The prompt says: replies: { include: { author: true, likes: true } }
+                               // Recursive fetching in Prisma is tricky.
+                               // For now we fetch 1 level of replies as is standard.
+                               // If deep nesting is needed, we might need raw SQL or recursive function.
+                               // Assuming 1 level of nesting for now based on prompt structure.
+                         include: { author: true, likes: true }
+                    }
+                },
+                orderBy: { createdAt: 'asc' }
+            }
+        },
+        orderBy: {
+            createdAt: 'desc',
+        },
+    });
+
+    return comments.map(mapComment) as unknown as Comment[];
 }
 
 export async function addComment(slideId: string, userId:string, text: string, parentId: string | null = null): Promise<Comment> {
-    const sql = getDb();
-    const result = await sql`
-        WITH new_comment AS (
-            INSERT INTO comments (id, "slideId", "userId", text, "parentId")
-            VALUES ('comment_' || gen_random_uuid()::text, ${slideId}, ${userId}, ${text}, ${parentId})
-            RETURNING *
-        )
-        SELECT c.*, u."displayName", u.username, u.avatar
-        FROM new_comment c
-        JOIN users u ON c."userId" = u.id;
-    `;
-    const newCommentData = result[0];
-    const { displayName, username, avatar, ...commentData } = newCommentData;
-    return {
-        ...commentData,
-        user: {
-            displayName: displayName || username,
-            avatar: avatar || ''
+    const newComment = await prisma.comment.create({
+        data: {
+            slideId,
+            authorId: userId,
+            text,
+            parentId
+        },
+        include: {
+            author: true,
+            likes: true, // Empty initially
+            replies: true // Empty initially
         }
-    } as Comment;
+    });
+
+    return mapComment(newComment) as unknown as Comment;
 }
 
 // --- Notification Functions ---

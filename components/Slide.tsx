@@ -3,11 +3,7 @@
 import React, { memo, useState, useEffect, useRef } from 'react';
 import Image from 'next/image';
 import DOMPurify from 'dompurify';
-import {
-  Slide as SlideUnionType,
-  HtmlSlide,
-  VideoSlide,
-} from '@/lib/types';
+import { SlideDTO, HtmlSlideDTO, VideoSlideDTO } from '@/lib/dto';
 import { useStore, ModalType } from '@/store/useStore';
 import VideoControls from './VideoControls';
 import { shallow } from 'zustand/shallow';
@@ -15,13 +11,16 @@ import { AnimatePresence, motion } from 'framer-motion';
 import PlayIcon from './icons/PlayIcon';
 import PauseIcon from './icons/PauseIcon';
 import Sidebar from './Sidebar';
+import { useUser } from '@/context/UserContext';
+import { cn } from '@/lib/utils';
+import SecretOverlay from './SecretOverlay';
 
 // --- Prop Types for Sub-components ---
 interface HtmlContentProps {
-  slide: HtmlSlide;
+  slide: HtmlSlideDTO;
 }
 interface SlideUIProps {
-    slide: SlideUnionType;
+    slide: SlideDTO;
 }
 
 // --- Sub-components ---
@@ -151,14 +150,11 @@ const SlideUI = ({ slide }: SlideUIProps) => {
     );
   };
 
-import { useUser } from '@/context/UserContext';
-import { cn } from '@/lib/utils';
-import SecretOverlay from './SecretOverlay';
 
 // --- Main Slide Component ---
 
 interface SlideProps {
-    slide: SlideUnionType;
+    slide: SlideDTO;
 }
 
 const Slide = memo<SlideProps>(({ slide}) => {
@@ -170,7 +166,7 @@ const Slide = memo<SlideProps>(({ slide}) => {
             case 'video':
                 return <div className="w-full h-full bg-black" />;
             case 'html':
-                return <HtmlContent slide={slide as HtmlSlide} />;
+                return <HtmlContent slide={slide as HtmlSlideDTO} />;
             default:
                 return <div className="w-full h-full bg-gray-800 flex items-center justify-center"><p>Unsupported slide type</p></div>;
         }
