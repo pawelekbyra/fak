@@ -1,16 +1,17 @@
 "use client";
 
 import React, { useState, useRef, useEffect } from 'react';
-import { useFormState } from 'react-dom';
+import { useFormState, useFormStatus } from 'react-dom';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import ToggleSwitch from './ui/ToggleSwitch';
-import { Crown } from 'lucide-react';
+import { Crown, Edit2, Camera } from 'lucide-react';
 import { useUser } from '@/context/UserContext';
 import Image from 'next/image';
 import { useTranslation } from '@/context/LanguageContext';
 import { useToast } from '@/context/ToastContext';
 import { updateUserProfile } from '@/lib/actions';
+import { cn } from '@/lib/utils';
+import ToggleSwitch from './ui/ToggleSwitch';
 
 interface ProfileTabProps {
     onClose: () => void;
@@ -23,16 +24,26 @@ const initialState = {
 
 const ProfileTab: React.FC<ProfileTabProps> = ({ onClose }) => {
   const { user: profile, checkUserStatus } = useUser();
-  const { t, setLanguage, lang } = useTranslation();
+  const { t } = useTranslation();
   const { addToast } = useToast();
-  const [emailConsent, setEmailConsent] = useState(true);
+
+  // Hydrate local state from profile
+  const [emailConsent, setEmailConsent] = useState(profile?.emailConsent || false);
+  const [language, setLanguage] = useState(profile?.emailLanguage || 'pl');
 
   // useFormState hook for server action
   const [state, formAction] = useFormState(updateUserProfile, initialState);
 
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const [isSettingsSubmitting, setIsSettingsSubmitting] = useState(false);
+
+  // Update local state when profile changes (e.g., after save and re-fetch)
+  useEffect(() => {
+      if (profile) {
+          setEmailConsent(profile.emailConsent || false);
+          setLanguage(profile.emailLanguage || 'pl');
+      }
+  }, [profile]);
 
   // Handle state updates from server action
   useEffect(() => {
@@ -58,59 +69,40 @@ const ProfileTab: React.FC<ProfileTabProps> = ({ onClose }) => {
     }
   };
 
-  const handleSettingsSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    setIsSettingsSubmitting(true);
-    setTimeout(() => {
-      try {
-        console.log('Saving settings:', { emailConsent, lang });
-        addToast(t('settingsSaveSuccess'), 'success');
-      } catch (error: any) {
-        addToast(error.message, 'error');
-      } finally {
-        setIsSettingsSubmitting(false);
-      }
-    }, 1000);
-  };
-
   if (!profile) {
-    return <div className="p-5 text-center">{t('loadingProfile')}</div>;
+    return <div className="p-5 text-center text-white/50">{t('loadingProfile')}</div>;
   }
 
   const currentAvatar = previewUrl || profile.avatar;
 
   return (
-    <div className="tab-pane active p-4" id="profile-tab">
-      {/* Main Form wraps everything that needs to be submitted */}
-      <form action={formAction} id="profileForm">
+    <div className="tab-pane active p-4 max-w-md mx-auto" id="profile-tab">
+      {/* Main Form wraps everything */}
+      <form action={formAction} id="profileForm" className="space-y-6">
 
         {/* Avatar Section */}
-        <div className="avatar-section bg-white/5 border border-white/10 rounded-xl p-5 mb-4 flex flex-col items-center text-center">
-            <div className="relative w-20 h-20 mb-3">
-                <div className="w-full h-full rounded-full overflow-hidden border-2 border-white/80 shadow-lg bg-gray-800 flex items-center justify-center">
+        <div className="flex flex-col items-center text-center relative z-10">
+            <div className="relative w-24 h-24 mb-4 group cursor-pointer" onClick={handleAvatarEditClick}>
+                <div className="w-full h-full rounded-full overflow-hidden border-4 border-white/10 shadow-xl bg-zinc-900 flex items-center justify-center transition-all group-hover:border-pink-500/50">
                     {currentAvatar ? (
                         <Image
                           src={currentAvatar}
                           alt={t('avatarAlt')}
-                          width={80}
-                          height={80}
+                          width={96}
+                          height={96}
                           className="w-full h-full object-cover"
                           id="userAvatar"
                           unoptimized={!!previewUrl} // unoptimized for blob urls
                         />
                     ) : (
-                        <span className="text-4xl text-gray-500">{profile.displayName?.charAt(0).toUpperCase()}</span>
+                        <span className="text-4xl text-zinc-500 font-bold">{profile.displayName?.charAt(0).toUpperCase()}</span>
                     )}
                 </div>
-                <button
-                  type="button" // Ensure this doesn't submit the form
-                  onClick={handleAvatarEditClick}
-                  className="absolute -bottom-2 left-1/2 -translate-x-1/2 w-7 h-7 bg-pink-600 border-2 border-[#2d2d2d] rounded-full text-white text-lg font-bold flex items-center justify-center"
-                  id="avatarEditBtn"
-                  title={t('changeAvatarTitle')}
-                >
-                    +
-                </button>
+
+                <div className="absolute bottom-0 right-0 bg-pink-600 rounded-full p-1.5 border-4 border-[#121212] shadow-sm text-white">
+                     <Camera size={14} />
+                </div>
+
                 {/* File Input inside the form */}
                 <input
                     type="file"
@@ -121,70 +113,105 @@ const ProfileTab: React.FC<ProfileTabProps> = ({ onClose }) => {
                     accept="image/png, image/jpeg, image/webp"
                 />
             </div>
+
             <div className="flex flex-col items-center gap-1">
-                <h3 className="text-lg font-bold" id="displayName">{profile.displayName}</h3>
-                <p className="text-sm text-white/60" id="userEmail">{profile.email}</p>
-                <div className="flex items-center gap-1.5 bg-gradient-to-r from-yellow-400 to-orange-400 text-black px-3 py-1 rounded-full text-xs font-bold shadow-md mt-1">
-                    <Crown size={14} />
-                    <span>{t('patronTier')}</span>
-                </div>
+                <h3 className="text-xl font-bold text-white tracking-tight" id="displayName">{profile.displayName}</h3>
+                <p className="text-sm text-white/40 font-medium" id="userEmail">{profile.email}</p>
+
+                {profile.role === 'patron' && (
+                    <div className="flex items-center gap-1.5 bg-gradient-to-r from-yellow-500/20 to-orange-500/20 border border-yellow-500/30 text-yellow-400 px-3 py-0.5 rounded-full text-xs font-bold mt-2">
+                        <Crown size={12} />
+                        <span>{t('patronTier')}</span>
+                    </div>
+                )}
             </div>
         </div>
 
-        {/* Personal Data Section */}
-        <div className="form-section bg-white/5 border border-white/10 rounded-xl p-5 mb-4">
-          <h3 className="section-title text-lg font-bold mb-5 flex items-center gap-3">
-            <span className="w-1 h-5 bg-gradient-to-b from-pink-500 to-rose-500 rounded-full"></span>
-            {t('personalData')}
-          </h3>
+        {/* Combined Form Fields */}
+        <div className="bg-zinc-900/50 backdrop-blur-md border border-white/5 rounded-2xl p-5 space-y-5 shadow-inner">
 
-          <div className="grid grid-cols-1 gap-4 mb-4">
-            <div className="form-group">
-              <label className="form-label text-sm font-medium mb-2 block">{t('displayName') || 'Display Name'}</label>
-              <Input
-                type="text"
-                name="displayName"
-                defaultValue={profile.displayName || ''}
-                placeholder={t('displayNamePlaceholder') || 'Your Name'}
+            {/* Display Name */}
+            <div className="space-y-2">
+              <label className="text-xs font-semibold text-white/40 uppercase tracking-wider pl-1">{t('displayName') || 'Display Name'}</label>
+              <div className="relative">
+                  <Input
+                    type="text"
+                    name="displayName"
+                    defaultValue={profile.displayName || ''}
+                    placeholder={t('displayNamePlaceholder') || 'Your Name'}
+                    className="bg-black/20 border-white/10 text-white placeholder:text-white/20 focus:border-pink-500/50 focus:ring-pink-500/20 transition-all h-11 rounded-xl"
+                  />
+                  <Edit2 className="absolute right-3 top-1/2 -translate-y-1/2 text-white/10 pointer-events-none" size={14} />
+              </div>
+            </div>
+
+            {/* Email (Read only for now mostly, but editable here) */}
+            <div className="space-y-2">
+                <label className="text-xs font-semibold text-white/40 uppercase tracking-wider pl-1">{t('email')}</label>
+                <Input
+                  type="email"
+                  name="email"
+                  defaultValue={profile.email}
+                  placeholder={t('emailPlaceholder')}
+                  className="bg-black/20 border-white/10 text-white placeholder:text-white/20 focus:border-pink-500/50 focus:ring-pink-500/20 transition-all h-11 rounded-xl"
+                />
+            </div>
+
+            {/* Separator */}
+            <div className="h-px bg-white/5 my-2" />
+
+            {/* Email Consent */}
+            <div className="flex items-center justify-between py-1">
+              <div className="space-y-0.5">
+                  <label className="text-sm font-medium text-white">{t('emailConsent')}</label>
+                  <p className="text-xs text-white/40 pr-4">Receive updates and notifications via email.</p>
+              </div>
+              <ToggleSwitch
+                isActive={emailConsent}
+                onToggle={() => setEmailConsent(prev => !prev)}
               />
+              {/* Hidden input to submit the state */}
+              <input type="hidden" name="emailConsent" value={emailConsent.toString()} />
             </div>
-          </div>
-          <div className="form-group mb-4">
-            <label className="form-label text-sm font-medium mb-2 block">{t('email')}</label>
-            <Input
-              type="email"
-              name="email"
-              defaultValue={profile.email}
-              placeholder={t('emailPlaceholder')}
-            />
-          </div>
-          <SaveButton t={t} />
-        </div>
-      </form>
 
-      {/* Settings Section - Separate Form logic */}
-      <div className="settings-section bg-white/5 border border-white/10 rounded-xl p-5">
-        <h3 className="section-title text-lg font-bold mb-5 flex items-center gap-3">
-          <span className="w-1 h-5 bg-gradient-to-b from-pink-500 to-rose-500 rounded-full"></span>
-          {t('settings')}
-        </h3>
-        <form onSubmit={handleSettingsSubmit}>
-            <div className="flex items-center justify-between mb-4">
-              <label className="form-label text-sm">{t('emailConsent')}</label>
-              <ToggleSwitch isActive={emailConsent} onToggle={() => setEmailConsent(p => !p)} />
-            </div>
-            <div className="form-group">
-                <label className="form-label text-sm font-medium mb-2 block">{t('emailLanguage')}</label>
-                <div className="flex gap-2">
-                    <Button type="button" variant={lang === 'pl' ? 'secondary' : 'outline'} onClick={() => setLanguage('pl')} className="flex-1">{t('polish')}</Button>
-                    <Button type="button" variant={lang === 'en' ? 'secondary' : 'outline'} onClick={() => setLanguage('en')} className="flex-1">{t('english')}</Button>
+            {/* Language Selector (Conditional) */}
+            {emailConsent && (
+                <div className="space-y-2 animate-in slide-in-from-top-2 fade-in duration-300">
+                    <label className="text-xs font-semibold text-white/40 uppercase tracking-wider pl-1">{t('emailLanguage')}</label>
+                    <div className="grid grid-cols-2 gap-2">
+                        <button
+                            type="button"
+                            onClick={() => setLanguage('pl')}
+                            className={cn(
+                                "h-10 rounded-xl text-sm font-medium border transition-all",
+                                language === 'pl'
+                                    ? "bg-pink-500/10 border-pink-500 text-pink-400"
+                                    : "bg-black/20 border-white/5 text-white/40 hover:bg-white/5"
+                            )}
+                        >
+                            🇵🇱 {t('polish')}
+                        </button>
+                        <button
+                            type="button"
+                            onClick={() => setLanguage('en')}
+                            className={cn(
+                                "h-10 rounded-xl text-sm font-medium border transition-all",
+                                language === 'en'
+                                    ? "bg-pink-500/10 border-pink-500 text-pink-400"
+                                    : "bg-black/20 border-white/5 text-white/40 hover:bg-white/5"
+                            )}
+                        >
+                            🇬🇧 {t('english')}
+                        </button>
+                        {/* Hidden input to submit the selected language */}
+                        <input type="hidden" name="emailLanguage" value={language} />
+                    </div>
                 </div>
-            </div>
-             <Button type="submit" className="w-full bg-pink-600 hover:bg-pink-700 mt-4" disabled={isSettingsSubmitting}>
-              {isSettingsSubmitting ? t('saving') : t('saveSettings')}
-            </Button>
-        </form>
-      </div>
+            )}
+        </div>
+
+        <SaveButton t={t} />
+      </form>
     </div>
   );
 };
@@ -193,13 +220,19 @@ const ProfileTab: React.FC<ProfileTabProps> = ({ onClose }) => {
 function SaveButton({ t }: { t: any }) {
   const { pending } = useFormStatus();
   return (
-    <Button type="submit" className="w-full bg-pink-600 hover:bg-pink-700" disabled={pending}>
-      {pending ? t('saving') : t('saveChanges')}
+    <Button
+        type="submit"
+        className="w-full bg-pink-600 hover:bg-pink-700 active:scale-95 transition-all h-12 text-base font-semibold rounded-xl shadow-lg shadow-pink-900/20"
+        disabled={pending}
+    >
+      {pending ? (
+          <div className="flex items-center gap-2">
+              <span className="w-4 h-4 border-2 border-white/20 border-t-white rounded-full animate-spin" />
+              {t('saving')}
+          </div>
+      ) : t('saveChanges')}
     </Button>
   );
 }
-
-// Helper to get form status
-import { useFormStatus } from 'react-dom';
 
 export default ProfileTab;

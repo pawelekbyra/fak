@@ -27,11 +27,8 @@ export async function authenticate(
   }
 }
 
-// Removed standalone uploadAvatar as it is now integrated into updateUserProfile
-// or can be kept if needed for other parts, but the prompt implies a replacement logic.
-// For safety, I'll keep the export but it won't be used by the new ProfileTab.
 export async function uploadAvatar(formData: FormData) {
-  // Legacy/Unused in new ProfileTab flow, kept for backward compatibility if needed
+  // Legacy/Unused in new ProfileTab flow
   return { success: false, message: 'Please use the profile save button.' };
 }
 
@@ -45,6 +42,11 @@ export async function updateUserProfile(prevState: any, formData: FormData) {
     const displayName = formData.get('displayName') as string;
     const email = formData.get('email') as string;
     const avatarFile = formData.get('avatar') as File;
+    const emailConsentRaw = formData.get('emailConsent');
+    const emailLanguage = formData.get('emailLanguage') as string;
+
+    // Parse emailConsent (checkbox sends 'on' if checked, or nothing if unchecked)
+    const emailConsent = emailConsentRaw === 'on' || emailConsentRaw === 'true';
 
     if (!email || !email.includes('@')) {
         return { success: false, message: 'Invalid email address.' };
@@ -53,7 +55,13 @@ export async function updateUserProfile(prevState: any, formData: FormData) {
     // Update Object
     const updateData: any = {
         displayName: displayName || undefined,
-        email: email
+        email: email,
+        emailConsent: emailConsent,
+        // If consent is false, language doesn't matter, but user wants to save it as chosen if consent is true.
+        // If consent is false, we can either clear it or keep it.
+        // The request says: "uzytkownik decyduje czy chce dostawac mailin i jesli tak to w jakim jezyku."
+        // We will save the language if provided.
+        emailLanguage: emailLanguage || 'pl'
     };
 
     try {

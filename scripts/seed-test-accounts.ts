@@ -34,7 +34,8 @@ async function seed() {
         role: 'author',
       },
       {
-        username: 'Patron',
+        // Explicitly setting lowercase 'patron' for username login test
+        username: 'patron',
         email: 'patron@patron.pl',
         passwordPlain: 'patron',
         displayName: 'Patron P',
@@ -54,7 +55,7 @@ async function seed() {
                 role: u.role,
                 displayName: u.displayName,
                 username: u.username,
-                name: u.displayName, // Sync Name
+                name: u.displayName,
             },
             create: {
                 email: u.email,

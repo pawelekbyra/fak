@@ -20,6 +20,8 @@ model User {
   image          String?
   role           String    @default("user") // "user", "admin", "patron"
   sessionVersion Int       @default(1)
+  emailConsent   Boolean   @default(false)
+  emailLanguage  String?   @default("pl") // Made optional to fix migration issue
   createdAt      DateTime  @default(now())
   updatedAt      DateTime  @updatedAt
   slides         Slide[]

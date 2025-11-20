@@ -10,6 +10,8 @@ export interface User {
   avatar?: string;
   sessionVersion?: number;
   role?: 'user' | 'admin' | 'patron' | 'author';
+  emailConsent?: boolean;
+  emailLanguage?: string;
 }
 
 export interface Comment {

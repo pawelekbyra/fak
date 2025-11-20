@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Loader2 } from 'lucide-react';
+import { Loader2, AlertTriangle } from 'lucide-react';
 import { useUser } from '@/context/UserContext';
 import { useTranslation } from '@/context/LanguageContext';
 import { useToast } from '@/context/ToastContext';
@@ -34,9 +34,6 @@ const DeleteTab: React.FC<DeleteTabProps> = ({ onClose }) => {
     const formData = new FormData(event.currentTarget);
     // We need to append the confirmation text manually if the input doesn't have a name matching what the action expects,
     // but we can just give the input the name 'confirm_text'.
-    // The input below has id="deleteConfirmation", let's add name="confirm_text".
-
-    // Wait, we used 'confirm_text' in lib/actions.ts.
     formData.append('confirm_text', confirmation);
 
     try {
@@ -58,18 +55,28 @@ const DeleteTab: React.FC<DeleteTabProps> = ({ onClose }) => {
   };
 
   return (
-    <div className="tab-pane active p-4" id="delete-tab">
-      <div className="profile-section bg-white/5 border border-white/10 rounded-xl p-5">
-        <h3 className="section-title text-lg font-bold mb-5 flex items-center gap-3"><span className="w-1 h-5 bg-gradient-to-b from-pink-500 to-rose-500 rounded-full"></span>{t('deleteAccountTitle')}</h3>
-        <div className="bg-red-900/50 border border-red-700 rounded-lg p-4 mb-6">
-          <h4 className="text-red-400 font-bold mb-3 text-base">{t('warningTitle')}</h4>
-          <p className="text-white/80 text-sm leading-relaxed">
+    <div className="tab-pane active p-4 max-w-md mx-auto" id="delete-tab">
+      <div className="bg-zinc-900/50 backdrop-blur-md border border-white/5 rounded-2xl p-5 shadow-inner space-y-6">
+
+        <div className="flex items-center gap-3">
+             <div className="w-10 h-10 rounded-full bg-red-500/10 flex items-center justify-center text-red-500">
+                 <AlertTriangle size={20} />
+             </div>
+             <h3 className="text-lg font-bold text-white tracking-tight">{t('deleteAccountTitle')}</h3>
+        </div>
+
+        <div className="bg-red-500/5 border border-red-500/20 rounded-xl p-4">
+          <h4 className="text-red-400 font-bold mb-2 text-sm">{t('warningTitle')}</h4>
+          <p className="text-red-200/60 text-xs leading-relaxed">
             {t('deleteAccountWarning')}
           </p>
         </div>
-        <form id="deleteForm" onSubmit={handleDeleteSubmit}>
-          <div className="form-group mb-4">
-            <label className="form-label text-sm font-medium mb-2 block">{t('deleteAccountPrompt')} <strong>{DELETE_CONFIRM_TEXT}</strong></label>
+
+        <form id="deleteForm" onSubmit={handleDeleteSubmit} className="space-y-4">
+          <div className="space-y-2">
+            <label className="text-xs font-semibold text-white/40 uppercase tracking-wider pl-1">
+                {t('deleteAccountPrompt')} <strong className="text-white select-all">{DELETE_CONFIRM_TEXT}</strong>
+            </label>
             <Input
               type="text"
               placeholder={DELETE_CONFIRM_TEXT}
@@ -77,15 +84,16 @@ const DeleteTab: React.FC<DeleteTabProps> = ({ onClose }) => {
               name="confirm_text"
               value={confirmation}
               onChange={(e) => setConfirmation(e.target.value)}
+              className="bg-black/20 border-white/10 text-white placeholder:text-white/20 focus:border-red-500/50 focus:ring-red-500/20 transition-all h-11 rounded-xl"
             />
-            <p className="text-xs text-white/60 mt-2">
+            <p className="text-[10px] text-white/40 pl-1">
               {t('deleteAccountInfo')}
             </p>
           </div>
           <Button
             type="submit"
             variant="destructive"
-            className="w-full mt-4"
+            className="w-full mt-2 bg-red-600 hover:bg-red-700 active:scale-95 transition-all h-12 text-base font-semibold rounded-xl shadow-lg shadow-red-900/20"
             disabled={confirmation !== DELETE_CONFIRM_TEXT || isSaving}
           >
             {isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
