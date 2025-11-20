@@ -458,6 +458,81 @@ export async function getSlide(id: string): Promise<Slide | null> {
     } as Slide;
 }
 
+export async function getSlides(options: { limit?: number, cursor?: string, currentUserId?: string }): Promise<Slide[]> {
+    const sql = getDb();
+    const { limit = 5, cursor, currentUserId } = options;
+
+    let result;
+
+    // Use Date object for cursor comparison if provided
+    const cursorDate = cursor ? new Date(parseInt(cursor)) : null;
+
+    // Branching queries to handle cursor condition cleanly without complex string composition
+    if (cursorDate) {
+        result = await sql`
+            SELECT
+                s.*,
+                COALESCE(l.count, 0) as "likeCount",
+                COALESCE(c.count, 0) as "commentCount",
+                ${currentUserId ? sql`EXISTS(SELECT 1 FROM likes WHERE "slideId" = s.id AND "userId" = ${currentUserId})` : false} as "isLiked"
+            FROM slides s
+            LEFT JOIN (
+                SELECT "slideId", COUNT(*) as count
+                FROM likes
+                GROUP BY "slideId"
+            ) l ON s.id = l."slideId"
+            LEFT JOIN (
+                SELECT "slideId", COUNT(*) as count
+                FROM comments
+                GROUP BY "slideId"
+            ) c ON s.id = c."slideId"
+            WHERE s."createdAt" < ${cursorDate}
+            ORDER BY s."createdAt" DESC
+            LIMIT ${limit}
+        `;
+    } else {
+        result = await sql`
+            SELECT
+                s.*,
+                COALESCE(l.count, 0) as "likeCount",
+                COALESCE(c.count, 0) as "commentCount",
+                ${currentUserId ? sql`EXISTS(SELECT 1 FROM likes WHERE "slideId" = s.id AND "userId" = ${currentUserId})` : false} as "isLiked"
+            FROM slides s
+            LEFT JOIN (
+                SELECT "slideId", COUNT(*) as count
+                FROM likes
+                GROUP BY "slideId"
+            ) l ON s.id = l."slideId"
+            LEFT JOIN (
+                SELECT "slideId", COUNT(*) as count
+                FROM comments
+                GROUP BY "slideId"
+            ) c ON s.id = c."slideId"
+            ORDER BY s."createdAt" DESC
+            LIMIT ${limit}
+        `;
+    }
+
+    return result.map((row: any) => {
+        const content = row.content ? JSON.parse(row.content) : {};
+        return {
+            id: row.id,
+            x: row.x,
+            y: row.y,
+            type: row.slideType as 'video' | 'html',
+            userId: row.userId,
+            username: row.username,
+            createdAt: new Date(row.createdAt).getTime(),
+            initialLikes: parseInt(row.likeCount || '0'),
+            initialComments: parseInt(row.commentCount || '0'),
+            isLiked: row.isLiked,
+            avatar: content.avatar || '',
+            access: content.access || 'public',
+            data: content.data,
+        } as Slide;
+    });
+}
+
 export async function getAllSlides(): Promise<Slide[]> {
     const sql = getDb();
     // Optimized query: uses LEFT JOINs and GROUP BY to avoid N+1 subqueries
