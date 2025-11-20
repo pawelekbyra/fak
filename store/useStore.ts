@@ -1,6 +1,12 @@
 import { create } from 'zustand';
-import { Slide } from '@/lib/types';
+import { SlideDTO } from '@/lib/dto';
 import React from 'react';
+
+// Backward compatibility for components that might still import Slide from types
+// but generally we should move to SlideDTO.
+// We'll alias it here if needed, or just use SlideDTO.
+// The GlobalVideoPlayer uses Slide | null, but we are moving to SlideDTO.
+type Slide = SlideDTO;
 
 export type ModalType = 'account' | 'comments' | 'info' | 'login' | 'tipping' | 'author' | null;
 
@@ -19,7 +25,7 @@ interface AppState {
   authorProfileId: string | null;
   openAuthorProfileModal: (authorId: string) => void;
   closeAuthorProfileModal: () => void;
-  jumpToSlide: (slideId: string) => void; // Placeholder as requested by the modal code
+  jumpToSlide: (slideId: string) => void; // Placeholder
 
   // Tipping Modal State
   isTippingModalOpen: boolean;
@@ -31,7 +37,10 @@ interface AppState {
 
   // Slide state
   activeSlide: Slide | null;
+  nextSlide: Slide | null;
   setActiveSlide: (slide: Slide | null) => void;
+  setNextSlide: (slide: Slide | null) => void;
+
   likeChanges: Record<string, LikeState>;
   toggleLike: (slideId: string, initialLikes: number, initialIsLiked: boolean) => void;
 
@@ -55,8 +64,9 @@ interface AppState {
 export const useStore = create<AppState>((set, get) => ({
   // --- STATE ---
   activeModal: null,
-  isLoggedIn: false, // Assume user is not logged in initially
+  isLoggedIn: false,
   activeSlide: null,
+  nextSlide: null,
   likeChanges: {},
 
   isAuthorProfileModalOpen: false,
@@ -74,10 +84,11 @@ export const useStore = create<AppState>((set, get) => ({
   // --- ACTIONS ---
   setActiveModal: (modal) => set({ activeModal: modal }),
   setActiveSlide: (slide) => set({ activeSlide: slide }),
+  setNextSlide: (slide) => set({ nextSlide: slide }),
 
   openAuthorProfileModal: (authorId) => set({ isAuthorProfileModalOpen: true, authorProfileId: authorId }),
   closeAuthorProfileModal: () => set({ isAuthorProfileModalOpen: false, authorProfileId: null }),
-  jumpToSlide: (slideId) => console.log('Jump to slide not implemented globally yet', slideId), // Placeholder
+  jumpToSlide: (slideId) => console.log('Jump to slide not implemented globally yet', slideId),
 
   openTippingModal: () => set({ isTippingModalOpen: true }),
   closeTippingModal: () => set({ isTippingModalOpen: false }),
@@ -111,7 +122,7 @@ export const useStore = create<AppState>((set, get) => ({
   pauseVideo: () => set({ isPlaying: false }),
   setCurrentTime: (time) => set({ currentTime: time }),
   setDuration: (duration) => set({ duration: duration }),
-  seek: (time) => set({ currentTime: time }), // This is a simplified seek
+  seek: (time) => set({ currentTime: time }),
 
 
   // --- COMPUTED / SELECTORS ---

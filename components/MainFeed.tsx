@@ -1,8 +1,13 @@
-import React, { useMemo, useRef, useEffect, useState } from 'react';
+"use client";
+
+import React, { useMemo, useState, useEffect } from 'react';
 import { useInfiniteQuery } from '@tanstack/react-query';
+import { Virtuoso } from 'react-virtuoso';
 import Slide from '@/components/Slide';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useStore } from '@/store/useStore';
+import { SlidesResponseSchema } from '@/lib/validators';
+import { SlideDTO } from '@/lib/dto';
 
 const fetchSlides = async ({ pageParam = '' }) => {
   const res = await fetch(`/api/slides?cursor=${pageParam}&limit=5`);
@@ -10,18 +15,20 @@ const fetchSlides = async ({ pageParam = '' }) => {
     throw new Error('Failed to fetch slides');
   }
   const data = await res.json();
-  return data;
+
+  try {
+      const parsed = SlidesResponseSchema.parse(data);
+      return parsed;
+  } catch (e) {
+      console.error("Slides API validation error:", e);
+      throw new Error("Invalid data received from Slides API");
+  }
 };
 
 const MainFeed = () => {
-  const scrollContainerRef = useRef<HTMLDivElement>(null);
-  const topSentinelRef = useRef<HTMLDivElement>(null);
-  const bottomSentinelRef = useRef<HTMLDivElement>(null);
-  const [isLooping, setIsLooping] = useState(false);
-  const isJumping = useRef(false);
   const setActiveSlide = useStore(state => state.setActiveSlide);
+  const setNextSlide = useStore(state => state.setNextSlide);
   const playVideo = useStore(state => state.playVideo);
-  const slideRefs = useRef<(HTMLDivElement | null)[]>([]);
 
   const {
     data,
@@ -37,89 +44,15 @@ const MainFeed = () => {
   });
 
   const slides = useMemo(() => {
-    return data?.pages.flatMap(page => page.slides) ?? [];
+    return (data?.pages.flatMap(page => page.slides) ?? []) as SlideDTO[];
   }, [data]);
 
-  const loopedSlides = useMemo(() => {
-      if (!isLooping || slides.length === 0) return slides;
-      return [...slides, ...slides, ...slides];
-  }, [slides, isLooping]);
-
+  // Initialize active slide if not set
   useEffect(() => {
-    if (hasNextPage) {
-      fetchNextPage();
-    } else if (slides.length > 0) {
-        setIsLooping(true);
-    }
-  }, [hasNextPage, fetchNextPage, slides.length]);
-
-  useEffect(() => {
-    if (isLooping && scrollContainerRef.current) {
-        const slideHeight = scrollContainerRef.current.clientHeight;
-        const initialScrollTop = slides.length * slideHeight;
-        scrollContainerRef.current.scrollTop = initialScrollTop;
-    }
-  }, [isLooping, slides.length]);
-
-  useEffect(() => {
-      if (!isLooping) return;
-
-      const observer = new IntersectionObserver(
-          (entries) => {
-              if (isJumping.current) return;
-              entries.forEach(entry => {
-                  if (entry.isIntersecting) {
-                      const slideHeight = scrollContainerRef.current!.clientHeight;
-                      isJumping.current = true;
-                      if (entry.target === topSentinelRef.current) {
-                          const newScrollTop = scrollContainerRef.current!.scrollTop + (slides.length * slideHeight);
-                          scrollContainerRef.current!.scrollTop = newScrollTop;
-                      } else if (entry.target === bottomSentinelRef.current) {
-                          const newScrollTop = scrollContainerRef.current!.scrollTop - (slides.length * slideHeight);
-                          scrollContainerRef.current!.scrollTop = newScrollTop;
-                      }
-                      setTimeout(() => { isJumping.current = false; }, 100);
-                  }
-              });
-          },
-          { root: scrollContainerRef.current, threshold: 0.1 }
-      );
-
-      if (topSentinelRef.current) observer.observe(topSentinelRef.current);
-      if (bottomSentinelRef.current) observer.observe(bottomSentinelRef.current);
-
-      return () => {
-          observer.disconnect();
-      };
-  }, [isLooping, slides]);
-
-  useEffect(() => {
-    const observer = new IntersectionObserver(
-      (entries) => {
-        entries.forEach((entry) => {
-          if (entry.isIntersecting) {
-            const slideId = (entry.target as HTMLElement).dataset.slideId;
-            const slide = slides.find(s => s.id === slideId);
-            if (slide) {
-              setActiveSlide(slide);
-              if (slide.type === 'video') {
-                playVideo();
-              }
-            }
-          }
-        });
-      },
-      { root: scrollContainerRef.current, threshold: 0.5 }
-    );
-
-    slideRefs.current.forEach((ref) => {
-      if (ref) observer.observe(ref);
-    });
-
-    return () => {
-      observer.disconnect();
-    };
-  }, [slides, setActiveSlide]);
+      if (slides.length > 0) {
+          // Set initial slides logic can be here or handled by rangeChanged on mount
+      }
+  }, [slides]);
 
 
   if (isLoading && slides.length === 0) {
@@ -131,20 +64,35 @@ const MainFeed = () => {
   }
 
   return (
-    <div ref={scrollContainerRef} className="w-full h-screen overflow-y-scroll snap-y snap-mandatory">
-      {isLooping && <div ref={topSentinelRef} />}
-      {loopedSlides.map((slide, index) => (
-        <div
-          key={`${slide.id}-${index}`}
-          className="h-full w-full snap-start"
-          ref={el => { slideRefs.current[index] = el; }}
-          data-slide-id={slide.id}
-        >
-          <Slide slide={slide} />
+    <Virtuoso
+      style={{ height: '100vh' }}
+      data={slides}
+      overscan={200}
+      endReached={() => hasNextPage && fetchNextPage()}
+      itemContent={(index, slide) => (
+        <div className="h-screen w-full snap-start">
+           <Slide slide={slide} />
         </div>
-      ))}
-      {isLooping && <div ref={bottomSentinelRef} />}
-    </div>
+      )}
+      rangeChanged={(range) => {
+          // Detect which slide is active.
+          // Since items are full screen, startIndex is effectively the active one when snapping completes.
+          // We might want to double check logic if partially scrolling, but for full page snap, startIndex is reliable.
+          const activeIndex = range.startIndex;
+
+          if (activeIndex >= 0 && activeIndex < slides.length) {
+              const currentSlide = slides[activeIndex];
+              const nextSlide = slides[activeIndex + 1] || null;
+
+              setActiveSlide(currentSlide);
+              setNextSlide(nextSlide);
+
+              if (currentSlide.type === 'video') {
+                  playVideo();
+              }
+          }
+      }}
+    />
   );
 };
 

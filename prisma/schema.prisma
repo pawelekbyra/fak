@@ -26,6 +26,7 @@ model User {
   updatedAt      DateTime  @updatedAt
   slides         Slide[]
   comments       Comment[]
+  commentLikes   CommentLike[]
   likes          Like[]
   accounts       Account[]
   sessions       Session[]
@@ -103,6 +104,14 @@ model Comment {
   author    User     @relation(fields: [authorId], references: [id])
   slideId   String
   slide     Slide    @relation(fields: [slideId], references: [id])
+
+  // Self-relation for replies
+  parentId  String?
+  parent    Comment? @relation("CommentReplies", fields: [parentId], references: [id], onDelete: Cascade)
+  replies   Comment[] @relation("CommentReplies")
+
+  likes     CommentLike[]
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
@@ -116,4 +125,15 @@ model Like {
   createdAt DateTime @default(now())
 
   @@unique([authorId, slideId])
+}
+
+model CommentLike {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  commentId String
+  comment   Comment  @relation(fields: [commentId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@unique([userId, commentId])
 }
