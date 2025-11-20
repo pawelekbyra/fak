@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Loader2 } from 'lucide-react';
 import { useUser } from '@/context/UserContext';
 import { useTranslation } from '@/context/LanguageContext';
+import { deleteAccount } from '@/lib/actions';
 
 const DeleteTab: React.FC = () => {
   const { t } = useTranslation();
@@ -26,16 +27,18 @@ const DeleteTab: React.FC = () => {
     setIsSaving(true);
     setStatus(null);
 
+    const formData = new FormData(event.currentTarget);
+    // We need to append the confirmation text manually if the input doesn't have a name matching what the action expects,
+    // but we can just give the input the name 'confirm_text'.
+    // The input below has id="deleteConfirmation", let's add name="confirm_text".
+
+    // Wait, we used 'confirm_text' in lib/actions.ts.
+    formData.append('confirm_text', confirmation);
+
     try {
-      const res = await fetch('/api/account/delete', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ confirm_text: confirmation }),
-      });
+      const result = await deleteAccount(null, formData);
 
-      const result = await res.json();
-
-      if (res.ok && result.success) {
+      if (result.success) {
         setStatus({ type: 'success', message: result.message });
         setTimeout(() => {
           logout();
@@ -66,6 +69,7 @@ const DeleteTab: React.FC = () => {
               type="text"
               placeholder={DELETE_CONFIRM_TEXT}
               id="deleteConfirmation"
+              name="confirm_text"
               value={confirmation}
               onChange={(e) => setConfirmation(e.target.value)}
             />

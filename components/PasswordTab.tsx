@@ -5,6 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Loader2 } from 'lucide-react';
 import { useTranslation } from '@/context/LanguageContext';
+import { changePassword } from '@/lib/actions';
 
 const PasswordTab: React.FC = () => {
   const { t } = useTranslation();
@@ -17,18 +18,11 @@ const PasswordTab: React.FC = () => {
     setStatus(null);
 
     const formData = new FormData(event.currentTarget);
-    const data = Object.fromEntries(formData.entries());
 
     try {
-      const res = await fetch('/api/password/change', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data),
-      });
+      const result = await changePassword(null, formData);
 
-      const result = await res.json();
-
-      if (res.ok && result.success) {
+      if (result.success) {
         setStatus({ type: 'success', message: result.message || t('passwordChangeSuccess') });
         (event.target as HTMLFormElement).reset();
       } else {

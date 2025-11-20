@@ -19,7 +19,7 @@ import { User, LogOut } from 'lucide-react';
 const TopBar = () => {
   const { user, logout } = useUser();
   const setActiveModal = useStore((state) => state.setActiveModal);
-  const { t } = useTranslation();
+  const { t, lang } = useTranslation();
   const { addToast } = useToast();
   const [isLoginPanelOpen, setIsLoginPanelOpen] = useState(false);
   const [showNotifPanel, setShowNotifPanel] = useState(false);
@@ -64,6 +64,10 @@ const TopBar = () => {
       setIsMenuOpen(false);
   };
 
+  // Custom titles
+  const loggedOutTitle = lang === 'pl' ? "Nie masz psychy się zalogować" : "Too scared to log in?";
+  const loggedInTitle = "Ting Tong";
+
   return (
     <>
       <div
@@ -87,7 +91,7 @@ const TopBar = () => {
                 onClick={() => setIsLoginPanelOpen(panel => !panel)}
                 className="font-semibold text-sm text-white transition-all duration-300 focus:outline-none whitespace-nowrap"
               >
-                <span>{t('loggedOutText')}</span>
+                <span>{loggedOutTitle}</span>
               </button>
             </div>
             <div className="flex justify-end">
@@ -111,28 +115,27 @@ const TopBar = () => {
                         <MenuIcon className="w-6 h-6" />
                     </Button>
                   </PopoverTrigger>
-                  <PopoverContent align="start" sideOffset={5} className="w-24 p-2 bg-zinc-900 border-zinc-800 text-white shadow-xl rounded-xl">
+                  <PopoverContent align="start" sideOffset={5} className="w-48 p-2 bg-zinc-900 border-zinc-800 text-white shadow-xl rounded-xl">
                       <div className="flex flex-col gap-2">
                           <button
                             onClick={handleOpenAccount}
-                            className="flex flex-col items-center justify-center gap-1 p-2 bg-zinc-800 hover:bg-zinc-700 rounded-lg transition-colors w-full"
+                            className="flex flex-row items-center gap-3 p-3 bg-zinc-800 hover:bg-zinc-700 rounded-lg transition-colors w-full"
                           >
                               <User size={20} className="text-blue-400" />
-                              <span className="text-[10px] font-medium">{t('account')}</span>
+                              <span className="text-sm font-medium">{t('account')}</span>
                           </button>
                           <button
                             onClick={handleLogout}
-                            className="flex flex-col items-center justify-center gap-1 p-2 bg-zinc-800 hover:bg-zinc-700 rounded-lg transition-colors w-full"
+                            className="flex flex-row items-center gap-3 p-3 bg-zinc-800 hover:bg-zinc-700 rounded-lg transition-colors w-full"
                           >
                               <LogOut size={20} className="text-red-400" />
-                              <span className="text-[10px] font-medium">{t('logout')}</span>
+                              <span className="text-sm font-medium">{t('logout')}</span>
                           </button>
                       </div>
                   </PopoverContent>
               </Popover>
 
-              {/* User Avatar (optional, keeping it for visual balance or removing if redundant) */}
-              {/* Keeping it as a shortcut to profile or just display */}
+              {/* User Avatar */}
                <div className="ml-2 flex items-center">
                 {user.avatar ? (
                   <Image
@@ -149,7 +152,7 @@ const TopBar = () => {
 
             </div>
             <div className="flex justify-center flex-1">
-              <span className="font-semibold text-lg text-white">Ting Tong</span>
+              <span className="font-semibold text-lg text-white">{loggedInTitle}</span>
             </div>
             <div className="flex justify-end">
               {isDesktop && (
@@ -178,12 +181,12 @@ const TopBar = () => {
       <AnimatePresence>
         {isLoginPanelOpen && (
           <motion.div
-            className="absolute left-0 w-full z-[50] bg-black/60 backdrop-blur-sm pt-1"
+            className="absolute left-0 w-full z-[50] bg-black pt-1 border-b border-zinc-800"
             style={{ top: 'var(--topbar-height)' }}
             initial={{ y: '-100%' }}
             animate={{ y: '0%' }}
             exit={{ y: '-100%' }}
-            transition={{ duration: 0.5, ease: 'easeInOut' }}
+            transition={{ type: 'spring', stiffness: 300, damping: 25 }}
           >
             <LoginForm onLoginSuccess={() => setIsLoginPanelOpen(false)} />
           </motion.div>

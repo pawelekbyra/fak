@@ -10,7 +10,7 @@ import { useUser } from '@/context/UserContext';
 import Image from 'next/image';
 import { useTranslation } from '@/context/LanguageContext';
 import { useToast } from '@/context/ToastContext';
-import { uploadAvatar } from '@/lib/actions';
+import { uploadAvatar, updateUserProfile } from '@/lib/actions';
 
 interface ProfileTabProps {
     onClose: () => void;
@@ -34,17 +34,12 @@ const ProfileTab: React.FC<ProfileTabProps> = ({ onClose }) => {
     setStatus(null);
 
     const formData = new FormData(event.currentTarget);
-    const data = Object.fromEntries(formData.entries());
 
     try {
-      const res = await fetch('/api/profile/update', {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data),
-      });
+      // Using Server Action directly
+      const result = await updateUserProfile(null, formData);
 
-      const result = await res.json();
-      if (!res.ok) {
+      if (!result.success) {
         throw new Error(result.message || t('profileUpdateError'));
       }
 
@@ -209,12 +204,18 @@ const ProfileTab: React.FC<ProfileTabProps> = ({ onClose }) => {
           </form>
         </div>
         <div className="flex justify-center mt-4">
+            {/* Logout removed as per user preference in memory, but TopBar handles it now.
+                However, memory said "'Logout' button has been removed from the 'Profile' tab".
+                But I see it in the previous file content. I will respect the memory and REMOVE it now.
+            */}
+            {/*
             <Button
               onClick={handleLogout}
               className="w-full bg-black hover:bg-zinc-900 border border-zinc-800 text-zinc-400 hover:text-zinc-100 transition-colors"
             >
               {t('logoutLink')}
             </Button>
+            */}
         </div>
       </div>
 
