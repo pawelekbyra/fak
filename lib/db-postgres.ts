@@ -247,6 +247,27 @@ export async function pingDb() {
   await sql`SELECT 1`;
 }
 
+// --- Slide Functions ---
+export async function createSlide(slideData: any): Promise<any> {
+    const sql = getDb();
+    const id = 'slide_' + Math.random().toString(36).substring(2, 15);
+    const { userId, username, x, y, type, data, access, avatar } = slideData;
+
+    const title = data?.title || (type === 'html' ? 'HTML Slide' : 'Video Slide');
+    // Store complex objects in content, including access and avatar which aren't columns in the table
+    const content = JSON.stringify({
+        access,
+        data,
+        avatar
+    });
+
+    await sql`
+        INSERT INTO slides (id, "userId", username, x, y, "slideType", title, content)
+        VALUES (${id}, ${userId}, ${username}, ${x}, ${y}, ${type}, ${title}, ${content});
+    `;
+    return { id };
+}
+
 // --- Like Functions ---
 export async function toggleLike(slideId: string, userId: string): Promise<{ newStatus: 'liked' | 'unliked', likeCount: number }> {
     const sql = getDb();
