@@ -1,7 +1,10 @@
 import Ably from 'ably';
 
-if (!process.env.ABLY_API_KEY) {
-  throw new Error('ABLY_API_KEY environment variable not set');
+let key = process.env.ABLY_API_KEY;
+
+if (!key) {
+  console.warn('ABLY_API_KEY environment variable not set. Using placeholder for build.');
+  key = 'placeholder:key';
 }
 
-export const ably = new Ably.Rest({ key: process.env.ABLY_API_KEY });
+export const ably = new Ably.Rest({ key });

@@ -6,9 +6,9 @@ config({ path: '.env.local' });
 
 async function seed() {
   // 0. Safety Check
-  if (process.env.NODE_ENV !== 'development') {
-    console.error('❌ Error: This script can only be run in development environment (NODE_ENV=development).');
-    process.exit(1);
+  if (process.env.NODE_ENV === 'production') {
+    console.error('❌ SAFETY ERROR: Seed script cannot be run in production!');
+    return;
   }
 
   console.log('Starting database seed (UPSERT mode) with Prisma...');

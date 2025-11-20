@@ -1,21 +1,17 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { auth } from '@/auth';
+import { NextResponse } from 'next/server';
+import { verifySession } from '@/lib/auth';
 
 export const dynamic = 'force-dynamic';
-import { db } from '@/lib/db';
 
-export async function GET(req: NextRequest) {
-    const session = await auth();
-
-    if (!session || !session.user || !session.user.id) {
-        return NextResponse.json({ isLoggedIn: false, user: null });
+export async function GET() {
+  try {
+    const session = await verifySession();
+    if (session && session.user) {
+      return NextResponse.json({ isLoggedIn: true, user: session.user });
     }
-
-    const freshUser = await db.findUserById(session.user.id!);
-    if (!freshUser) {
-        return NextResponse.json({ isLoggedIn: false, user: null });
-    }
-    const { password, ...userPayload } = freshUser;
-
-    return NextResponse.json({ isLoggedIn: true, user: userPayload });
+    return NextResponse.json({ isLoggedIn: false, user: null });
+  } catch (error) {
+    console.error("Failed to verify session:", error);
+    return NextResponse.json({ isLoggedIn: false, user: null });
+  }
 }

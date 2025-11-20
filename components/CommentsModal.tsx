@@ -289,6 +289,7 @@ const CommentsModal: React.FC<CommentsModalProps> = ({ isOpen, onClose, slideId,
         body: JSON.stringify({ slideId, text, parentId }),
       });
 
+      // Always parse JSON
       const data = await res.json().catch(() => null);
 
       if (!res.ok || !data || !data.success) {
@@ -335,9 +336,11 @@ const CommentsModal: React.FC<CommentsModalProps> = ({ isOpen, onClose, slideId,
         body: JSON.stringify({ slideId, text: trimmedComment }),
       });
 
+      // Always parse JSON to handle 429 and other errors correctly
       const data = await res.json().catch(() => null);
 
       if (!res.ok || !data || !data.success) {
+         // Use translated message from server key or fallback
          const errorMessage = data?.message ? t(data.message) : t('commentError');
          throw new Error(errorMessage);
       }
