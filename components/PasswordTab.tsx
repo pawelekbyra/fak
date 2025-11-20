@@ -6,16 +6,16 @@ import { Button } from '@/components/ui/button';
 import { Loader2 } from 'lucide-react';
 import { useTranslation } from '@/context/LanguageContext';
 import { changePassword } from '@/lib/actions';
+import { useToast } from '@/context/ToastContext';
 
 const PasswordTab: React.FC = () => {
   const { t } = useTranslation();
-  const [status, setStatus] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
+  const { addToast } = useToast();
   const [isSaving, setIsSaving] = useState(false);
 
   const handlePasswordSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setIsSaving(true);
-    setStatus(null);
 
     const formData = new FormData(event.currentTarget);
 
@@ -23,13 +23,13 @@ const PasswordTab: React.FC = () => {
       const result = await changePassword(null, formData);
 
       if (result.success) {
-        setStatus({ type: 'success', message: result.message || t('passwordChangeSuccess') });
+        addToast(result.message || t('passwordChangeSuccess'), 'success');
         (event.target as HTMLFormElement).reset();
       } else {
         throw new Error(result.message || t('passwordChangeError'));
       }
     } catch (error: any) {
-      setStatus({ type: 'error', message: error.message });
+      addToast(error.message, 'error');
     } finally {
       setIsSaving(false);
     }
@@ -59,11 +59,6 @@ const PasswordTab: React.FC = () => {
             {isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
             {isSaving ? t('changingPassword') : t('changePasswordButton')}
           </Button>
-          {status && (
-            <div className={`mt-4 text-sm p-3 rounded-md ${status.type === 'success' ? 'bg-green-900/50 text-green-300' : 'bg-red-900/50 text-red-300'}`}>
-              {status.message}
-            </div>
-          )}
         </form>
       </div>
     </div>

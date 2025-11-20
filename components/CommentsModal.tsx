@@ -8,6 +8,7 @@ import Ably from 'ably';
 import { ably } from '@/lib/ably-client';
 import { useTranslation } from '@/context/LanguageContext';
 import { useUser } from '@/context/UserContext';
+import { useToast } from '@/context/ToastContext';
 // This type is now aligned with the backend response
 type Comment = {
   id: string;
@@ -116,6 +117,7 @@ interface CommentsModalProps {
 const CommentsModal: React.FC<CommentsModalProps> = ({ isOpen, onClose, slideId, initialCommentsCount }) => {
   const { t } = useTranslation();
   const { user } = useUser();
+  const { addToast } = useToast();
   const [comments, setComments] = useState<Comment[]>([]);
   const [newComment, setNewComment] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -286,17 +288,22 @@ const CommentsModal: React.FC<CommentsModalProps> = ({ isOpen, onClose, slideId,
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ slideId, text, parentId }),
       });
-      if (!res.ok) {
-        throw new Error('Failed to post reply');
+
+      const data = await res.json().catch(() => null);
+
+      if (!res.ok || !data || !data.success) {
+        const errorMessage = data?.message ? t(data.message) : t('commentError');
+        throw new Error(errorMessage);
       }
-      const data = await res.json();
+
       replaceTempComment(tempId, data.comment);
 
     } catch (err: any) {
-      setError(err.message);
+      const msg = err.message || t('commentError');
+      addToast(msg, 'error');
       // Revert optimistic update on failure
       removeCommentOptimistically(tempId);
-      console.error("Failed to post reply, optimistic update reverted.");
+      console.error("Failed to post reply:", msg);
     }
   };
 
@@ -327,15 +334,20 @@ const CommentsModal: React.FC<CommentsModalProps> = ({ isOpen, onClose, slideId,
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ slideId, text: trimmedComment }),
       });
-      if (!res.ok) {
-        throw new Error('Failed to post comment');
+
+      const data = await res.json().catch(() => null);
+
+      if (!res.ok || !data || !data.success) {
+         const errorMessage = data?.message ? t(data.message) : t('commentError');
+         throw new Error(errorMessage);
       }
-      const data = await res.json();
+
       replaceTempComment(tempId, data.comment);
     } catch (err: any) {
-      setError(err.message);
       // Revert on failure
       removeCommentOptimistically(tempId);
+      const msg = err.message || t('commentError');
+      addToast(msg, 'error');
     } finally {
       setIsSubmitting(false);
     }

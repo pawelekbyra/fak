@@ -6,26 +6,30 @@ import { Button } from '@/components/ui/button';
 import { Loader2 } from 'lucide-react';
 import { useUser } from '@/context/UserContext';
 import { useTranslation } from '@/context/LanguageContext';
+import { useToast } from '@/context/ToastContext';
 import { deleteAccount } from '@/lib/actions';
 
-const DeleteTab: React.FC = () => {
+interface DeleteTabProps {
+  onClose?: () => void;
+}
+
+const DeleteTab: React.FC<DeleteTabProps> = ({ onClose }) => {
   const { t } = useTranslation();
+  const { addToast } = useToast();
   const DELETE_CONFIRM_TEXT = t('deleteAccountConfirmText');
 
   const [confirmation, setConfirmation] = useState('');
-  const [status, setStatus] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   const { logout } = useUser();
 
   const handleDeleteSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (confirmation !== DELETE_CONFIRM_TEXT) {
-      setStatus({ type: 'error', message: t('deleteAccountConfirmError') });
+      addToast(t('deleteAccountConfirmError'), 'error');
       return;
     }
 
     setIsSaving(true);
-    setStatus(null);
 
     const formData = new FormData(event.currentTarget);
     // We need to append the confirmation text manually if the input doesn't have a name matching what the action expects,
@@ -39,15 +43,16 @@ const DeleteTab: React.FC = () => {
       const result = await deleteAccount(null, formData);
 
       if (result.success) {
-        setStatus({ type: 'success', message: result.message });
+        addToast(result.message, 'success');
         setTimeout(() => {
           logout();
+          if (onClose) onClose();
         }, 2000);
       } else {
         throw new Error(result.message || t('deleteAccountError'));
       }
     } catch (error: any) {
-      setStatus({ type: 'error', message: error.message });
+      addToast(error.message, 'error');
       setIsSaving(false);
     }
   };
@@ -86,11 +91,6 @@ const DeleteTab: React.FC = () => {
             {isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
             {isSaving ? t('deleting') : t('deleteAccountButton')}
           </Button>
-          {status && (
-            <div className={`mt-4 text-sm p-3 rounded-md ${status.type === 'success' ? 'bg-green-900/50 text-green-300' : 'bg-red-900/50 text-red-300'}`}>
-              {status.message}
-            </div>
-          )}
         </form>
       </div>
     </div>

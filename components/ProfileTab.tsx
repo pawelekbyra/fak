@@ -21,7 +21,6 @@ const ProfileTab: React.FC<ProfileTabProps> = ({ onClose }) => {
   const { t, setLanguage, lang } = useTranslation();
   const { addToast } = useToast();
   const [emailConsent, setEmailConsent] = useState(true);
-  const [status, setStatus] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const [isCropModalOpen, setIsCropModalOpen] = useState(false);
@@ -31,7 +30,6 @@ const ProfileTab: React.FC<ProfileTabProps> = ({ onClose }) => {
   const handleProfileSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setIsSubmitting(true);
-    setStatus(null);
 
     const formData = new FormData(event.currentTarget);
 
@@ -43,11 +41,11 @@ const ProfileTab: React.FC<ProfileTabProps> = ({ onClose }) => {
         throw new Error(result.message || t('profileUpdateError'));
       }
 
-      setStatus({ type: 'success', message: t('profileUpdateSuccess') });
+      addToast(t('profileUpdateSuccess'), 'success');
       await checkUserStatus();
 
     } catch (error: any) {
-      setStatus({ type: 'error', message: error.message });
+      addToast(error.message, 'error');
     } finally {
       setIsSubmitting(false);
     }
@@ -80,7 +78,6 @@ const ProfileTab: React.FC<ProfileTabProps> = ({ onClose }) => {
     const formData = new FormData();
     formData.append('avatar', avatarBlob, 'avatar.png');
 
-    setStatus(null);
     try {
       const result = await uploadAvatar(formData);
 
@@ -88,10 +85,10 @@ const ProfileTab: React.FC<ProfileTabProps> = ({ onClose }) => {
         throw new Error(result.message || t('avatarUploadError'));
       }
 
-      setStatus({ type: 'success', message: t('avatarUploadSuccess') });
+      addToast(t('avatarUploadSuccess'), 'success');
       await checkUserStatus();
     } catch (error: any) {
-      setStatus({ type: 'error', message: error.message });
+      addToast(error.message, 'error');
     } finally {
       setIsCropModalOpen(false);
       setImageToCrop(null);
@@ -111,12 +108,6 @@ const ProfileTab: React.FC<ProfileTabProps> = ({ onClose }) => {
   return (
     <>
       <div className="tab-pane active p-4" id="profile-tab">
-        {status && (
-          <div className={`p-3 rounded-md mb-4 text-sm ${status.type === 'success' ? 'bg-green-500/20 text-green-300' : 'bg-red-500/20 text-red-300'}`}>
-            {status.message}
-          </div>
-        )}
-
         <div className="avatar-section bg-white/5 border border-white/10 rounded-xl p-5 mb-4 flex flex-col items-center text-center">
             <div className="relative w-20 h-20 mb-3">
                 <div className="w-full h-full rounded-full overflow-hidden border-2 border-white/80 shadow-lg bg-gray-800 flex items-center justify-center">
@@ -175,13 +166,12 @@ const ProfileTab: React.FC<ProfileTabProps> = ({ onClose }) => {
           <form onSubmit={(e) => {
               e.preventDefault();
               setIsSubmitting(true);
-              setStatus(null);
               setTimeout(() => {
                 try {
                   console.log('Saving settings:', { emailConsent, lang });
-                  setStatus({ type: 'success', message: t('settingsSaveSuccess') });
+                  addToast(t('settingsSaveSuccess'), 'success');
                 } catch (error: any) {
-                  setStatus({ type: 'error', message: error.message });
+                  addToast(error.message, 'error');
                 } finally {
                   setIsSubmitting(false);
                 }

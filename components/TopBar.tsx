@@ -115,21 +115,21 @@ const TopBar = () => {
                         <MenuIcon className="w-6 h-6" />
                     </Button>
                   </PopoverTrigger>
-                  <PopoverContent align="start" sideOffset={5} className="w-48 p-2 bg-zinc-900 border-zinc-800 text-white shadow-xl rounded-xl">
+                  <PopoverContent align="start" sideOffset={5} className="w-auto min-w-[150px] p-2 bg-zinc-900 border-zinc-800 text-white shadow-xl rounded-xl">
                       <div className="flex flex-col gap-2">
                           <button
                             onClick={handleOpenAccount}
                             className="flex flex-row items-center gap-3 p-3 bg-zinc-800 hover:bg-zinc-700 rounded-lg transition-colors w-full"
                           >
                               <User size={20} className="text-blue-400" />
-                              <span className="text-sm font-medium">{t('account')}</span>
+                              <span className="text-sm font-medium whitespace-nowrap">{t('account')}</span>
                           </button>
                           <button
                             onClick={handleLogout}
                             className="flex flex-row items-center gap-3 p-3 bg-zinc-800 hover:bg-zinc-700 rounded-lg transition-colors w-full"
                           >
                               <LogOut size={20} className="text-red-400" />
-                              <span className="text-sm font-medium">{t('logout')}</span>
+                              <span className="text-sm font-medium whitespace-nowrap">{t('logout')}</span>
                           </button>
                       </div>
                   </PopoverContent>

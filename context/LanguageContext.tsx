@@ -151,7 +151,9 @@ const translations: Record<string, Record<string, string>> = {
         pwaModalTitle: 'Doświadczenie Ting Tong czeka na telefonie!',
         pwaModalBody: 'Zeskanuj kod QR poniżej lub odwiedź nas na telefonie, aby pobrać aplikację i cieszyć się pełnią możliwości.',
         publishButton: 'Publikuj',
-        publishButtonInactive: 'Publikowanie dostępne tylko dla Twórców'
+        publishButtonInactive: 'Publikowanie dostępne tylko dla Twórców',
+        commentRateLimit: 'Zbyt szybko komentujesz. Zwolnij trochę!',
+        commentError: 'Błąd dodawania komentarza.'
     },
     en: {
         loggedOutText: "Ting Tong",
@@ -301,7 +303,9 @@ const translations: Record<string, Record<string, string>> = {
         pwaModalTitle: 'The full Ting Tong experience is on your phone!',
         pwaModalBody: 'Scan the QR code below or visit us on your phone to download the app and unlock the full experience.',
         publishButton: 'Publish',
-        publishButtonInactive: 'Publishing available for Creators only'
+        publishButtonInactive: 'Publishing available for Creators only',
+        commentRateLimit: 'You are commenting too fast. Slow down!',
+        commentError: 'Error adding comment.'
     }
 };
 
