@@ -24,7 +24,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ success: false, message: 'Slide not found' }, { status: 404 });
     }
 
-    const result = await db.toggleLike(slideId, currentUser.id);
+    const result = await db.toggleLike(slideId, currentUser.id!);
 
     const channel = ably.channels.get(`likes:${slideId}`);
     await channel.publish('update', { likeCount: result.likeCount });
