@@ -46,6 +46,11 @@ export async function updateUserProfile(prevState: any, formData: FormData) {
     const email = formData.get('email') as string;
     const avatarFile = formData.get('avatar') as File;
 
+    // New fields handling
+    const emailConsentRaw = formData.get('emailConsent');
+    const emailLanguage = formData.get('emailLanguage') as string;
+    const emailConsent = emailConsentRaw === 'true' || emailConsentRaw === 'on';
+
     if (!email || !email.includes('@')) {
         return { success: false, message: 'Invalid email address.' };
     }
@@ -53,7 +58,9 @@ export async function updateUserProfile(prevState: any, formData: FormData) {
     // Update Object
     const updateData: any = {
         displayName: displayName || undefined,
-        email: email
+        email: email,
+        emailConsent: emailConsent,
+        emailLanguage: emailConsent ? (emailLanguage || 'pl') : null
     };
 
     try {

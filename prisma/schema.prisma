@@ -19,6 +19,8 @@ model User {
   avatar         String?
   image          String?
   role           String    @default("user") // "user", "admin", "patron"
+  emailConsent   Boolean   @default(false)
+  emailLanguage  String?   @default("pl")
   sessionVersion Int       @default(1)
   createdAt      DateTime  @default(now())
   updatedAt      DateTime  @updatedAt

@@ -43,53 +43,60 @@ const AccountPanel: React.FC<AccountPanelProps> = ({ onClose }) => {
       onClick={onClose} // Close on overlay click
     >
       <motion.div
-        className="absolute top-0 left-0 h-full w-full max-w-md bg-gradient-to-br from-[#1a1a1a] to-[#2d2d2d] flex flex-col"
+        className="absolute top-0 left-0 h-full w-full max-w-md bg-gradient-to-br from-[#121212] to-[#1e1e1e] flex flex-col"
         initial={{ x: '-100%' }}
         animate={{ x: '0%' }}
         exit={{ x: '-100%' }}
         transition={{ type: 'spring', stiffness: 300, damping: 30 }}
         onClick={(e) => e.stopPropagation()} // Prevent closing when clicking inside the panel
       >
+        {/* Top Bar - styled to be distinct but integrated */}
         <div
-            className="relative flex-shrink-0 flex items-center justify-center bg-black border-b border-white/10"
+            className="relative flex-shrink-0 flex items-center justify-center bg-[#121212]/90 backdrop-blur-md border-b border-white/5 shadow-sm z-10"
             style={{ height: 'var(--topbar-height)', paddingTop: 'var(--safe-area-top)'}}
         >
-          <h2 className="text-base font-semibold text-white">{t(`${activeTab}Tab`)}</h2>
-          <button onClick={onClose} className="absolute right-4 top-1/2 -translate-y-1/2 text-white/80 hover:text-white" aria-label={t('closeAccountAriaLabel')}>
-              <X size={24} />
+          <h2 className="text-base font-semibold text-white tracking-wide">{t(`${activeTab}Tab`)}</h2>
+          <button
+            onClick={onClose}
+            className="absolute right-4 top-1/2 -translate-y-1/2 p-2 rounded-full text-white/60 hover:text-white hover:bg-white/10 transition-all active:scale-90"
+            aria-label={t('closeAccountAriaLabel')}
+          >
+              <X size={20} />
           </button>
         </div>
 
-        <div className="flex-shrink-0 flex bg-zinc-900 border-b border-white/10">
+        {/* Tabs Header */}
+        <div className="flex-shrink-0 flex bg-[#1a1a1a] border-b border-white/5">
           <button
             onClick={() => handleTabClick('profile')}
-            className={`flex-1 p-3.5 text-sm font-semibold border-b-2 transition-colors ${activeTab === 'profile' ? 'bg-zinc-700 text-white border-pink-500' : 'text-white/60 border-transparent hover:bg-white/5'}`}
+            className={`flex-1 py-4 text-sm font-medium border-b-2 transition-all ${activeTab === 'profile' ? 'text-pink-500 border-pink-500 bg-white/5' : 'text-white/40 border-transparent hover:text-white/70 hover:bg-white/5'}`}
           >
             {t('profileTab')}
           </button>
           <button
             onClick={() => handleTabClick('password')}
-            className={`flex-1 p-3.5 text-sm font-semibold border-b-2 transition-colors ${activeTab === 'password' ? 'bg-zinc-700 text-white border-pink-500' : 'text-white/60 border-transparent hover:bg-white/5'}`}
+            className={`flex-1 py-4 text-sm font-medium border-b-2 transition-all ${activeTab === 'password' ? 'text-pink-500 border-pink-500 bg-white/5' : 'text-white/40 border-transparent hover:text-white/70 hover:bg-white/5'}`}
           >
             {t('passwordTab')}
           </button>
           <button
             onClick={() => handleTabClick('delete')}
-            className={`flex-1 p-3.5 text-sm font-semibold border-b-2 transition-colors ${activeTab === 'delete' ? 'bg-zinc-700 text-white border-pink-500' : 'text-white/60 border-transparent hover:bg-white/5'}`}
+            className={`flex-1 py-4 text-sm font-medium border-b-2 transition-all ${activeTab === 'delete' ? 'text-pink-500 border-pink-500 bg-white/5' : 'text-white/40 border-transparent hover:text-white/70 hover:bg-white/5'}`}
           >
             {t('deleteTab')}
           </button>
         </div>
 
-        <div className="flex-1 overflow-y-auto">
+        {/* Content Area */}
+        <div className="flex-1 overflow-y-auto scrollbar-hide">
             {activeTab === 'profile' && <ProfileTab onClose={onClose} />}
             {activeTab === 'password' && <PasswordTab />}
             {activeTab === 'delete' && <DeleteTab onClose={onClose} />}
         </div>
 
         {canPublish && (
-          <div className="p-4 border-t border-white/10 bg-zinc-900/50">
-             <Button className="w-full bg-pink-600 hover:bg-pink-700 text-white" onClick={() => window.location.href = '/admin/slides'}>
+          <div className="p-4 border-t border-white/10 bg-[#1a1a1a]/80 backdrop-blur-sm">
+             <Button className="w-full bg-gradient-to-r from-pink-600 to-rose-600 hover:from-pink-500 hover:to-rose-500 text-white font-semibold py-6 rounded-xl shadow-lg shadow-pink-900/20 active:scale-[0.98] transition-all" onClick={() => window.location.href = '/admin/slides'}>
                  {t('publishButton')}
              </Button>
           </div>

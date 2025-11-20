@@ -59,17 +59,26 @@ const DeleteTab: React.FC<DeleteTabProps> = ({ onClose }) => {
 
   return (
     <div className="tab-pane active p-4" id="delete-tab">
-      <div className="profile-section bg-white/5 border border-white/10 rounded-xl p-5">
-        <h3 className="section-title text-lg font-bold mb-5 flex items-center gap-3"><span className="w-1 h-5 bg-gradient-to-b from-pink-500 to-rose-500 rounded-full"></span>{t('deleteAccountTitle')}</h3>
-        <div className="bg-red-900/50 border border-red-700 rounded-lg p-4 mb-6">
-          <h4 className="text-red-400 font-bold mb-3 text-base">{t('warningTitle')}</h4>
-          <p className="text-white/80 text-sm leading-relaxed">
+      <div className="bg-white/5 border border-white/10 rounded-xl p-5">
+        <h3 className="text-lg font-bold mb-5 flex items-center gap-3 text-white">
+            <span className="w-1 h-6 bg-gradient-to-b from-pink-500 to-rose-500 rounded-full"></span>
+            {t('deleteAccountTitle')}
+        </h3>
+
+        <div className="bg-red-500/10 border border-red-500/30 rounded-xl p-5 mb-6">
+          <h4 className="text-red-400 font-bold mb-2 text-base flex items-center gap-2">
+              ⚠️ {t('warningTitle')}
+          </h4>
+          <p className="text-white/70 text-sm leading-relaxed">
             {t('deleteAccountWarning')}
           </p>
         </div>
-        <form id="deleteForm" onSubmit={handleDeleteSubmit}>
-          <div className="form-group mb-4">
-            <label className="form-label text-sm font-medium mb-2 block">{t('deleteAccountPrompt')} <strong>{DELETE_CONFIRM_TEXT}</strong></label>
+
+        <form id="deleteForm" onSubmit={handleDeleteSubmit} className="space-y-4">
+          <div className="space-y-2">
+            <label className="text-sm font-medium text-white/80 ml-1">
+                {t('deleteAccountPrompt')} <strong className="text-white">{DELETE_CONFIRM_TEXT}</strong>
+            </label>
             <Input
               type="text"
               placeholder={DELETE_CONFIRM_TEXT}
@@ -77,20 +86,24 @@ const DeleteTab: React.FC<DeleteTabProps> = ({ onClose }) => {
               name="confirm_text"
               value={confirmation}
               onChange={(e) => setConfirmation(e.target.value)}
+              className="bg-black/20 border-white/10 text-white focus:border-red-500/50 focus:bg-black/40 transition-all"
             />
-            <p className="text-xs text-white/60 mt-2">
+            <p className="text-xs text-white/50 mt-1 ml-1">
               {t('deleteAccountInfo')}
             </p>
           </div>
-          <Button
-            type="submit"
-            variant="destructive"
-            className="w-full mt-4"
-            disabled={confirmation !== DELETE_CONFIRM_TEXT || isSaving}
-          >
-            {isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-            {isSaving ? t('deleting') : t('deleteAccountButton')}
-          </Button>
+
+          <div className="pt-4">
+              <Button
+                type="submit"
+                variant="destructive"
+                className="w-full bg-red-600 hover:bg-red-700 text-white font-semibold py-6 rounded-xl shadow-lg shadow-red-900/20 active:scale-[0.98] transition-all"
+                disabled={confirmation !== DELETE_CONFIRM_TEXT || isSaving}
+              >
+                {isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+                {isSaving ? t('deleting') : t('deleteAccountButton')}
+              </Button>
+          </div>
         </form>
       </div>
     </div>

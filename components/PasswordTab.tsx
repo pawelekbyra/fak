@@ -37,28 +37,59 @@ const PasswordTab: React.FC = () => {
 
   return (
     <div className="tab-pane active p-4" id="password-tab">
-      <div className="profile-section bg-white/5 border border-white/10 rounded-xl p-5">
-        <h3 className="section-title text-lg font-bold mb-5 flex items-center gap-3"><span className="w-1 h-5 bg-gradient-to-b from-pink-500 to-rose-500 rounded-full"></span>{t('changePasswordTitle')}</h3>
-        <form id="passwordForm" onSubmit={handlePasswordSubmit}>
-          <div className="form-group mb-4">
-            <label className="form-label text-sm font-medium mb-2 block">{t('currentPasswordLabel')}</label>
-            <Input type="password" name="currentPassword" placeholder={t('currentPasswordPlaceholder')} required autoComplete="current-password" />
+      <div className="bg-white/5 border border-white/10 rounded-xl p-5">
+        <h3 className="text-lg font-bold mb-5 flex items-center gap-3 text-white">
+            <span className="w-1 h-6 bg-gradient-to-b from-pink-500 to-rose-500 rounded-full"></span>
+            {t('changePasswordTitle')}
+        </h3>
+        <form id="passwordForm" onSubmit={handlePasswordSubmit} className="space-y-4">
+          <div className="space-y-2">
+            <label className="text-sm font-medium text-white/80 ml-1">{t('currentPasswordLabel')}</label>
+            <Input
+                type="password"
+                name="currentPassword"
+                placeholder={t('currentPasswordPlaceholder')}
+                required
+                autoComplete="current-password"
+                className="bg-black/20 border-white/10 text-white focus:border-pink-500/50 focus:bg-black/40 transition-all"
+            />
           </div>
-          <div className="form-group mb-4">
-            <label className="form-label text-sm font-medium mb-2 block">{t('newPasswordLabel')}</label>
-            <Input type="password" name="newPassword" placeholder={t('newPasswordPlaceholder')} required autoComplete="new-password" />
+          <div className="space-y-2">
+            <label className="text-sm font-medium text-white/80 ml-1">{t('newPasswordLabel')}</label>
+            <Input
+                type="password"
+                name="newPassword"
+                placeholder={t('newPasswordPlaceholder')}
+                required
+                autoComplete="new-password"
+                className="bg-black/20 border-white/10 text-white focus:border-pink-500/50 focus:bg-black/40 transition-all"
+            />
           </div>
-          <div className="form-group mb-4">
-            <label className="form-label text-sm font-medium mb-2 block">{t('confirmPasswordLabel')}</label>
-            <Input type="password" name="confirmPassword" placeholder={t('confirmPasswordPlaceholder')} required autoComplete="new-password" />
-            <p className="text-xs text-white/60 mt-2">
+          <div className="space-y-2">
+            <label className="text-sm font-medium text-white/80 ml-1">{t('confirmPasswordLabel')}</label>
+            <Input
+                type="password"
+                name="confirmPassword"
+                placeholder={t('confirmPasswordPlaceholder')}
+                required
+                autoComplete="new-password"
+                className="bg-black/20 border-white/10 text-white focus:border-pink-500/50 focus:bg-black/40 transition-all"
+            />
+            <p className="text-xs text-white/50 mt-1 ml-1">
               {t('passwordMinLength')}
             </p>
           </div>
-          <Button type="submit" className="w-full bg-pink-600 hover:bg-pink-700" disabled={isSaving}>
-            {isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-            {isSaving ? t('changingPassword') : t('changePasswordButton')}
-          </Button>
+
+          <div className="pt-4">
+            <Button
+                type="submit"
+                className="w-full bg-gradient-to-r from-pink-600 to-rose-600 hover:from-pink-500 hover:to-rose-500 text-white font-semibold py-6 rounded-xl shadow-lg shadow-pink-900/20 active:scale-[0.98] transition-all"
+                disabled={isSaving}
+            >
+                {isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+                {isSaving ? t('changingPassword') : t('changePasswordButton')}
+            </Button>
+          </div>
         </form>
       </div>
     </div>

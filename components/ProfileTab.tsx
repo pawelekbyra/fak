@@ -1,11 +1,11 @@
 "use client";
 
 import React, { useState, useRef, useEffect } from 'react';
-import { useFormState } from 'react-dom';
+import { useFormState, useFormStatus } from 'react-dom';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import ToggleSwitch from './ui/ToggleSwitch';
-import { Crown } from 'lucide-react';
+import { Crown, Pencil, Camera } from 'lucide-react';
 import { useUser } from '@/context/UserContext';
 import Image from 'next/image';
 import { useTranslation } from '@/context/LanguageContext';
@@ -23,16 +23,28 @@ const initialState = {
 
 const ProfileTab: React.FC<ProfileTabProps> = ({ onClose }) => {
   const { user: profile, checkUserStatus } = useUser();
-  const { t, setLanguage, lang } = useTranslation();
+  const { t } = useTranslation();
   const { addToast } = useToast();
-  const [emailConsent, setEmailConsent] = useState(true);
+
+  // State for fields
+  const [emailConsent, setEmailConsent] = useState(false);
+  const [emailLanguage, setEmailLanguage] = useState('pl');
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+
+  // Initialize state from profile when available
+  useEffect(() => {
+    if (profile) {
+      // We need to cast profile to any because the frontend type might not match the DB type immediately
+      // pending context update, but we access the fields if they exist.
+      const p = profile as any;
+      if (p.emailConsent !== undefined) setEmailConsent(p.emailConsent);
+      if (p.emailLanguage) setEmailLanguage(p.emailLanguage);
+    }
+  }, [profile]);
 
   // useFormState hook for server action
   const [state, formAction] = useFormState(updateUserProfile, initialState);
-
-  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const [isSettingsSubmitting, setIsSettingsSubmitting] = useState(false);
 
   // Handle state updates from server action
   useEffect(() => {
@@ -58,60 +70,47 @@ const ProfileTab: React.FC<ProfileTabProps> = ({ onClose }) => {
     }
   };
 
-  const handleSettingsSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    setIsSettingsSubmitting(true);
-    setTimeout(() => {
-      try {
-        console.log('Saving settings:', { emailConsent, lang });
-        addToast(t('settingsSaveSuccess'), 'success');
-      } catch (error: any) {
-        addToast(error.message, 'error');
-      } finally {
-        setIsSettingsSubmitting(false);
-      }
-    }, 1000);
-  };
-
   if (!profile) {
-    return <div className="p-5 text-center">{t('loadingProfile')}</div>;
+    return <div className="p-5 text-center text-white/60">{t('loadingProfile')}</div>;
   }
 
   const currentAvatar = previewUrl || profile.avatar;
 
   return (
     <div className="tab-pane active p-4" id="profile-tab">
-      {/* Main Form wraps everything that needs to be submitted */}
-      <form action={formAction} id="profileForm">
+      <form action={formAction} id="profileForm" className="space-y-4">
 
         {/* Avatar Section */}
-        <div className="avatar-section bg-white/5 border border-white/10 rounded-xl p-5 mb-4 flex flex-col items-center text-center">
-            <div className="relative w-20 h-20 mb-3">
-                <div className="w-full h-full rounded-full overflow-hidden border-2 border-white/80 shadow-lg bg-gray-800 flex items-center justify-center">
+        <div className="bg-white/5 border border-white/10 rounded-xl p-6 flex flex-col items-center text-center">
+            <div className="relative w-24 h-24 mb-4 group cursor-pointer" onClick={handleAvatarEditClick}>
+                <div className="w-full h-full rounded-full overflow-hidden border-4 border-white/10 shadow-lg bg-gray-800 flex items-center justify-center relative">
                     {currentAvatar ? (
                         <Image
                           src={currentAvatar}
                           alt={t('avatarAlt')}
-                          width={80}
-                          height={80}
+                          width={96}
+                          height={96}
                           className="w-full h-full object-cover"
                           id="userAvatar"
-                          unoptimized={!!previewUrl} // unoptimized for blob urls
+                          unoptimized={!!previewUrl}
                         />
                     ) : (
-                        <span className="text-4xl text-gray-500">{profile.displayName?.charAt(0).toUpperCase()}</span>
+                        <span className="text-4xl text-gray-500">{profile.displayName?.charAt(0).toUpperCase() || 'U'}</span>
                     )}
+
+                    {/* Overlay on hover */}
+                    <div className="absolute inset-0 bg-black/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                        <Camera className="text-white w-8 h-8" />
+                    </div>
                 </div>
                 <button
-                  type="button" // Ensure this doesn't submit the form
-                  onClick={handleAvatarEditClick}
-                  className="absolute -bottom-2 left-1/2 -translate-x-1/2 w-7 h-7 bg-pink-600 border-2 border-[#2d2d2d] rounded-full text-white text-lg font-bold flex items-center justify-center"
-                  id="avatarEditBtn"
+                  type="button"
+                  className="absolute bottom-0 right-0 w-8 h-8 bg-pink-600 border-2 border-[#2d2d2d] rounded-full text-white flex items-center justify-center hover:bg-pink-500 transition-colors shadow-lg"
                   title={t('changeAvatarTitle')}
                 >
-                    +
+                   <Pencil size={14} />
                 </button>
-                {/* File Input inside the form */}
+
                 <input
                     type="file"
                     name="avatar"
@@ -121,85 +120,118 @@ const ProfileTab: React.FC<ProfileTabProps> = ({ onClose }) => {
                     accept="image/png, image/jpeg, image/webp"
                 />
             </div>
+
             <div className="flex flex-col items-center gap-1">
-                <h3 className="text-lg font-bold" id="displayName">{profile.displayName}</h3>
-                <p className="text-sm text-white/60" id="userEmail">{profile.email}</p>
-                <div className="flex items-center gap-1.5 bg-gradient-to-r from-yellow-400 to-orange-400 text-black px-3 py-1 rounded-full text-xs font-bold shadow-md mt-1">
-                    <Crown size={14} />
-                    <span>{t('patronTier')}</span>
-                </div>
+                <h3 className="text-xl font-bold text-white" id="displayName">{profile.displayName}</h3>
+                <p className="text-sm text-white/50" id="userEmail">{profile.email}</p>
+                {profile.role === 'patron' && (
+                  <div className="flex items-center gap-1.5 bg-gradient-to-r from-yellow-400 to-orange-400 text-black px-3 py-1 rounded-full text-xs font-bold shadow-md mt-2">
+                      <Crown size={14} />
+                      <span>{t('patronTier')}</span>
+                  </div>
+                )}
             </div>
         </div>
 
-        {/* Personal Data Section */}
-        <div className="form-section bg-white/5 border border-white/10 rounded-xl p-5 mb-4">
-          <h3 className="section-title text-lg font-bold mb-5 flex items-center gap-3">
-            <span className="w-1 h-5 bg-gradient-to-b from-pink-500 to-rose-500 rounded-full"></span>
-            {t('personalData')}
+        {/* Combined Form Fields */}
+        <div className="bg-white/5 border border-white/10 rounded-xl p-5">
+          <h3 className="text-lg font-bold mb-5 flex items-center gap-3 text-white">
+            <span className="w-1 h-6 bg-gradient-to-b from-pink-500 to-rose-500 rounded-full"></span>
+            {t('accountSettings')}
           </h3>
 
-          <div className="grid grid-cols-1 gap-4 mb-4">
-            <div className="form-group">
-              <label className="form-label text-sm font-medium mb-2 block">{t('displayName') || 'Display Name'}</label>
+          <div className="space-y-5">
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-white/80 ml-1">{t('displayName') || 'Display Name'}</label>
               <Input
                 type="text"
                 name="displayName"
                 defaultValue={profile.displayName || ''}
                 placeholder={t('displayNamePlaceholder') || 'Your Name'}
+                className="bg-black/20 border-white/10 text-white focus:border-pink-500/50 focus:bg-black/40 transition-all"
               />
             </div>
+
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-white/80 ml-1">{t('email')}</label>
+              <Input
+                type="email"
+                name="email"
+                defaultValue={profile.email}
+                placeholder={t('emailPlaceholder')}
+                className="bg-black/20 border-white/10 text-white focus:border-pink-500/50 focus:bg-black/40 transition-all"
+              />
+            </div>
+
+            <div className="pt-4 border-t border-white/10">
+                <div className="flex items-center justify-between mb-4">
+                    <div className="flex flex-col">
+                        <label className="text-sm font-medium text-white/90">{t('emailConsent')}</label>
+                        <span className="text-xs text-white/50">{t('emailConsentDesc') || 'Receive updates and notifications via email'}</span>
+                    </div>
+                    <ToggleSwitch isActive={emailConsent} onToggle={() => setEmailConsent(p => !p)} />
+                    {/* Hidden input to submit the toggle value */}
+                    <input type="hidden" name="emailConsent" value={emailConsent.toString()} />
+                </div>
+
+                {emailConsent && (
+                    <div className="space-y-3 animate-in fade-in slide-in-from-top-2 duration-300">
+                         <label className="text-sm font-medium text-white/80 ml-1">{t('emailLanguage')}</label>
+                         <div className="flex gap-2">
+                            <button
+                                type="button"
+                                onClick={() => setEmailLanguage('pl')}
+                                className={`flex-1 py-2.5 px-4 rounded-lg text-sm font-semibold transition-all border ${
+                                    emailLanguage === 'pl'
+                                    ? 'bg-pink-600/20 border-pink-500 text-pink-400'
+                                    : 'bg-white/5 border-transparent text-white/60 hover:bg-white/10'
+                                }`}
+                            >
+                                {t('polish')}
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => setEmailLanguage('en')}
+                                className={`flex-1 py-2.5 px-4 rounded-lg text-sm font-semibold transition-all border ${
+                                    emailLanguage === 'en'
+                                    ? 'bg-pink-600/20 border-pink-500 text-pink-400'
+                                    : 'bg-white/5 border-transparent text-white/60 hover:bg-white/10'
+                                }`}
+                            >
+                                {t('english')}
+                            </button>
+                            <input type="hidden" name="emailLanguage" value={emailLanguage} />
+                         </div>
+                    </div>
+                )}
+            </div>
           </div>
-          <div className="form-group mb-4">
-            <label className="form-label text-sm font-medium mb-2 block">{t('email')}</label>
-            <Input
-              type="email"
-              name="email"
-              defaultValue={profile.email}
-              placeholder={t('emailPlaceholder')}
-            />
+
+          <div className="mt-6">
+            <SaveButton t={t} />
           </div>
-          <SaveButton t={t} />
         </div>
       </form>
-
-      {/* Settings Section - Separate Form logic */}
-      <div className="settings-section bg-white/5 border border-white/10 rounded-xl p-5">
-        <h3 className="section-title text-lg font-bold mb-5 flex items-center gap-3">
-          <span className="w-1 h-5 bg-gradient-to-b from-pink-500 to-rose-500 rounded-full"></span>
-          {t('settings')}
-        </h3>
-        <form onSubmit={handleSettingsSubmit}>
-            <div className="flex items-center justify-between mb-4">
-              <label className="form-label text-sm">{t('emailConsent')}</label>
-              <ToggleSwitch isActive={emailConsent} onToggle={() => setEmailConsent(p => !p)} />
-            </div>
-            <div className="form-group">
-                <label className="form-label text-sm font-medium mb-2 block">{t('emailLanguage')}</label>
-                <div className="flex gap-2">
-                    <Button type="button" variant={lang === 'pl' ? 'secondary' : 'outline'} onClick={() => setLanguage('pl')} className="flex-1">{t('polish')}</Button>
-                    <Button type="button" variant={lang === 'en' ? 'secondary' : 'outline'} onClick={() => setLanguage('en')} className="flex-1">{t('english')}</Button>
-                </div>
-            </div>
-             <Button type="submit" className="w-full bg-pink-600 hover:bg-pink-700 mt-4" disabled={isSettingsSubmitting}>
-              {isSettingsSubmitting ? t('saving') : t('saveSettings')}
-            </Button>
-        </form>
-      </div>
     </div>
   );
 };
 
-// Component for the submit button to handle pending state
 function SaveButton({ t }: { t: any }) {
   const { pending } = useFormStatus();
   return (
-    <Button type="submit" className="w-full bg-pink-600 hover:bg-pink-700" disabled={pending}>
-      {pending ? t('saving') : t('saveChanges')}
+    <Button
+        type="submit"
+        className="w-full bg-gradient-to-r from-pink-600 to-rose-600 hover:from-pink-500 hover:to-rose-500 text-white font-semibold py-6 rounded-xl shadow-lg shadow-pink-900/20 active:scale-[0.98] transition-all"
+        disabled={pending}
+    >
+      {pending ? (
+        <div className="flex items-center gap-2">
+            <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+            <span>{t('saving')}</span>
+        </div>
+      ) : t('saveChanges')}
     </Button>
   );
 }
-
-// Helper to get form status
-import { useFormStatus } from 'react-dom';
 
 export default ProfileTab;

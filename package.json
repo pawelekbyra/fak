@@ -34,6 +34,7 @@
     "clsx": "^2.1.1",
     "date-fns": "^4.1.0",
     "dompurify": "^3.2.6",
+    "dotenv": "^17.2.3",
     "framer-motion": "^11.18.2",
     "hls.js": "^1.5.14",
     "jose": "^6.1.0",
