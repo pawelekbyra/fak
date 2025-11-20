@@ -13,7 +13,7 @@ if (process.env.VAPID_SUBJECT && process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY && pro
 
 export async function POST(request: NextRequest) {
   const session = await auth();
-  if (!session || !session.user || session.user.role !== 'admin') {
+  if (!session || !session.user || (session.user as any).role !== 'admin') {
     return NextResponse.json({ success: false, message: 'Unauthorized' }, { status: 403 });
   }
 

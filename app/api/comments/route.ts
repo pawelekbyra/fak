@@ -58,7 +58,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Pass parentId to db.addComment
-    const newComment = await db.addComment(slideId, currentUser.id, sanitizedText, parentId || null);
+    const newComment = await db.addComment(slideId, currentUser.id!, sanitizedText, parentId || null);
 
     const channel = ably.channels.get(`comments:${slideId}`);
     await channel.publish('new-comment', newComment);

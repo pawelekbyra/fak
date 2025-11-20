@@ -9,7 +9,7 @@ export async function POST(request: NextRequest) {
   if (!session || !session.user || !session.user.id) {
     return NextResponse.json({ success: false, message: 'Authentication required.' }, { status: 401 });
   }
-  const userId = session.user.id;
+  const userId = session.user.id!;
 
   try {
     const { commentId } = await request.json();
