@@ -1,6 +1,6 @@
 
 import { config } from 'dotenv';
-import bcrypt from 'bcrypt';
+import * as bcrypt from '@node-rs/bcrypt';
 import { createTables, createUser, createSlide } from '../lib/db-postgres';
 import { User } from '../lib/db.interfaces';
 
