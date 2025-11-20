@@ -280,13 +280,29 @@ export async function toggleLike(slideId: string, userId: string): Promise<{ new
     const sql = getDb();
     const isLikedResult = await sql`SELECT 1 FROM likes WHERE "slideId" = ${slideId} AND "userId" = ${userId};`;
     const isLiked = isLikedResult.length > 0;
+
     if (isLiked) {
-        await sql`DELETE FROM likes WHERE "slideId" = ${slideId} AND "userId" = ${userId};`;
+        // Atomic decrement
+        await sql`
+            BEGIN;
+            DELETE FROM likes WHERE "slideId" = ${slideId} AND "userId" = ${userId};
+            UPDATE slides SET "likeCount" = "likeCount" - 1 WHERE id = ${slideId};
+            COMMIT;
+        `;
     } else {
-        await sql`INSERT INTO likes ("slideId", "userId") VALUES (${slideId}, ${userId});`;
+        // Atomic increment
+        await sql`
+            BEGIN;
+            INSERT INTO likes ("slideId", "userId") VALUES (${slideId}, ${userId});
+            UPDATE slides SET "likeCount" = "likeCount" + 1 WHERE id = ${slideId};
+            COMMIT;
+        `;
     }
-    const likeCountResult = await sql`SELECT COUNT(*) as count FROM likes WHERE "slideId" = ${slideId};`;
-    const likeCount = likeCountResult[0].count as number;
+
+    // Fetch updated count directly from slide
+    const slideResult = await sql`SELECT "likeCount" FROM slides WHERE id = ${slideId}`;
+    const likeCount = slideResult[0].likeCount as number;
+
     return { newStatus: isLiked ? 'unliked' : 'liked', likeCount };
 }
 
@@ -371,18 +387,25 @@ export async function addComment(
   text: string,
   parentId?: string | null
 ): Promise<CommentWithRelations> {
-  const comment = await prisma.comment.create({
-    data: {
-      slideId,
-      authorId: userId,
-      text,
-      parentId: parentId || null
-    },
-    include: {
-      author: true,
-      likes: true
-    }
-  });
+  // Transaction ensures both actions happen or fail together
+  const [comment] = await prisma.$transaction([
+    prisma.comment.create({
+      data: {
+        slideId,
+        authorId: userId,
+        text,
+        parentId: parentId || null
+      },
+      include: {
+        author: true,
+        likes: true
+      }
+    }),
+    prisma.slide.update({
+      where: { id: slideId },
+      data: { commentCount: { increment: 1 } }
+    })
+  ]);
 
   // Return DTO shape
   return {
@@ -477,23 +500,10 @@ export async function getPushSubscriptions(options: { userId?: string, role?: st
 
 export async function getSlide(id: string): Promise<Slide | null> {
     const sql = getDb();
-    // Optimized query: uses LEFT JOINs and GROUP BY to avoid N+1 subqueries
+    // Refactored: Reads directly from denormalized counters on 'slides' table.
     const result = await sql`
-        SELECT
-            s.*,
-            COALESCE(l.count, 0) as "likeCount",
-            COALESCE(c.count, 0) as "commentCount"
+        SELECT s.*
         FROM slides s
-        LEFT JOIN (
-            SELECT "slideId", COUNT(*) as count
-            FROM likes
-            GROUP BY "slideId"
-        ) l ON s.id = l."slideId"
-        LEFT JOIN (
-            SELECT "slideId", COUNT(*) as count
-            FROM comments
-            GROUP BY "slideId"
-        ) c ON s.id = c."slideId"
         WHERE s.id = ${id}
     `;
 
@@ -509,8 +519,8 @@ export async function getSlide(id: string): Promise<Slide | null> {
         userId: row.userId,
         username: row.username,
         createdAt: new Date(row.createdAt).getTime(),
-        initialLikes: parseInt(row.likeCount || '0'),
-        initialComments: parseInt(row.commentCount || '0'),
+        initialLikes: row.likeCount || 0,
+        initialComments: row.commentCount || 0,
         isLiked: false,
         avatar: content.avatar || '',
         access: content.access || 'public',
@@ -527,25 +537,16 @@ export async function getSlides(options: { limit?: number, cursor?: string, curr
     // Use Date object for cursor comparison if provided
     const cursorDate = cursor ? new Date(parseInt(cursor)) : null;
 
-    // Branching queries to handle cursor condition cleanly without complex string composition
+    // Refactored: Reads directly from denormalized counters.
+    // Removed complex JOINs for counts.
+    // 'isLiked' still requires a subquery or join, but exists() is efficient.
+
     if (cursorDate) {
         result = await sql`
             SELECT
                 s.*,
-                COALESCE(l.count, 0) as "likeCount",
-                COALESCE(c.count, 0) as "commentCount",
                 ${currentUserId ? sql`EXISTS(SELECT 1 FROM likes WHERE "slideId" = s.id AND "userId" = ${currentUserId})` : false} as "isLiked"
             FROM slides s
-            LEFT JOIN (
-                SELECT "slideId", COUNT(*) as count
-                FROM likes
-                GROUP BY "slideId"
-            ) l ON s.id = l."slideId"
-            LEFT JOIN (
-                SELECT "slideId", COUNT(*) as count
-                FROM comments
-                GROUP BY "slideId"
-            ) c ON s.id = c."slideId"
             WHERE s."createdAt" < ${cursorDate}
             ORDER BY s."createdAt" DESC
             LIMIT ${limit}
@@ -554,20 +555,8 @@ export async function getSlides(options: { limit?: number, cursor?: string, curr
         result = await sql`
             SELECT
                 s.*,
-                COALESCE(l.count, 0) as "likeCount",
-                COALESCE(c.count, 0) as "commentCount",
                 ${currentUserId ? sql`EXISTS(SELECT 1 FROM likes WHERE "slideId" = s.id AND "userId" = ${currentUserId})` : false} as "isLiked"
             FROM slides s
-            LEFT JOIN (
-                SELECT "slideId", COUNT(*) as count
-                FROM likes
-                GROUP BY "slideId"
-            ) l ON s.id = l."slideId"
-            LEFT JOIN (
-                SELECT "slideId", COUNT(*) as count
-                FROM comments
-                GROUP BY "slideId"
-            ) c ON s.id = c."slideId"
             ORDER BY s."createdAt" DESC
             LIMIT ${limit}
         `;
@@ -583,8 +572,8 @@ export async function getSlides(options: { limit?: number, cursor?: string, curr
             userId: row.userId,
             username: row.username,
             createdAt: new Date(row.createdAt).getTime(),
-            initialLikes: parseInt(row.likeCount || '0'),
-            initialComments: parseInt(row.commentCount || '0'),
+            initialLikes: row.likeCount || 0,
+            initialComments: row.commentCount || 0,
             isLiked: row.isLiked,
             avatar: content.avatar || '',
             access: content.access || 'public',
@@ -595,23 +584,10 @@ export async function getSlides(options: { limit?: number, cursor?: string, curr
 
 export async function getAllSlides(): Promise<Slide[]> {
     const sql = getDb();
-    // Optimized query: uses LEFT JOINs and GROUP BY to avoid N+1 subqueries
+    // Refactored: Reads directly from denormalized counters.
     const result = await sql`
-        SELECT
-            s.*,
-            COALESCE(l.count, 0) as "likeCount",
-            COALESCE(c.count, 0) as "commentCount"
+        SELECT s.*
         FROM slides s
-        LEFT JOIN (
-            SELECT "slideId", COUNT(*) as count
-            FROM likes
-            GROUP BY "slideId"
-        ) l ON s.id = l."slideId"
-        LEFT JOIN (
-            SELECT "slideId", COUNT(*) as count
-            FROM comments
-            GROUP BY "slideId"
-        ) c ON s.id = c."slideId"
         ORDER BY s."createdAt" DESC;
     `;
 
@@ -625,9 +601,9 @@ export async function getAllSlides(): Promise<Slide[]> {
             userId: row.userId,
             username: row.username,
             createdAt: new Date(row.createdAt).getTime(),
-            initialLikes: parseInt(row.likeCount || '0'),
-            initialComments: parseInt(row.commentCount || '0'),
-            isLiked: false, // Admin view doesn't track personal like status
+            initialLikes: row.likeCount || 0,
+            initialComments: row.commentCount || 0,
+            isLiked: false,
             avatar: content.avatar || '',
             access: content.access || 'public',
             data: content.data,

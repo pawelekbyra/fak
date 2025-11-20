@@ -65,6 +65,7 @@ const MainFeed = () => {
 
   return (
     <Virtuoso
+      className="snap-y snap-mandatory"
       style={{ height: '100vh' }}
       data={slides}
       overscan={200}

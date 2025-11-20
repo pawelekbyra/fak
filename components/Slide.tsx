@@ -1,6 +1,6 @@
 "use client";
 
-import React, { memo, useState, useEffect, useRef } from 'react';
+import React, { memo, useState, useEffect, useRef, useMemo } from 'react';
 import Image from 'next/image';
 import DOMPurify from 'dompurify';
 import { SlideDTO, HtmlSlideDTO, VideoSlideDTO } from '@/lib/dto';
@@ -26,8 +26,15 @@ interface SlideUIProps {
 // --- Sub-components ---
 
 const HtmlContent = ({ slide }: HtmlContentProps) => {
+  const sanitizedHtml = useMemo(() => {
+    if (!slide.data?.htmlContent) return '';
+    return typeof window !== 'undefined'
+      ? DOMPurify.sanitize(slide.data.htmlContent)
+      : slide.data.htmlContent;
+  }, [slide.data?.htmlContent]);
+
   if (!slide.data?.htmlContent) return null;
-  const sanitizedHtml = typeof window !== 'undefined' ? DOMPurify.sanitize(slide.data.htmlContent) : slide.data.htmlContent;
+
   return (
     <div
       className="w-full h-full overflow-y-auto bg-white"
@@ -164,7 +171,7 @@ const Slide = memo<SlideProps>(({ slide}) => {
     const renderContent = () => {
         switch (slide.type) {
             case 'video':
-                return <div className="w-full h-full bg-black" />;
+                return <div className="w-full h-full bg-transparent" />;
             case 'html':
                 return <HtmlContent slide={slide as HtmlSlideDTO} />;
             default:

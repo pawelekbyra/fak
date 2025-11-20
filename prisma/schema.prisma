@@ -88,6 +88,9 @@ model Slide {
   videoUrl     String?
   thumbnailUrl String?
 
+  likeCount    Int       @default(0)
+  commentCount Int       @default(0)
+
   public       Boolean   @default(false)
   createdAt    DateTime  @default(now())
   updatedAt    DateTime  @updatedAt

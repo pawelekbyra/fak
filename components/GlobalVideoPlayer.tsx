@@ -12,6 +12,10 @@ const GlobalVideoPlayer = () => {
   const hlsARef = useRef<Hls | null>(null);
   const hlsBRef = useRef<Hls | null>(null);
 
+  // Track which slide ID is loaded in which player
+  const playerAIdRef = useRef<string | null>(null);
+  const playerBIdRef = useRef<string | null>(null);
+
   // 'A' is active means Player A is visible and playing.
   // 'B' is active means Player B is visible and playing.
   const [activePlayer, setActivePlayer] = useState<'A' | 'B'>('A');
@@ -84,74 +88,25 @@ const GlobalVideoPlayer = () => {
       }
   };
 
-  // SWAP Logic: Watch activeSlide changes
   useEffect(() => {
-      // Determine which player should be active based on current toggle state.
-      // Actually, we toggle state first.
-
-      // Logic: If activeSlide changes, we need to ensure the *active* player is playing it.
-      // But wait, the goal is that the *inactive* player ALREADY has it loaded.
-      // So if we were A, and slide changed, we switch to B (because B ideally has the next slide).
-
-      // However, we need to verify if B actually has the current activeSlide.
-      // A simplified Double Buffering strategy:
-      // 1. Determine which player holds activeSlide content (or should hold it).
-      // 2. If it's the inactive one, swap.
-
-      // Better yet: strict rotation.
-      // Slide N: Player A.
-      // Slide N+1: Player B (preloading).
-      // When moving N -> N+1: activePlayer becomes B.
-
-      // We can maintain a reference to "last active slide id" to detect change?
-      // Or just trust the swap.
-
-      // Let's blindly toggle for now on slide change, but we need to be careful on init.
-      // On Init: activePlayer A loads Slide 0. activePlayer B loads Slide 1.
-
-      // Refined Logic:
-      // We don't know if we moved forward or backward.
-      // But `nextSlide` is always N+1 (or whatever feed logic says).
-      // Virtualization might jump.
-
-      // Let's load Active content into Active Player, and Next content into Inactive Player.
-      // Wait, that defeats 0ms delay if we load Active into Active *after* change.
-      // The Active Player *must already have* the content.
-
-      // So:
-      // When `activeSlide` updates, we check if Player A or Player B has this URL.
-      // If neither, load into A and make A active.
-      // If B has it, make B active.
-      // Then load `nextSlide` into the *other* one.
-
       if (!activeSlide) return;
 
-      const activeUrl = activeSlide.type === 'video' ? (activeSlide.data.hlsUrl || activeSlide.data.mp4Url) : null;
+      // Smart Switching Logic:
+      // Check if either player ALREADY has the target slide loaded.
+      // This prevents unnecessary switching/reloading during fast scrolls or back-and-forth navigation.
 
-      if (!activeUrl) return;
+      const isA = playerAIdRef.current === activeSlide.id;
+      const isB = playerBIdRef.current === activeSlide.id;
 
-      // Check current sources (approximate check, HLS.js url vs native src)
-      const getUrl = (video: HTMLVideoElement, hls: Hls | null) => hls?.url || video.src;
-
-      const urlA = playerARef.current ? getUrl(playerARef.current, hlsARef.current) : '';
-      const urlB = playerBRef.current ? getUrl(playerBRef.current, hlsBRef.current) : '';
-
-      // Normalize URLs (sometimes full path vs relative)
-      // Ideally we store the slide ID associated with the player in a ref
-
-  }, [activeSlide]);
-
-  // Implementing simpler approach:
-  // We track `lastActiveSlideId`.
-  const lastActiveSlideId = useRef<string | null>(null);
-
-  useEffect(() => {
-      if (!activeSlide || activeSlide.id === lastActiveSlideId.current) return;
-
-      // Slide changed.
-      // If we were A, switch to B. If B, switch to A.
-      setActivePlayer(prev => prev === 'A' ? 'B' : 'A');
-      lastActiveSlideId.current = activeSlide.id;
+      if (isA) {
+          setActivePlayer('A');
+      } else if (isB) {
+          setActivePlayer('B');
+      } else {
+          // If neither has it, we toggle to the "other" player to load it fresh.
+          // This maintains the A/B pattern for new content.
+          setActivePlayer(prev => prev === 'A' ? 'B' : 'A');
+      }
 
   }, [activeSlide?.id]);
 
@@ -170,7 +125,10 @@ const GlobalVideoPlayer = () => {
           // Player A is Active -> Needs `activeSlide`
           // Player B is Inactive -> Needs `nextSlide`
           loadSlideIntoPlayer(activeSlide, pA, hA);
+          playerAIdRef.current = activeSlide?.id || null;
+
           loadSlideIntoPlayer(nextSlide, pB, hB);
+          playerBIdRef.current = nextSlide?.id || null;
 
           // Play A
           if (isPlaying && activeSlide?.type === 'video') {
@@ -195,7 +153,10 @@ const GlobalVideoPlayer = () => {
           // Player B is Active -> Needs `activeSlide`
           // Player A is Inactive -> Needs `nextSlide`
           loadSlideIntoPlayer(activeSlide, pB, hB);
+          playerBIdRef.current = activeSlide?.id || null;
+
           loadSlideIntoPlayer(nextSlide, pA, hA);
+          playerAIdRef.current = nextSlide?.id || null;
 
            // Play B
           if (isPlaying && activeSlide?.type === 'video') {
