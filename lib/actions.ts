@@ -28,7 +28,7 @@ export async function authenticate(
 
 export async function uploadAvatar(formData: FormData) {
   const session = await auth();
-  if (!session || !session.user) {
+  if (!session || !session.user || !session.user.id) {
     return { success: false, message: 'Not authenticated' };
   }
   const currentUser = session.user;
@@ -69,7 +69,7 @@ export async function uploadAvatar(formData: FormData) {
 
 export async function updateUserProfile(prevState: any, formData: FormData) {
     const session = await auth();
-    if (!session || !session.user) {
+    if (!session || !session.user || !session.user.id) {
         return { success: false, message: 'Not authenticated' };
     }
     const userId = session.user.id;
@@ -107,7 +107,7 @@ export async function updateUserProfile(prevState: any, formData: FormData) {
 
 export async function changePassword(prevState: any, formData: FormData) {
     const session = await auth();
-    if (!session || !session.user) {
+    if (!session || !session.user || !session.user.id) {
         return { success: false, message: 'Not authenticated' };
     }
     const userId = session.user.id;
@@ -154,7 +154,7 @@ export async function changePassword(prevState: any, formData: FormData) {
 
 export async function deleteAccount(prevState: any, formData: FormData) {
     const session = await auth();
-    if (!session || !session.user) {
+    if (!session || !session.user || !session.user.id) {
         return { success: false, message: 'Not authenticated' };
     }
     const userId = session.user.id;

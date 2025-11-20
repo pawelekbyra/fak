@@ -29,8 +29,9 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ success: false, message: 'Authentication required to comment.' }, { status: 401 });
   }
   const currentUser = session.user;
+  const userId = currentUser.id as string;
 
-  const { success } = await rateLimit(`comment:${currentUser.id}`, 3, 30);
+  const { success } = await rateLimit(`comment:${userId}`, 3, 30);
 
   if (!success) {
     return NextResponse.json({ success: false, message: 'commentRateLimit' }, { status: 429 });
@@ -58,7 +59,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Pass parentId to db.addComment
-    const newComment = await db.addComment(slideId, currentUser.id, sanitizedText, parentId || null);
+    const newComment = await db.addComment(slideId, userId, sanitizedText, parentId || null);
 
     const channel = ably.channels.get(`comments:${slideId}`);
     await channel.publish('new-comment', newComment);

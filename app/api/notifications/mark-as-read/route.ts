@@ -5,7 +5,7 @@ import { redis } from '@/lib/kv';
 
 export async function POST(request: NextRequest) {
   const session = await auth();
-  if (!session || !session.user) {
+  if (!session || !session.user || !session.user.id) {
     return NextResponse.json({ success: false, message: 'Authentication required.' }, { status: 401 });
   }
   const userId = session.user.id;
