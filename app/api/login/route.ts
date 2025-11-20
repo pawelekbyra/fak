@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { SignJWT } from 'jose';
 import { cookies } from 'next/headers';
 import { db } from '@/lib/db';
-import bcrypt from 'bcrypt';
+import * as bcrypt from '@node-rs/bcrypt';
 import { rateLimit } from '@/lib/rate-limiter';
 
 const FALLBACK_SECRET = 'a_very_long_insecure_key_for_testing_1234567890abcdef';

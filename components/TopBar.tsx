@@ -111,21 +111,25 @@ const TopBar = () => {
                         <MenuIcon className="w-6 h-6" />
                     </Button>
                   </PopoverTrigger>
-                  <PopoverContent align="start" sideOffset={5} className="w-64 p-2 bg-zinc-900 border-zinc-800 text-white shadow-xl rounded-xl">
-                      <div className="grid grid-cols-2 gap-2">
+                  <PopoverContent align="start" sideOffset={8} className="w-48 p-2 bg-zinc-900/95 backdrop-blur-xl border border-white/10 text-white shadow-2xl rounded-xl">
+                      <div className="flex flex-col gap-2">
                           <button
                             onClick={handleOpenAccount}
-                            className="flex flex-col items-center justify-center gap-2 p-4 bg-zinc-800 hover:bg-zinc-700 rounded-lg transition-colors aspect-square"
+                            className="flex items-center justify-start gap-3 p-3 bg-white/5 hover:bg-white/10 rounded-lg transition-all duration-200 w-full group border border-transparent hover:border-white/5"
                           >
-                              <User size={24} className="text-blue-400" />
-                              <span className="text-xs font-medium">{t('account')}</span>
+                              <div className="p-1.5 rounded-md bg-blue-500/10 text-blue-400 group-hover:bg-blue-500/20 transition-colors">
+                                <User size={18} />
+                              </div>
+                              <span className="text-sm font-medium text-zinc-100">{t('account')}</span>
                           </button>
                           <button
                             onClick={handleLogout}
-                            className="flex flex-col items-center justify-center gap-2 p-4 bg-zinc-800 hover:bg-zinc-700 rounded-lg transition-colors aspect-square"
+                            className="flex items-center justify-start gap-3 p-3 bg-white/5 hover:bg-white/10 rounded-lg transition-all duration-200 w-full group border border-transparent hover:border-white/5"
                           >
-                              <LogOut size={24} className="text-red-400" />
-                              <span className="text-xs font-medium">{t('logout')}</span>
+                              <div className="p-1.5 rounded-md bg-red-500/10 text-red-400 group-hover:bg-red-500/20 transition-colors">
+                                <LogOut size={18} />
+                              </div>
+                              <span className="text-sm font-medium text-zinc-100">{t('logout')}</span>
                           </button>
                       </div>
                   </PopoverContent>

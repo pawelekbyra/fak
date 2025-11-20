@@ -208,14 +208,17 @@ const ProfileTab: React.FC<ProfileTabProps> = ({ onClose }) => {
             </Button>
           </form>
         </div>
-        <div className="flex justify-center mt-4">
-            <Button
-              onClick={handleLogout}
-              className="w-full bg-black hover:bg-zinc-900 border border-zinc-800 text-zinc-400 hover:text-zinc-100 transition-colors"
-            >
-              {t('logoutLink')}
-            </Button>
-        </div>
+        {(profile.role === 'admin' || profile.role === 'author') && (
+            <div className="mt-6 p-4 bg-zinc-900/50 border border-white/10 rounded-xl">
+               <Button
+                 className="w-full bg-pink-600 hover:bg-pink-700 text-white font-bold shadow-lg shadow-pink-500/20"
+                 onClick={() => window.location.href = '/admin/slides'}
+               >
+                   {t('publishButton')}
+               </Button>
+               <p className="text-xs text-center text-white/40 mt-2">{t('adminPanel')}</p>
+            </div>
+        )}
       </div>
 
       {isCropModalOpen && (
