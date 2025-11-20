@@ -11,7 +11,7 @@ export async function GET(req: NextRequest) {
         return NextResponse.json({ isLoggedIn: false, user: null });
     }
 
-    const freshUser = await db.findUserById(session.user.id);
+    const freshUser = await db.findUserById(session.user.id!);
     if (!freshUser) {
         return NextResponse.json({ isLoggedIn: false, user: null });
     }

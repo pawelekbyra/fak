@@ -41,7 +41,7 @@ export async function uploadAvatar(formData: FormData) {
   // Attempt to delete old avatar if it exists and is a blob URL
   // We need to fetch the user from DB to get the current avatar URL,
   // as the session might be stale regarding the avatar.
-  const dbUser = await db.findUserById(currentUser.id);
+  const dbUser = await db.findUserById(currentUser.id!);
   const currentAvatar = dbUser?.avatar || currentUser.image; // use DB or session fallback
 
   if (currentAvatar && currentAvatar.includes('public.blob.vercel-storage.com')) {
@@ -58,7 +58,7 @@ export async function uploadAvatar(formData: FormData) {
 
   const avatarUrl = blob.url;
 
-  const updatedUser = await db.updateUser(currentUser.id, { avatar: avatarUrl });
+  const updatedUser = await db.updateUser(currentUser.id!, { avatar: avatarUrl });
   if (!updatedUser) {
     return { success: false, message: 'Failed to update user record.' };
   }
@@ -69,10 +69,10 @@ export async function uploadAvatar(formData: FormData) {
 
 export async function updateUserProfile(prevState: any, formData: FormData) {
     const session = await auth();
-    if (!session || !session.user) {
+    if (!session || !session.user || !session.user.id) {
         return { success: false, message: 'Not authenticated' };
     }
-    const userId = session.user.id;
+    const userId = session.user.id!;
 
     const firstName = formData.get('firstName') as string;
     const lastName = formData.get('lastName') as string;
@@ -107,10 +107,10 @@ export async function updateUserProfile(prevState: any, formData: FormData) {
 
 export async function changePassword(prevState: any, formData: FormData) {
     const session = await auth();
-    if (!session || !session.user) {
+    if (!session || !session.user || !session.user.id) {
         return { success: false, message: 'Not authenticated' };
     }
-    const userId = session.user.id;
+    const userId = session.user.id!;
 
     const currentPassword = formData.get('currentPassword') as string;
     const newPassword = formData.get('newPassword') as string;
@@ -154,10 +154,10 @@ export async function changePassword(prevState: any, formData: FormData) {
 
 export async function deleteAccount(prevState: any, formData: FormData) {
     const session = await auth();
-    if (!session || !session.user) {
+    if (!session || !session.user || !session.user.id) {
         return { success: false, message: 'Not authenticated' };
     }
-    const userId = session.user.id;
+    const userId = session.user.id!;
 
     try {
         await db.deleteUser(userId);

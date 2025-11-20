@@ -6,10 +6,10 @@ export const dynamic = 'force-dynamic';
 
 export async function GET(request: NextRequest) {
   const session = await auth();
-  if (!session || !session.user) {
+  if (!session || !session.user || !session.user.id) {
     return NextResponse.json({ success: false, message: 'Authentication required.' }, { status: 401 });
   }
-  const userId = session.user.id;
+  const userId = session.user.id!;
 
   try {
     const notifications = await db.getNotifications(userId);
@@ -27,10 +27,10 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
     const session = await auth();
-    if (!session || !session.user) {
+    if (!session || !session.user || !session.user.id) {
         return NextResponse.json({ success: false, message: 'Authentication required.' }, { status: 401 });
     }
-    const userId = session.user.id;
+    const userId = session.user.id!;
 
     const { subscription, isPwaInstalled } = await request.json();
 

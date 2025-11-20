@@ -31,7 +31,7 @@ export async function verifySession(): Promise<AuthPayload | null> {
     const user: any = {
         id: session.user.id,
         email: session.user.email || '',
-        role: session.user.role || 'user',
+        role: (session.user as any).role || 'user',
         // We mapped 'name' to 'displayName' in some places, but let's check what we have.
         displayName: session.user.name || '',
         avatar: session.user.image || '',
