@@ -1,118 +1,87 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { SignJWT } from 'jose';
-import { cookies } from 'next/headers';
-import { db } from '@/lib/db';
+import { NextResponse } from 'next/server';
+import { prisma } from '@/lib/prisma';
 import * as bcrypt from '@node-rs/bcrypt';
-import { rateLimit } from '@/lib/rate-limiter';
+import { signIn } from '@/auth';
+import { isRedirectError } from 'next/dist/client/components/redirect';
 
-const FALLBACK_SECRET = 'a_very_long_insecure_key_for_testing_1234567890abcdef';
-const secretToUse = process.env.JWT_SECRET || FALLBACK_SECRET;
-
-if (!process.env.JWT_SECRET) {
-console.warn("WARNING: JWT_SECRET not set. Using insecure default fallback key for development.");
-}
-
-const JWT_SECRET = new TextEncoder().encode(secretToUse);
-const COOKIE_NAME = 'session';
-
-export async function POST(req: NextRequest) {
-  const ip = req.headers.get('x-forwarded-for') || req.headers.get('x-real-ip') || req.ip || '127.0.0.1';
-  const { success } = await rateLimit(`login:${ip}`, 5, 60);
-
-  if (!success) {
-    return NextResponse.json({ success: false, message: 'Too many requests. Please try again later.' }, { status: 429 });
-  }
-
+export async function POST(req: Request) {
   try {
     const body = await req.json();
-    // accept 'email' OR 'username' from the body, but we will treat it as 'identifier'
-    const { email: emailOrUsername, password } = body;
+    const { login, password } = body;
 
-    if (emailOrUsername === 'admin' && password === 'admin') {
-      const mockAdminUser = {
-        id: 'mock-admin-id',
-        email: 'admin',
-        username: 'Admin',
-        role: 'admin',
-        avatar_url: '',
-      };
-
-      const token = await new SignJWT({ user: mockAdminUser })
-        .setProtectedHeader({ alg: 'HS256' })
-        .setIssuedAt()
-        .setExpirationTime('24h')
-        .sign(JWT_SECRET);
-
-      cookies().set(COOKIE_NAME, token, {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: 'lax',
-        path: '/',
-        maxAge: 60 * 60 * 24, // 1 day
-      });
-
-      return NextResponse.json({ success: true, user: mockAdminUser });
+    if (!login || !password) {
+      return NextResponse.json(
+        { success: false, message: 'Missing login or password' },
+        { status: 400 }
+      );
     }
 
-    if (!emailOrUsername || !password) {
-      return NextResponse.json({ success: false, message: 'Email/Username and password are required' }, { status: 400 });
-    }
-
+    // 1. Hybrid Lookup (Email OR Username)
     let user = null;
-
-    // Check if input looks like an email
-    if (emailOrUsername.includes('@')) {
-        user = await db.findUserByEmail(emailOrUsername);
+    if (login.includes('@')) {
+      user = await prisma.user.findUnique({ where: { email: login } });
     } else {
-        // Try to find by username
-        // We need to cast db to any or ensure findUserByUsername is in Db type.
-        // Since we added it to lib/db-postgres.ts and lib/db.ts types it as `typeof postgres`, it should be available.
-        if (db.findUserByUsername) {
-             user = await db.findUserByUsername(emailOrUsername);
-        } else {
-            console.error("db.findUserByUsername is not defined");
-            // Fallback or error? If we can't search by username, we can't log them in.
-        }
+      user = await prisma.user.findUnique({ where: { username: login } });
     }
 
-    if (!user) {
-      return NextResponse.json({ success: false, message: 'Invalid username or password' }, { status: 401 });
+    if (!user || !user.password) {
+      return NextResponse.json(
+        { success: false, message: 'Invalid credentials' },
+        { status: 401 }
+      );
     }
 
-    if (!user.password) {
-        // User exists but has no password set (e.g., social login in the future)
-        return NextResponse.json({ success: false, message: 'Invalid username or password' }, { status: 401 });
+    // 2. Verify Password
+    const passwordsMatch = await bcrypt.compare(password, user.password);
+    if (!passwordsMatch) {
+      return NextResponse.json(
+        { success: false, message: 'Invalid credentials' },
+        { status: 401 }
+      );
     }
 
-    const isPasswordValid = await bcrypt.compare(password, user.password);
+    // 3. Prepare User Object (Safe)
+    const userWithoutPassword = {
+      id: user.id,
+      email: user.email,
+      displayName: user.displayName || user.name, // Fallback
+      username: user.username,
+      role: user.role,
+      avatar: user.avatar || user.image, // Fallback
+      // Add other necessary fields for Context
+    };
 
-    if (!isPasswordValid) {
-      return NextResponse.json({ success: false, message: 'Invalid username or password' }, { status: 401 });
+    // 4. Log User In (Set Session)
+    // We use signIn to establish the NextAuth session.
+    // We wrap it to prevent the default redirect behavior from interfering with our JSON response.
+    try {
+       await signIn('credentials', {
+         login,
+         password,
+         redirect: false
+       });
+    } catch (err) {
+      // NextAuth v5 throws a Redirect error even when redirect: false on server-side in some cases?
+      // Or if successful it might just return.
+      // If it throws a redirect error, we catch it.
+      if (isRedirectError(err)) {
+         // This means sign in was successful and tried to redirect.
+         // We swallow the redirect error and return our JSON.
+      } else {
+         // Real error
+         console.error("SignIn error:", err);
+         throw err;
+      }
     }
 
-    // Don't include password hash in the token payload
-    const { password: _password, ...userPayload } = user;
+    // 5. Return Success JSON
+    return NextResponse.json({ success: true, user: userWithoutPassword });
 
-    // Create the session token (JWT)
-    const token = await new SignJWT({ user: userPayload })
-      .setProtectedHeader({ alg: 'HS256' })
-      .setIssuedAt()
-      .setExpirationTime('24h')
-      .sign(JWT_SECRET);
-
-    // Set the session cookie
-    cookies().set(COOKIE_NAME, token, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
-      path: '/',
-      maxAge: 60 * 60 * 24, // 1 day
-    });
-
-    return NextResponse.json({ success: true, user: userPayload });
-
-  } catch (error) {
-    console.error('Login API error:', error);
-    return NextResponse.json({ success: false, message: 'An internal server error occurred' }, { status: 500 });
+  } catch (error: any) {
+    console.error("Login API Error:", error);
+    return NextResponse.json(
+      { success: false, message: 'Internal Server Error' },
+      { status: 500 }
+    );
   }
 }

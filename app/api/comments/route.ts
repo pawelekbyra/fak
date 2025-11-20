@@ -65,8 +65,9 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ success: true, comment: newComment }, { status: 201 });
 
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error posting comment:', error);
-    return NextResponse.json({ success: false, message: 'Internal Server Error' }, { status: 500 });
+    // Return a JSON object with message property
+    return NextResponse.json({ success: false, message: error.message || 'Internal Server Error' }, { status: 500 });
   }
 }
