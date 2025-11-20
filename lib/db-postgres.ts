@@ -6,7 +6,7 @@ let sql: NeonQueryFunction<false, false>;
 
 const MAX_RETRIES = 3;
 const RETRY_DELAY_MS = 100;
-const QUERY_TIMEOUT_MS = 5000; // 5 seconds
+const QUERY_TIMEOUT_MS = 10000; // Increased to 10 seconds
 
 async function queryWithTimeout(query: Promise<any>) {
   return Promise.race([
@@ -417,11 +417,23 @@ export async function getPushSubscriptions(options: { userId?: string, role?: st
 
 export async function getSlide(id: string): Promise<Slide | null> {
     const sql = getDb();
+    // Optimized query: uses LEFT JOINs and GROUP BY to avoid N+1 subqueries
     const result = await sql`
-        SELECT s.*,
-        (SELECT COUNT(*) FROM likes WHERE "slideId" = s.id) as "likeCount",
-        (SELECT COUNT(*) FROM comments WHERE "slideId" = s.id) as "commentCount"
+        SELECT
+            s.*,
+            COALESCE(l.count, 0) as "likeCount",
+            COALESCE(c.count, 0) as "commentCount"
         FROM slides s
+        LEFT JOIN (
+            SELECT "slideId", COUNT(*) as count
+            FROM likes
+            GROUP BY "slideId"
+        ) l ON s.id = l."slideId"
+        LEFT JOIN (
+            SELECT "slideId", COUNT(*) as count
+            FROM comments
+            GROUP BY "slideId"
+        ) c ON s.id = c."slideId"
         WHERE s.id = ${id}
     `;
 
@@ -448,11 +460,23 @@ export async function getSlide(id: string): Promise<Slide | null> {
 
 export async function getAllSlides(): Promise<Slide[]> {
     const sql = getDb();
+    // Optimized query: uses LEFT JOINs and GROUP BY to avoid N+1 subqueries
     const result = await sql`
-        SELECT s.*,
-        (SELECT COUNT(*) FROM likes WHERE "slideId" = s.id) as "likeCount",
-        (SELECT COUNT(*) FROM comments WHERE "slideId" = s.id) as "commentCount"
+        SELECT
+            s.*,
+            COALESCE(l.count, 0) as "likeCount",
+            COALESCE(c.count, 0) as "commentCount"
         FROM slides s
+        LEFT JOIN (
+            SELECT "slideId", COUNT(*) as count
+            FROM likes
+            GROUP BY "slideId"
+        ) l ON s.id = l."slideId"
+        LEFT JOIN (
+            SELECT "slideId", COUNT(*) as count
+            FROM comments
+            GROUP BY "slideId"
+        ) c ON s.id = c."slideId"
         ORDER BY s."createdAt" DESC;
     `;
 
