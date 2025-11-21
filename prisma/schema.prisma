@@ -111,6 +111,7 @@ model Slide {
 model Comment {
   id        String   @id @default(cuid())
   text      String
+  imageUrl  String?
   authorId  String
   author    User     @relation(fields: [authorId], references: [id])
   slideId   String
