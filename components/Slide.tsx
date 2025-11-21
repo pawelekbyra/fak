@@ -2,7 +2,6 @@
 
 import React, { memo, useState, useEffect, useRef } from 'react';
 import Image from 'next/image';
-// USUNIĘTO: import DOMPurify ... (to powodowało błędy, jest teraz w HtmlContent.tsx)
 import { SlideDTO, HtmlSlideDTO, VideoSlideDTO, CommentWithRelations } from '@/lib/dto';
 import { useStore } from '@/store/useStore';
 import VideoControls from './VideoControls';
@@ -20,7 +19,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { CommentSchema } from '@/lib/validators';
 import { z } from 'zod';
 
-// WAŻNE: Importujemy zewnętrzny komponent, który działa poprawnie
+// Importujemy poprawiony komponent
 import HtmlContent from './HtmlContent';
 
 interface SlideUIProps {
@@ -73,9 +72,7 @@ const SlideUI = ({ slide }: SlideUIProps) => {
         className="absolute inset-0 z-10 p-4 flex flex-col justify-end text-white"
         onClick={handleContainerClick}
       >
-        {/* Top gradient */}
         <div className="absolute inset-x-0 top-0 h-24 bg-gradient-to-b from-black/50 to-transparent pointer-events-none" />
-        {/* Bottom gradient */}
         <div className="absolute inset-x-0 bottom-0 h-48 bg-gradient-to-t from-black/50 to-transparent pointer-events-none" />
 
         <AnimatePresence>
@@ -98,7 +95,6 @@ const SlideUI = ({ slide }: SlideUIProps) => {
             )}
         </AnimatePresence>
 
-        {/* UI Controls Container */}
         <div className="relative z-20 pointer-events-none">
             <div className="flex items-center gap-2 mb-2 pointer-events-auto">
                 <Image 
@@ -138,8 +134,6 @@ const SlideUI = ({ slide }: SlideUIProps) => {
     );
   };
 
-// --- Main Slide Component ---
-
 interface SlideProps {
     slide: SlideDTO;
     priorityLoad?: boolean;
@@ -152,7 +146,6 @@ const Slide = memo<SlideProps>(({ slide, priorityLoad = false }) => {
     const showSecretOverlay = slide.access === 'secret' && !isLoggedIn;
     const queryClient = useQueryClient();
 
-    // Prefetch comments logic
     useEffect(() => {
         if (isActive && slide?.id) {
             try {
@@ -190,10 +183,13 @@ const Slide = memo<SlideProps>(({ slide, priorityLoad = false }) => {
             case 'video':
                 return <LocalVideoPlayer slide={slide as VideoSlideDTO} isActive={isActive} shouldLoad={priorityLoad} />;
             case 'html':
-                // FIX: Używamy zewnętrznego komponentu i przekazujemy poprawne propsy 'data' oraz 'isActive'
+                // FIX: Sprawdzamy czy data istnieje, aby uniknąć błędu undefined
+                const htmlSlide = slide as HtmlSlideDTO;
+                if (!htmlSlide.data) return null;
+                
                 return (
                     <HtmlContent 
-                        data={(slide as HtmlSlideDTO).data} 
+                        data={htmlSlide.data} 
                         isActive={isActive} 
                     />
                 );
