@@ -19,7 +19,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { CommentSchema } from '@/lib/validators';
 import { z } from 'zod';
 
-// Przywracamy import zewnętrznego komponentu, który działał w starszej wersji
+// Importujemy zewnętrzny komponent (zgodnie z Twoim plikiem HtmlContent.tsx)
 import HtmlContent from './HtmlContent';
 
 interface SlideUIProps {
@@ -188,8 +188,13 @@ const Slide = memo<SlideProps>(({ slide, priorityLoad = false }) => {
             case 'video':
                 return <LocalVideoPlayer slide={slide as VideoSlideDTO} isActive={isActive} shouldLoad={priorityLoad} />;
             case 'html':
-                // Używamy zaimportowanego komponentu zamiast inlinowego
-                return <HtmlContent slide={slide as HtmlSlideDTO} />;
+                // FIX: Przekazujemy poprawne propsy: data i isActive
+                return (
+                    <HtmlContent 
+                        data={(slide as HtmlSlideDTO).data} 
+                        isActive={isActive} 
+                    />
+                );
             default:
                 return <div className="w-full h-full bg-gray-800 flex items-center justify-center"><p>Unsupported slide type</p></div>;
         }
