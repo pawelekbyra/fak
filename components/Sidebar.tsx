@@ -15,6 +15,7 @@ interface SidebarProps {
   initialIsLiked: boolean;
   slideId: string;
   commentsCount: number;
+  authorId: string;
 }
 
 const Sidebar: React.FC<SidebarProps> = ({
@@ -22,6 +23,7 @@ const Sidebar: React.FC<SidebarProps> = ({
   initialIsLiked,
   slideId,
   commentsCount,
+  authorId,
 }) => {
   const { addToast } = useToast();
   const { t } = useTranslation();
@@ -82,11 +84,7 @@ const Sidebar: React.FC<SidebarProps> = ({
   };
 
   const handleOpenAuthorProfile = () => {
-      // Use a mock ID for now as FeedItem does not pass authorId yet.
-      // In a real app, this should come from `slide.userId` or similar passed prop.
-      // Since I am restricted to this file change for now:
-      const mockAuthorId = 'mock-author-id';
-      openAuthorProfileModal(mockAuthorId);
+    openAuthorProfileModal(authorId);
   };
 
   return (

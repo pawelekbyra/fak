@@ -142,6 +142,7 @@ const SlideUI = ({ slide }: SlideUIProps) => {
             initialLikes={slide.initialLikes}
             initialIsLiked={slide.isLiked}
             commentsCount={slide.initialComments}
+            authorId={slide.userId}
         />
 
         {isVideoSlide && (

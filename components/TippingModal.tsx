@@ -1,14 +1,14 @@
 "use client";
 
 import React, { useState, useMemo, useCallback, memo } from 'react';
-// Utrzymujemy importy, które przechodziły walidację (Input, Button)
 import { Input } from '@/components/ui/input'; 
 import { Button } from '@/components/ui/button'; 
-import { cn } from '@/lib/utils'; // Zakładam, że ten import jest poprawny
+import { cn } from '@/lib/utils';
+import { useStore } from '@/store/useStore';
+import { shallow } from 'zustand/shallow';
 
-// --- Placeholder na logikę i tłumaczenia z prototype'u JS ---
+// --- Helper & Translations ---
 
-// Tłumaczenia (na podstawie prototypu)
 const translations = {
     tippingTitle: 'Bramka Napiwkowa',
     tippingNext: 'DALEJ',
@@ -26,7 +26,8 @@ const translations = {
     errorTermsNotAccepted: 'Musisz zaakceptować regulamin.',
 };
 
-const useTranslation = (key: keyof typeof translations, replacements?: Record<string, string | number>): string => {
+// Renamed to avoid "Rules of Hooks" confusion
+const translate = (key: keyof typeof translations, replacements?: Record<string, string | number>): string => {
     let text = translations[key] || key;
     if (replacements) {
         for (const [k, v] of Object.entries(replacements)) {
@@ -36,9 +37,15 @@ const useTranslation = (key: keyof typeof translations, replacements?: Record<st
     return text;
 };
 
-// Logika, która imituje 3 główne kroki i zarządzanie stanem
+// --- Logic Hook ---
+
 const useTippingLogic = () => {
-    const [isOpen, setIsOpen] = useState(true); // Kontrolowanie widoczności modala
+    // Integrate with Global Store
+    const { isTippingModalOpen, closeTippingModal } = useStore(state => ({
+        isTippingModalOpen: state.isTippingModalOpen,
+        closeTippingModal: state.closeTippingModal
+    }), shallow);
+
     const [currentStep, setCurrentStep] = useState(0); // 0, 1, 2
     const [isProcessing, setIsProcessing] = useState(false);
     const [isTermsVisible, setIsTermsVisible] = useState(false);
@@ -53,31 +60,32 @@ const useTippingLogic = () => {
 
     const totalVisualSteps = 3;
 
-    const steps = [
+    // Moved out to avoid dependency issues or memoized
+    const steps = useMemo(() => [
         { label: 'Opcje', step: 0 },
         { label: 'Kwota', step: 1 },
         { label: 'Płatność', step: 2 },
-    ];
+    ], []);
 
-    const stepLabels = useMemo(() => steps.map(s => s.label), []);
+    const stepLabels = useMemo(() => steps.map(s => s.label), [steps]);
 
     const handleNext = useCallback(() => {
         setLocalError('');
         
         if (currentStep === 0) {
             if (formData.createAccount && !formData.email) {
-                setLocalError(useTranslation('errorEmailRequired'));
+                setLocalError(translate('errorEmailRequired'));
                 return;
             }
             setCurrentStep(1);
 
         } else if (currentStep === 1) {
             if (formData.amount < 1) {
-                 setLocalError(useTranslation('errorMinTipAmount', { minAmount: 1, currency: formData.currency }));
+                 setLocalError(translate('errorMinTipAmount', { minAmount: 1, currency: formData.currency }));
                  return;
             }
             if (!formData.termsAccepted) {
-                 setLocalError(useTranslation('errorTermsNotAccepted'));
+                 setLocalError(translate('errorTermsNotAccepted'));
                  return;
             }
             setIsProcessing(true);
@@ -104,25 +112,18 @@ const useTippingLogic = () => {
             await new Promise(resolve => setTimeout(resolve, 2000)); 
 
             setIsProcessing(false);
-            setIsOpen(false); // Zamknięcie po sukcesie
+            closeTippingModal(); // Close on success
         }
-    }, [currentStep]);
+    }, [currentStep, closeTippingModal]);
 
     const handleClose = useCallback(() => {
-        setIsOpen(false);
-        // Opcjonalne: pełny reset stanu
+        closeTippingModal();
+        // Reset state if needed, or let it persist
         // setCurrentStep(0);
-        // setIsTermsVisible(false);
-        // setIsProcessing(false);
-        // setLocalError('');
-    }, []);
-
-    // Placeholder do otwierania/zamykania, na potrzeby renderowania go otwartego
-    const showModal = () => setIsOpen(true);
+    }, [closeTippingModal]);
 
     return {
-        isOpen,
-        showModal,
+        isOpen: isTippingModalOpen,
         currentStep,
         stepLabels,
         totalVisualSteps,
@@ -139,7 +140,7 @@ const useTippingLogic = () => {
     };
 };
 
-// --- Komponent paska postępu ---
+// --- Sub-components ---
 
 interface ProgressBarProps {
     currentStep: number;
@@ -189,14 +190,12 @@ const ProgressBar = memo<ProgressBarProps>(({ currentStep, totalSteps, stepLabel
 
 ProgressBar.displayName = 'ProgressBar';
 
-// --- Komponent kroku 0: Email/Opcje (Użycie standardowego input type="checkbox") ---
-
-interface Step0EmailProps {
+interface StepProps {
     formData: ReturnType<typeof useTippingLogic>['formData'];
     setFormData: ReturnType<typeof useTippingLogic>['setFormData'];
 }
 
-const Step0Email = ({ formData, setFormData }: Step0EmailProps) => (
+const Step0Email = ({ formData, setFormData }: StepProps) => (
     <div className="space-y-6 px-6 py-4">
         <div className="flex items-center space-x-3">
             <input
@@ -210,10 +209,10 @@ const Step0Email = ({ formData, setFormData }: Step0EmailProps) => (
                     appearance-none checked:bg-pink-600 checked:border-transparent 
                     transition duration-150 ease-in-out cursor-pointer
                 "
-                style={{ WebkitAppearance: 'none', MozAppearance: 'none' }} // Dla lepszej kompatybilności
+                style={{ WebkitAppearance: 'none', MozAppearance: 'none' }}
             />
             <label htmlFor="createAccount" className="text-gray-300 cursor-pointer text-base">
-                {useTranslation('createAccountLabel')}
+                {translate('createAccountLabel')}
             </label>
         </div>
         
@@ -222,7 +221,7 @@ const Step0Email = ({ formData, setFormData }: Step0EmailProps) => (
             <Input
                 id="email"
                 type="email"
-                placeholder={useTranslation('emailPlaceholder')}
+                placeholder={translate('emailPlaceholder')}
                 value={formData.email}
                 onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
                 className="bg-gray-800 border-gray-700 text-white placeholder:text-gray-500 focus:border-pink-600"
@@ -232,10 +231,7 @@ const Step0Email = ({ formData, setFormData }: Step0EmailProps) => (
     </div>
 );
 
-// --- Komponent kroku 1: Kwota/Regulamin (Użycie standardowego <select>) ---
-
-const Step1Amount = ({ formData, setFormData }: Step0EmailProps) => {
-    
+const Step1Amount = ({ formData, setFormData }: StepProps) => {
     const availableCurrencies = ['EUR', 'PLN', 'USD', 'GBP'];
 
     return (
@@ -247,13 +243,12 @@ const Step1Amount = ({ formData, setFormData }: Step0EmailProps) => {
                     type="number"
                     step="0.01"
                     min={formData.currency === 'PLN' ? 5 : 1}
-                    placeholder={useTranslation('amountPlaceholder')}
+                    placeholder={translate('amountPlaceholder')}
                     value={formData.amount > 0 ? formData.amount : ''}
                     onChange={(e) => setFormData(prev => ({ ...prev, amount: parseFloat(e.target.value) || 0 }))}
                     className="flex-1 bg-gray-800 border-gray-700 text-white placeholder:text-gray-500 focus:border-pink-600"
                 />
                 
-                {/* Zastąpienie Select komponentem HTML <select> */}
                 <div className="relative">
                     <select
                         value={formData.currency}
@@ -270,13 +265,11 @@ const Step1Amount = ({ formData, setFormData }: Step0EmailProps) => {
                             </option>
                         ))}
                     </select>
-                    {/* Ikona dla wizualizacji Select */}
                     <svg className="absolute right-2 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path></svg>
                 </div>
             </div>
 
             <div className="flex items-start space-x-3 pt-4">
-                {/* Zastąpienie Checkbox komponentem HTML input type="checkbox" */}
                 <input
                     id="termsAccepted"
                     type="checkbox"
@@ -291,9 +284,9 @@ const Step1Amount = ({ formData, setFormData }: Step0EmailProps) => {
                     style={{ WebkitAppearance: 'none', MozAppearance: 'none' }}
                 />
                 <label htmlFor="termsAccepted" className="text-gray-300 cursor-pointer text-base">
-                    {useTranslation('termsLabel')} (
+                    {translate('termsLabel')} (
                     <span 
-                        onClick={() => setFormData(prev => ({ ...prev, isTermsVisible: true }))} // Zmiana na wewnętrzną funkcję
+                        onClick={() => setFormData(prev => ({ ...prev, isTermsVisible: true }))}
                         className="text-pink-600 hover:text-pink-400 transition cursor-pointer"
                     >
                         pokaż
@@ -304,8 +297,6 @@ const Step1Amount = ({ formData, setFormData }: Step0EmailProps) => {
     );
 };
 
-// --- Komponent kroku 2: Płatność (Stripe) ---
-
 interface Step2PaymentProps {
     formData: ReturnType<typeof useTippingLogic>['formData'];
     isProcessing: boolean;
@@ -314,7 +305,7 @@ interface Step2PaymentProps {
 const Step2Payment = ({ formData, isProcessing }: Step2PaymentProps) => (
     <div className="space-y-6 px-6 py-4">
         <p id="tippingSummaryAmount" className="text-lg font-semibold text-center text-pink-500 border-b border-gray-700 pb-2">
-            {useTranslation('tippingSummaryLabel')} {(formData.amount || 0).toFixed(2)} {formData.currency.toUpperCase()}
+            {translate('tippingSummaryLabel')} {(formData.amount || 0).toFixed(2)} {formData.currency.toUpperCase()}
         </p>
 
         <label className="text-gray-400 text-sm mb-2 block">Dane do płatności</label>
@@ -325,7 +316,7 @@ const Step2Payment = ({ formData, isProcessing }: Step2PaymentProps) => (
             isProcessing && "opacity-50"
         )}>
             {isProcessing ? (
-                <p className="text-pink-500 font-medium">{useTranslation('changingButtonText')}</p>
+                <p className="text-pink-500 font-medium">{translate('changingButtonText')}</p>
             ) : (
                 <p className="text-gray-500">Stripe Payment Element (ładowanie formularza)</p>
             )}
@@ -335,16 +326,15 @@ const Step2Payment = ({ formData, isProcessing }: Step2PaymentProps) => (
     </div>
 );
 
-// --- Komponent Regulaminu ---
 const TermsContent = ({ setIsTermsVisible }: { setIsTermsVisible: (val: boolean) => void }) => (
     <div className="absolute inset-0 z-50 bg-gray-900 rounded-lg p-6 flex flex-col">
-        <h2 className="text-xl font-bold text-white text-center mb-4">{useTranslation('tippingTermsTitle')}</h2>
+        <h2 className="text-xl font-bold text-white text-center mb-4">{translate('tippingTermsTitle')}</h2>
         <div className="flex-1 overflow-y-auto text-gray-400 text-sm space-y-3 p-2 bg-gray-800 rounded-md">
             <p>To jest miejsce na szczegółowy regulamin dotyczący napiwków i płatności.</p>
             <p>1. Akceptacja regulaminu jest obowiązkowa w celu przejścia do płatności.</p>
             <p>2. Minimalna kwota napiwku wynosi 1 EUR / 5 PLN.</p>
             <p>3. Dziękujemy za wsparcie!</p>
-            <p>Zgodnie z prototypem, ta treść jest wyświetlana, gdy użytkownik kliknie "pokaż" obok checkboxa z akceptacją regulacji.</p>
+            <p>Zgodnie z prototypem, ta treść jest wyświetlana, gdy użytkownik kliknie &quot;pokaż&quot; obok checkboxa z akceptacją regulacji.</p>
         </div>
         <div className="mt-4 flex justify-end">
             <Button
@@ -358,11 +348,11 @@ const TermsContent = ({ setIsTermsVisible }: { setIsTermsVisible: (val: boolean)
     </div>
 );
 
+// --- Main Component ---
 
-// --- Główny komponent modala ---
-
-export const TippingModal = ({ showModal, isOpen }: { showModal: () => void, isOpen: boolean }) => {
+const TippingModal = () => {
     const { 
+        isOpen,
         currentStep, 
         stepLabels, 
         totalVisualSteps, 
@@ -378,10 +368,9 @@ export const TippingModal = ({ showModal, isOpen }: { showModal: () => void, isO
         setIsTermsVisible
     } = useTippingLogic(); 
 
-    if (!isOpen) return null; // Zastępuje logikę Dialog.open
+    if (!isOpen) return null;
 
-    const title = isTermsVisible ? useTranslation('tippingTermsTitle') : useTranslation('tippingTitle');
-    const accentColor = 'border-pink-600';
+    const title = isTermsVisible ? translate('tippingTermsTitle') : translate('tippingTitle');
 
     const renderStepContent = () => {
         switch (currentStep) {
@@ -398,7 +387,7 @@ export const TippingModal = ({ showModal, isOpen }: { showModal: () => void, isO
                             <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" className="opacity-25"></circle>
                             <path fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" className="opacity-75"></path>
                         </svg>
-                        <h3 className="mt-4 text-xl font-semibold text-white">{useTranslation('changingButtonText')}</h3>
+                        <h3 className="mt-4 text-xl font-semibold text-white">{translate('changingButtonText')}</h3>
                         <p className="mt-2 text-gray-400">Proszę nie zamykać okna...</p>
                     </div>
                 );
@@ -408,18 +397,15 @@ export const TippingModal = ({ showModal, isOpen }: { showModal: () => void, isO
     };
 
     return (
-        // Cała struktura modala z niestandardową obsługą zamykania
         <div className="fixed inset-0 z-50 bg-black/70 flex items-center justify-center p-4" onClick={handleClose}>
             <div 
                 className={cn(
-                    // Ograniczona szerokość, ciemne tło, zaokrąglenia
                     "relative bg-gray-900 text-white rounded-xl shadow-2xl transition-all duration-300 p-0 border border-gray-700",
                     isTermsVisible ? "max-w-xl" : "max-w-md",
                     "w-full"
                 )}
-                onClick={(e) => e.stopPropagation()} // Zapobieganie zamknięciu po kliknięciu w środek
+                onClick={(e) => e.stopPropagation()}
             >
-                {/* Przycisk zamknięcia modala (DialogHeader) */}
                 <button 
                     onClick={handleClose} 
                     className="absolute top-3 right-3 text-gray-500 hover:text-white transition z-10 p-2"
@@ -428,14 +414,12 @@ export const TippingModal = ({ showModal, isOpen }: { showModal: () => void, isO
                     <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path></svg>
                 </button>
 
-                {/* Tytuł */}
                 <div className="p-6 pb-0">
                     <h2 className="text-center text-2xl font-bold text-white relative">
                         {title}
                     </h2>
                 </div>
 
-                {/* Pasek postępu (ukryty dla widoku Regulaminu/Przetwarzania) */}
                 {!isTermsVisible && currentStep < 3 && (
                     <ProgressBar 
                         currentStep={currentStep} 
@@ -444,14 +428,11 @@ export const TippingModal = ({ showModal, isOpen }: { showModal: () => void, isO
                     />
                 )}
                 
-                {/* Treść kroku */}
                 <div className="relative flex-1 min-h-[250px] overflow-y-auto">
                     {renderStepContent()}
-                    {/* Nakładka z regulaminem */}
                     {isTermsVisible && <TermsContent setIsTermsVisible={setIsTermsVisible} />}
                 </div>
 
-                {/* Stopka z przyciskami nawigacyjnymi i błędami (ukryta dla Regulaminu/Przetwarzania) */}
                 {!isTermsVisible && currentStep < 3 && (
                     <div className="px-6 py-4 border-t border-gray-800">
                         {localError && (
@@ -459,7 +440,6 @@ export const TippingModal = ({ showModal, isOpen }: { showModal: () => void, isO
                         )}
                         
                         <div className="flex justify-between items-center gap-4">
-                            {/* Przycisk Wstecz (ukryty w pierwszym kroku) */}
                             {currentStep > 0 && (
                                 <Button
                                     variant="outline"
@@ -471,26 +451,23 @@ export const TippingModal = ({ showModal, isOpen }: { showModal: () => void, isO
                                 </Button>
                             )}
 
-                            {/* Przycisk Dalej / Płacę */}
-                            {(currentStep < 2 || currentStep === 2) && (
-                                <Button
-                                    onClick={currentStep === 2 ? handleSubmit : handleNext}
-                                    disabled={isProcessing}
-                                    className={cn(
-                                        "w-full bg-pink-600 text-white font-bold hover:bg-pink-700 transition duration-150",
-                                        currentStep > 0 && currentStep < 2 && "ml-auto" 
-                                    )}
-                                >
-                                    {isProcessing ? (
-                                        <div className="flex items-center justify-center">
-                                            <span className="animate-spin mr-2 border-2 border-white border-t-transparent rounded-full w-4 h-4"></span>
-                                            {useTranslation('changingButtonText')}
-                                        </div>
-                                    ) : (
-                                        currentStep === 2 ? useTranslation('tippingPay') : useTranslation('tippingNext')
-                                    )}
-                                </Button>
-                            )}
+                            <Button
+                                onClick={currentStep === 2 ? handleSubmit : handleNext}
+                                disabled={isProcessing}
+                                className={cn(
+                                    "w-full bg-pink-600 text-white font-bold hover:bg-pink-700 transition duration-150",
+                                    (currentStep === 0) ? "w-full" : (currentStep > 0 && currentStep < 2) ? "ml-auto" : "w-full"
+                                )}
+                            >
+                                {isProcessing ? (
+                                    <div className="flex items-center justify-center">
+                                        <span className="animate-spin mr-2 border-2 border-white border-t-transparent rounded-full w-4 h-4"></span>
+                                        {translate('changingButtonText')}
+                                    </div>
+                                ) : (
+                                    currentStep === 2 ? translate('tippingPay') : translate('tippingNext')
+                                )}
+                            </Button>
                         </div>
                     </div>
                 )}
@@ -498,3 +475,5 @@ export const TippingModal = ({ showModal, isOpen }: { showModal: () => void, isO
         </div>
     );
 };
+
+export default TippingModal;
