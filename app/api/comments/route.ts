@@ -4,19 +4,24 @@ import { auth } from '@/auth';
 import { sanitize } from '@/lib/sanitize';
 import { rateLimit } from '@/lib/rate-limiter';
 import { ably } from '@/lib/ably-server';
+import { prisma } from '@/lib/prisma'; // Import prisma for direct checks if needed, but we should try to use db layer
+
 export const dynamic = 'force-dynamic';
 
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
   const slideId = searchParams.get('slideId');
+  const cursor = searchParams.get('cursor') || undefined;
+  const limitParam = searchParams.get('limit');
+  const limit = limitParam ? parseInt(limitParam, 10) : 20;
 
   if (!slideId) {
     return NextResponse.json({ success: false, message: 'slideId is required' }, { status: 400 });
   }
 
   try {
-    const comments = await db.getComments(slideId);
-    return NextResponse.json({ success: true, comments });
+    const { comments, nextCursor } = await db.getComments(slideId, { limit, cursor });
+    return NextResponse.json({ success: true, comments, nextCursor });
   } catch (error) {
     console.error('Error fetching comments:', error);
     return NextResponse.json({ success: false, message: 'Internal Server Error' }, { status: 500 });
@@ -86,31 +91,21 @@ export async function DELETE(request: NextRequest) {
         return NextResponse.json({ success: false, message: 'commentId is required' }, { status: 400 });
       }
 
-      // We need to check if the user is the author of the comment
-      // Assuming db.deleteComment handles permission check or we do it here by fetching comment first.
-      // For simplicity, we'll assume the DB method or this logic handles it.
-      // But wait, db.deleteComment might not exist or might need strict checks.
+      // Secure Delete: explicit check before calling DB delete
+      // Although db.deleteComment has a check, adding a redundant check here as requested by prompt "In app/api/comments/route.ts ... check if session.user.id == authorId"
 
-      // Let's verify ownership first
-      // Since db.getComments returns a list, we might need a getCommentById if available, or just try delete and catch error if not owned.
-      // Assuming db.deleteComment(id, userId) exists or we implement a safe delete.
-      // The prompt said "add delete support if necessary, or mock".
-      // I'll implement a mock/placeholder for now if db.deleteComment is not readily apparent in my memory,
-      // BUT I should check db.ts/db-postgres.ts.
-      // I'll assume db.deleteComment exists or I should add it.
+      const comment = await prisma.comment.findUnique({
+        where: { id: commentId },
+        select: { authorId: true }
+      });
 
-      // Let's just implement a safe check if possible.
-      // Since I cannot see db-postgres.ts right now in this turn, I will assume a function exists or just mock the success
-      // if I want to be safe. But real implementation is better.
+      if (!comment) {
+        return NextResponse.json({ success: false, message: 'Comment not found' }, { status: 404 });
+      }
 
-      // Let's try to call db.deleteComment. If it fails, I'll catch.
-      // Actually, I should check if the function exists.
-
-      // I will assume it exists for now as it is a standard operation.
-      // If not, I'll have to fix it in verification.
-
-      // Actually, looking at previous file list, db-postgres.ts exists.
-      // I'll assume db.deleteComment(commentId, userId) is the signature.
+      if (comment.authorId !== currentUser.id) {
+        return NextResponse.json({ success: false, message: 'Unauthorized' }, { status: 403 });
+      }
 
       await db.deleteComment(commentId, currentUser.id!);
 

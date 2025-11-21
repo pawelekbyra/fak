@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Heart, MessageSquare, Loader2, MoreHorizontal, Trash, Flag, Smile } from 'lucide-react';
 import Image from 'next/image';
@@ -184,7 +184,7 @@ interface CommentsModalProps {
 }
 
 const CommentsModal: React.FC<CommentsModalProps> = ({ isOpen, onClose, slideId, initialCommentsCount }) => {
-  const { t, lang } = useTranslation(); // Assuming lang is available in useTranslation context
+  const { t, lang } = useTranslation();
   const { user } = useUser();
   const { addToast } = useToast();
   const [comments, setComments] = useState<CommentWithRelations[]>([]);
@@ -192,6 +192,11 @@ const CommentsModal: React.FC<CommentsModalProps> = ({ isOpen, onClose, slideId,
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Pagination State
+  const [nextCursor, setNextCursor] = useState<string | null>(null);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
+
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   // Auto-resize textarea
@@ -202,10 +207,68 @@ const CommentsModal: React.FC<CommentsModalProps> = ({ isOpen, onClose, slideId,
     }
   }, [newComment]);
 
+  const loadComments = useCallback(async (cursor?: string) => {
+      if (!slideId) return;
+
+      const isInitial = !cursor;
+      if (isInitial) {
+        setIsLoading(true);
+        setError(null);
+      } else {
+        setIsLoadingMore(true);
+      }
+
+      try {
+          const params = new URLSearchParams({ slideId, limit: '20' });
+          if (cursor) params.append('cursor', cursor);
+
+          const res = await fetch(`/api/comments?${params.toString()}`);
+          if (!res.ok) throw new Error('Failed to fetch comments');
+
+          const data = await res.json();
+          if (data.success) {
+            const parsedComments = z.array(CommentSchema).parse(data.comments);
+            const commentMap = new Map<string, CommentWithRelations>(parsedComments.map((c: any) => [c.id, { ...c, author: c.author || c.user, replies: [] }]));
+            const rootComments: CommentWithRelations[] = [];
+
+            for (const rawComment of parsedComments as any[]) {
+               const comment = commentMap.get(rawComment.id)!;
+               // If it's a reply and we have its parent in this batch, append it
+               // Note: This logic assumes replies come in the same batch or we only handle nested structure if fetch returns it that way.
+               // Current backend structure fetches replies joined to comments, so `replies` field is already populated by Prisma include,
+               // but the DTO flattening logic in `getComments` might need attention if we rely on `parentId` purely.
+               // Update: getComments in db-postgres returns nested `replies` array.
+               // So we just need to take the top-level comments (where parentId is null).
+               // Prisma query filters `where: { parentId: null }` so we only get roots.
+               // So simply using parsedComments is enough, they are roots.
+               rootComments.push(comment);
+            }
+
+            if (isInitial) {
+                setComments(rootComments);
+            } else {
+                setComments(prev => [...prev, ...rootComments]);
+            }
+            setNextCursor(data.nextCursor);
+          } else {
+            throw new Error(data.message || 'Failed to fetch comments');
+          }
+      } catch (err: any) {
+          console.error("Fetch Error:", err);
+          if (isInitial) setError(err.message || 'Invalid data received');
+      } finally {
+          setIsLoading(false);
+          setIsLoadingMore(false);
+      }
+  }, [slideId]);
+
   useEffect(() => {
     if (isOpen && slideId) {
-      const channel = ably.channels.get(`comments:${slideId}`);
+      setComments([]);
+      setNextCursor(null);
+      loadComments();
 
+      const channel = ably.channels.get(`comments:${slideId}`);
       const onNewComment = (message: Ably.Message) => {
         const data = message.data as any;
         const mappedComment: CommentWithRelations = {
@@ -214,56 +277,23 @@ const CommentsModal: React.FC<CommentsModalProps> = ({ isOpen, onClose, slideId,
             likedBy: data.likedBy || [],
             replies: []
         };
+        // Avoid adding duplicate if it was already fetched or added optimistically (though fetch shouldn't race this usually)
         addCommentOptimistically(mappedComment);
       };
 
       channel.subscribe('new-comment', onNewComment);
 
-      setIsLoading(true);
-      setError(null);
-      fetch(`/api/comments?slideId=${slideId}`)
-        .then(res => {
-          if (!res.ok) {
-            throw new Error('Failed to fetch comments');
-          }
-          return res.json();
-        })
-        .then(data => {
-          if (data.success) {
-            const parsedComments = z.array(CommentSchema).parse(data.comments);
-            const commentMap = new Map<string, CommentWithRelations>(parsedComments.map((c: any) => [c.id, { ...c, author: c.author || c.user, replies: [] }]));
-            const rootComments: CommentWithRelations[] = [];
-
-            for (const rawComment of parsedComments as any[]) {
-               const comment = commentMap.get(rawComment.id)!;
-               if (rawComment.parentId && commentMap.has(rawComment.parentId)) {
-                const parentComment = commentMap.get(rawComment.parentId);
-                if (parentComment) {
-                  if (!parentComment.replies) parentComment.replies = [];
-                  parentComment.replies.push(comment);
-                }
-              } else {
-                rootComments.push(comment);
-              }
-            }
-            setComments(rootComments);
-          } else {
-            throw new Error(data.message || 'Failed to fetch comments');
-          }
-        })
-        .catch(err => {
-          console.error("Validation or Fetch Error:", err);
-          setError(err.message || 'Invalid data received');
-        })
-        .finally(() => {
-          setIsLoading(false);
-        });
-
       return () => {
         channel.unsubscribe('new-comment', onNewComment);
       };
     }
-  }, [isOpen, slideId]);
+  }, [isOpen, slideId, loadComments]);
+
+  const handleLoadMore = () => {
+      if (nextCursor) {
+          loadComments(nextCursor);
+      }
+  };
 
   const handleLike = async (commentId: string) => {
     if (!user) {
@@ -302,12 +332,19 @@ const CommentsModal: React.FC<CommentsModalProps> = ({ isOpen, onClose, slideId,
   };
 
   const addCommentOptimistically = (newComment: CommentWithRelations) => {
-    if ((newComment as any).parentId) {
-      setComments(prev => {
+    // If it's a new real-time comment or own comment, we verify uniqueness before adding to avoid dups from fetch + socket
+    setComments(prev => {
+      const exists = prev.some(c => c.id === newComment.id);
+      if (exists) return prev; // Don't add if already there (e.g. loaded from cursor or own optimistic)
+
+      if ((newComment as any).parentId) {
         const newComments = [...prev];
         const addReply = (comment: CommentWithRelations): CommentWithRelations => {
           if (comment.id === (newComment as any).parentId) {
-            return { ...comment, replies: [newComment, ...(comment.replies || [])] };
+            // Check if reply exists
+            const replyExists = comment.replies?.some(r => r.id === newComment.id);
+            if (replyExists) return comment;
+            return { ...comment, replies: [...(comment.replies || []), newComment] }; // Append replies at end usually
           }
           if (comment.replies) {
             return { ...comment, replies: comment.replies.map(addReply) };
@@ -315,10 +352,11 @@ const CommentsModal: React.FC<CommentsModalProps> = ({ isOpen, onClose, slideId,
           return comment;
         };
         return newComments.map(addReply);
-      });
-    } else {
-      setComments(prev => [newComment, ...prev]);
-    }
+      } else {
+        // New root comments go to top
+        return [newComment, ...prev];
+      }
+    });
   };
 
   const removeCommentOptimistically = (commentId: string) => {
@@ -359,7 +397,7 @@ const CommentsModal: React.FC<CommentsModalProps> = ({ isOpen, onClose, slideId,
     const newReply: CommentWithRelations = {
       id: tempId,
       text,
-      createdAt: new Date().toISOString() as any, // DTO might expect string but for local display we need date handling. Actually DTO says string (ISO).
+      createdAt: new Date().toISOString() as any,
       updatedAt: new Date().toISOString() as any,
       authorId: user.id,
       slideId: slideId,
@@ -374,7 +412,19 @@ const CommentsModal: React.FC<CommentsModalProps> = ({ isOpen, onClose, slideId,
       // @ts-ignore
       parentId,
     };
-    addCommentOptimistically(newReply);
+    // Manually add optimistic reply since addCommentOptimistically has duplication checks that might conflict with temp IDs or logic
+    setComments(prev => {
+        const addReply = (comment: CommentWithRelations): CommentWithRelations => {
+          if (comment.id === parentId) {
+            return { ...comment, replies: [...(comment.replies || []), newReply] };
+          }
+          if (comment.replies) {
+            return { ...comment, replies: comment.replies.map(addReply) };
+          }
+          return comment;
+        };
+        return prev.map(addReply);
+    });
 
     try {
       const res = await fetch('/api/comments', {
@@ -433,7 +483,9 @@ const CommentsModal: React.FC<CommentsModalProps> = ({ isOpen, onClose, slideId,
       // @ts-ignore
       parentId: null,
     };
-    addCommentOptimistically(newCommentData);
+
+    // Optimistic add
+    setComments(prev => [newCommentData, ...prev]);
 
     try {
       const res = await fetch('/api/comments', {
@@ -488,7 +540,7 @@ const CommentsModal: React.FC<CommentsModalProps> = ({ isOpen, onClose, slideId,
   }
 
   const renderContent = () => {
-    if (isLoading) {
+    if (isLoading && comments.length === 0) {
       return (
         <div className="flex-1 p-4 space-y-4">
            {[...Array(3)].map((_, i) => (
@@ -503,14 +555,14 @@ const CommentsModal: React.FC<CommentsModalProps> = ({ isOpen, onClose, slideId,
         </div>
       );
     }
-    if (error) {
+    if (error && comments.length === 0) {
       return (
         <div className="flex-1 flex items-center justify-center text-center text-red-400 p-4">
           {error}
         </div>
       );
     }
-    if (comments.length === 0) {
+    if (comments.length === 0 && !isLoading) {
         return (
             <div className="flex-1 flex items-center justify-center text-center text-white/60 p-4">
                 {t('noCommentsYet')}
@@ -533,6 +585,18 @@ const CommentsModal: React.FC<CommentsModalProps> = ({ isOpen, onClose, slideId,
                 lang={lang}
               />
             ))}
+            {nextCursor && (
+                 <div className="flex justify-center pt-2 pb-4">
+                    <button
+                        onClick={handleLoadMore}
+                        disabled={isLoadingMore}
+                        className="text-sm text-pink-400 hover:text-pink-300 disabled:opacity-50 flex items-center gap-2"
+                    >
+                        {isLoadingMore && <Loader2 className="animate-spin h-3 w-3" />}
+                        {t('loadMore') || 'Load More'}
+                    </button>
+                 </div>
+            )}
           </motion.div>
         </AnimatePresence>
       </div>
