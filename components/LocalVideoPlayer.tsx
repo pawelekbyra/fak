@@ -10,7 +10,7 @@ import { cn } from '@/lib/utils';
 interface LocalVideoPlayerProps {
     slide: VideoSlideDTO;
     isActive: boolean;
-    shouldLoad?: boolean; // Odbieramy prop do preloadingu
+    shouldLoad?: boolean; // Received for preloading
 }
 
 const LocalVideoPlayer = ({ slide, isActive, shouldLoad = false }: LocalVideoPlayerProps) => {
@@ -27,7 +27,7 @@ const LocalVideoPlayer = ({ slide, isActive, shouldLoad = false }: LocalVideoPla
         shallow
     );
 
-    // 1. Inicjalizacja HLS (tylko raz)
+    // 1. Initialize HLS (once)
     useEffect(() => {
         const video = videoRef.current;
         if (!video) return;
@@ -36,8 +36,14 @@ const LocalVideoPlayer = ({ slide, isActive, shouldLoad = false }: LocalVideoPla
 
         if (Hls.isSupported() && hlsUrl) {
             const hls = new Hls({
-                autoStartLoad: false, // WAŻNE: Nie ładuj automatycznie, czekaj na sygnał
+                autoStartLoad: false, // IMPORTANT: Do not auto load, wait for signal
                 capLevelToPlayerSize: true,
+                // Optimization for "Instant Start" (ExoPlayer feel)
+                maxBufferLength: 30,
+                maxMaxBufferLength: 60,
+                enableWorker: true,
+                startLevel: -1, // Auto start level
+                backBufferLength: 10, // Keep some back buffer for replays
             });
             hlsRef.current = hls;
             hls.attachMedia(video);
@@ -62,22 +68,31 @@ const LocalVideoPlayer = ({ slide, isActive, shouldLoad = false }: LocalVideoPla
         }
     }, [slide.data.hlsUrl, slide.data.mp4Url]);
 
-    // 2. Logika Preloadingu (Smart Loading)
+    // 2. Preloading Logic (Smart Loading)
     useEffect(() => {
         const hls = hlsRef.current;
         
-        // Jeśli slajd jest aktywny LUB jest następny w kolejce (shouldLoad) -> ładujemy dane
+        // If slide is active OR next in queue (shouldLoad) -> load data
         if ((isActive || shouldLoad) && hls && slide.data.hlsUrl) {
-            // Sprawdź, czy już nie załadowano, aby uniknąć duplikatów
-            if (hls.url !== slide.data.hlsUrl) {
-                 console.log(`Preloading video ${slide.id}`);
+            // Check if not already loaded to avoid duplicates
+            // Hls.js internal check or simplistic url check
+            // note: hls.url might not always be populated directly depending on version,
+            // but safe to call loadSource if we manage state correctly.
+            // We can assume if hlsRef exists and we are here, we want to load.
+
+            // We can check if media is already attached and has source
+            if (!videoRef.current?.src && !hls.url) {
+                 // console.log(`Preloading video ${slide.id}`);
                  hls.loadSource(slide.data.hlsUrl);
                  hls.startLoad();
+            } else if (hls.url === slide.data.hlsUrl && !isActive && shouldLoad) {
+                // Ensure we are loading if it was stopped?
+                hls.startLoad();
             }
         }
     }, [isActive, shouldLoad, slide.data.hlsUrl, slide.id]);
 
-    // 3. Logika Odtwarzania (Tylko Active)
+    // 3. Playback Logic (Only Active)
     useEffect(() => {
         const video = videoRef.current;
         if (!video) return;
@@ -88,20 +103,20 @@ const LocalVideoPlayer = ({ slide, isActive, shouldLoad = false }: LocalVideoPla
             const playPromise = video.play();
             if (playPromise !== undefined) {
                 playPromise.catch(error => {
-                    console.warn("Autoplay prevented", error);
-                    // Tu można dodać logikę pokazania przycisku "Play" w razie błędu
+                   // console.warn("Autoplay prevented", error);
                 });
             }
         } else {
             video.pause();
             if (!isActive) {
-                // Opcjonalnie: przewiń do początku po przewinięciu dalej
+                // Optional: reset time if needed, but usually keeping it paused is better for "resume" feel
+                // unless we want TikTok style reset. TikTok resets usually.
                 // video.currentTime = 0; 
             }
         }
     }, [isActive, isPlaying]);
 
-    // 4. Obsługa Mute
+    // 4. Handle Mute
     useEffect(() => {
         if (videoRef.current) {
             videoRef.current.muted = isMuted;
