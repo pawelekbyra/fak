@@ -1,12 +1,16 @@
-import React, { useMemo, useState, useEffect, useRef } from 'react';
+import React, { useMemo, useEffect } from 'react';
 import { useInfiniteQuery } from '@tanstack/react-query';
-import { Virtuoso } from 'react-virtuoso';
+import { Swiper, SwiperSlide } from 'swiper/react';
+import { Mousewheel, Keyboard } from 'swiper/modules';
 import Slide from '@/components/Slide';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useStore } from '@/store/useStore';
 import { SlidesResponseSchema } from '@/lib/validators';
 import { SlideDTO } from '@/lib/dto';
 import { shallow } from 'zustand/shallow';
+
+// Import Swiper styles
+import 'swiper/css';
 
 const fetchSlides = async ({ pageParam = '' }) => {
   const res = await fetch(`/api/slides?cursor=${pageParam}&limit=5`);
@@ -31,11 +35,6 @@ const MainFeed = () => {
     playVideo: state.playVideo,
     activeSlide: state.activeSlide
   }), shallow);
-
-  const [currentViewIndex, setCurrentViewIndex] = useState(0);
-
-  // Timer ref for debounce
-  const debounceTimerRef = useRef<NodeJS.Timeout | null>(null);
 
   const {
     data,
@@ -73,50 +72,48 @@ const MainFeed = () => {
   }
 
   return (
-    <Virtuoso
-      className="snap-y snap-mandatory"
-      style={{ height: '100vh' }}
-      data={slides}
-      overscan={200}
-      endReached={() => hasNextPage && fetchNextPage()}
-      itemContent={(index, slide) => {
-        const priorityLoad = index === currentViewIndex || index === currentViewIndex + 1;
-        return (
-          <div className="h-screen w-full snap-start">
-             <Slide slide={slide} priorityLoad={priorityLoad} />
-          </div>
-        );
-      }}
-      rangeChanged={(range) => {
-          // Clear any existing timer to debounce rapid scrolling
-          if (debounceTimerRef.current) {
-              clearTimeout(debounceTimerRef.current);
-          }
+    <div id="webyx-container" className="h-screen w-full bg-black">
+      <Swiper
+        direction={'vertical'}
+        loop={true}
+        mousewheel={true}
+        keyboard={{ enabled: true }}
+        modules={[Mousewheel, Keyboard]}
+        className="h-full w-full"
+        onSlideChange={(swiper) => {
+           const realIndex = swiper.realIndex;
+           const currentSlide = slides[realIndex];
+           const nextSlide = slides[(realIndex + 1) % slides.length]; // Simple circular next slide for loop
 
-          // Set a new timer
-          debounceTimerRef.current = setTimeout(() => {
-              // Detect which slide is active.
-              // Since items are full screen, startIndex is effectively the active one when snapping completes.
-              const activeIndex = range.startIndex;
-              setCurrentViewIndex(activeIndex);
+           if (currentSlide && activeSlide?.id !== currentSlide.id) {
+               setActiveSlide(currentSlide);
+               setNextSlide(nextSlide);
+               if (currentSlide.type === 'video') {
+                   playVideo();
+               }
+           }
 
-              if (activeIndex >= 0 && activeIndex < slides.length) {
-                  const currentSlide = slides[activeIndex];
-                  const nextSlide = slides[activeIndex + 1] || null;
-
-                  // Only update if changed to avoid unnecessary re-renders
-                  if (activeSlide?.id !== currentSlide.id) {
-                      setActiveSlide(currentSlide);
-                      setNextSlide(nextSlide);
-
-                      if (currentSlide.type === 'video') {
-                          playVideo();
-                      }
-                  }
-              }
-          }, 80); // Reduced debounce to 80ms for snappier response
-      }}
-    />
+           // Fetch more if we are near the end of the list (accounting for loop duplicates logic roughly)
+           // In loop mode, Swiper handles indices differently, but realIndex maps to data index.
+           if (hasNextPage && realIndex >= slides.length - 2) {
+               fetchNextPage();
+           }
+        }}
+      >
+        {slides.map((slide) => (
+          <SwiperSlide key={slide.id} className="h-full w-full">
+            {({ isActive }) => (
+               <Slide
+                 slide={slide}
+                 isActive={isActive}
+                 // Simple priority load: if active or next/prev (handled by Swiper buffering usually, but we can pass it)
+                 priorityLoad={isActive}
+               />
+            )}
+          </SwiperSlide>
+        ))}
+      </Swiper>
+    </div>
   );
 };
 
