@@ -10,27 +10,24 @@ import { cn } from '@/lib/utils';
 interface LocalVideoPlayerProps {
     slide: VideoSlideDTO;
     isActive: boolean;
-    shouldLoad: boolean;
+    shouldLoad?: boolean; // Odbieramy prop do preloadingu
 }
 
-const LocalVideoPlayer = ({ slide, isActive, shouldLoad }: LocalVideoPlayerProps) => {
+const LocalVideoPlayer = ({ slide, isActive, shouldLoad = false }: LocalVideoPlayerProps) => {
     const videoRef = useRef<HTMLVideoElement>(null);
     const hlsRef = useRef<Hls | null>(null);
-    const [isHlsSupported, setIsHlsSupported] = useState(false);
-    const [showManualPlay, setShowManualPlay] = useState(false);
+    const [isReadyToPlay, setIsReadyToPlay] = useState(false);
 
     // Global state
-    const { isPlaying, isMuted, setIsMuted, togglePlay } = useStore(
+    const { isPlaying, isMuted } = useStore(
         (state) => ({
             isPlaying: state.isPlaying,
             isMuted: state.isMuted,
-            setIsMuted: state.setIsMuted,
-            togglePlay: state.togglePlay,
         }),
         shallow
     );
 
-    // 1. Initialize HLS or Native
+    // 1. Inicjalizacja HLS (tylko raz)
     useEffect(() => {
         const video = videoRef.current;
         if (!video) return;
@@ -38,14 +35,17 @@ const LocalVideoPlayer = ({ slide, isActive, shouldLoad }: LocalVideoPlayerProps
         const { hlsUrl, mp4Url } = slide.data;
 
         if (Hls.isSupported() && hlsUrl) {
-            setIsHlsSupported(true);
             const hls = new Hls({
-                autoStartLoad: false, // Wait until active/priority to load
+                autoStartLoad: false, // WAŻNE: Nie ładuj automatycznie, czekaj na sygnał
+                capLevelToPlayerSize: true,
             });
             hlsRef.current = hls;
             hls.attachMedia(video);
+            hls.on(Hls.Events.MANIFEST_PARSED, () => {
+                setIsReadyToPlay(true);
+            });
 
-            // Cleanup hls instance on unmount
+            // Cleanup
             return () => {
                 if (hlsRef.current) {
                     hlsRef.current.destroy();
@@ -55,29 +55,29 @@ const LocalVideoPlayer = ({ slide, isActive, shouldLoad }: LocalVideoPlayerProps
         } else if (video.canPlayType('application/vnd.apple.mpegurl') && hlsUrl) {
              // Native HLS (iOS)
              video.src = hlsUrl;
+             setIsReadyToPlay(true);
         } else if (mp4Url) {
-             // Fallback MP4
              video.src = mp4Url;
+             setIsReadyToPlay(true);
         }
     }, [slide.data.hlsUrl, slide.data.mp4Url]);
 
-    // 2. Manage Loading Logic (Preloading)
+    // 2. Logika Preloadingu (Smart Loading)
     useEffect(() => {
         const hls = hlsRef.current;
-        if (!hls || !slide.data.hlsUrl) return;
-
-        if (shouldLoad) {
+        
+        // Jeśli slajd jest aktywny LUB jest następny w kolejce (shouldLoad) -> ładujemy dane
+        if ((isActive || shouldLoad) && hls && slide.data.hlsUrl) {
+            // Sprawdź, czy już nie załadowano, aby uniknąć duplikatów
             if (hls.url !== slide.data.hlsUrl) {
-                hls.loadSource(slide.data.hlsUrl);
+                 console.log(`Preloading video ${slide.id}`);
+                 hls.loadSource(slide.data.hlsUrl);
+                 hls.startLoad();
             }
-            hls.startLoad();
-        } else {
-            // Optional: aggressive cleanup to save bandwidth
-            hls.stopLoad();
         }
-    }, [shouldLoad, slide.data.hlsUrl]);
+    }, [isActive, shouldLoad, slide.data.hlsUrl, slide.id]);
 
-    // 3. Manage Playback Logic & Autoplay Error Handling
+    // 3. Logika Odtwarzania (Tylko Active)
     useEffect(() => {
         const video = videoRef.current;
         if (!video) return;
@@ -87,106 +87,37 @@ const LocalVideoPlayer = ({ slide, isActive, shouldLoad }: LocalVideoPlayerProps
         if (shouldPlay) {
             const playPromise = video.play();
             if (playPromise !== undefined) {
-                playPromise
-                    .then(() => {
-                        setShowManualPlay(false);
-                    })
-                    .catch(error => {
-                        console.warn("Autoplay prevented", error);
-                        setShowManualPlay(true);
-                    });
+                playPromise.catch(error => {
+                    console.warn("Autoplay prevented", error);
+                    // Tu można dodać logikę pokazania przycisku "Play" w razie błędu
+                });
             }
         } else {
             video.pause();
-            setShowManualPlay(false);
+            if (!isActive) {
+                // Opcjonalnie: przewiń do początku po przewinięciu dalej
+                // video.currentTime = 0; 
+            }
         }
-
     }, [isActive, isPlaying]);
 
-    const handleManualPlay = () => {
-        const video = videoRef.current;
-        if (!video) return;
-
-        // Force unmute and play
-        setIsMuted(false);
-        if (!isPlaying) togglePlay();
-
-        video.muted = false;
-        video.play()
-            .then(() => setShowManualPlay(false))
-            .catch(e => console.error("Manual play failed", e));
-    };
-
-    // 3. Handle Mute
+    // 4. Obsługa Mute
     useEffect(() => {
         if (videoRef.current) {
             videoRef.current.muted = isMuted;
         }
     }, [isMuted]);
 
-    // 4. Dispatch Progress Events (for UI controls)
-    useEffect(() => {
-        const video = videoRef.current;
-        if (!video) return;
-
-        let rafId: number;
-
-        const update = () => {
-            if (isActive && !video.paused && !video.ended) {
-                 const event = new CustomEvent('video-progress', {
-                    detail: {
-                        currentTime: video.currentTime,
-                        duration: video.duration || 0
-                    }
-                });
-                window.dispatchEvent(event);
-            }
-            rafId = requestAnimationFrame(update);
-        };
-
-        if (isActive && isPlaying) {
-             rafId = requestAnimationFrame(update);
-        }
-
-        return () => cancelAnimationFrame(rafId);
-    }, [isActive, isPlaying]);
-
-
     return (
         <div className="absolute inset-0 z-0 bg-black">
              <video
                 ref={videoRef}
-                className={cn(
-                    "w-full h-full object-cover",
-                    // Optional: Fade in when active?
-                    // For now, keep it simple to avoid glitches
-                )}
+                className="w-full h-full object-cover"
                 loop
                 playsInline
-                muted={isMuted} // Initial mute state
+                muted={isMuted}
                 poster={slide.data.poster}
             />
-
-            {/* Manual Play Overlay for Autoplay Blocks */}
-            {showManualPlay && isActive && (
-                <div
-                    className="absolute inset-0 z-50 flex items-center justify-center bg-black/40 cursor-pointer"
-                    onClick={handleManualPlay}
-                >
-                    <div className="bg-white/20 p-6 rounded-full backdrop-blur-sm hover:bg-white/30 transition-all hover:scale-110">
-                        {/* Large Play Icon */}
-                        <svg
-                            xmlns="http://www.w3.org/2000/svg"
-                            viewBox="0 0 24 24"
-                            fill="currentColor"
-                            className="w-16 h-16 text-white"
-                        >
-                            <path fillRule="evenodd" d="M4.5 5.653c0-1.426 1.529-2.33 2.779-1.643l11.54 6.348c1.295.712 1.295 2.573 0 3.285L7.28 19.991c-1.25.687-2.779-.217-2.779-1.643V5.653z" clipRule="evenodd" />
-                        </svg>
-                        <p className="mt-2 text-white font-semibold text-sm text-center">Tap to play</p>
-                    </div>
-                </div>
-            )}
         </div>
     );
 };
