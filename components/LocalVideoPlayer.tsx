@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef } from 'react';
 import Hls from 'hls.js';
 import { useStore } from '@/store/useStore';
 import { shallow } from 'zustand/shallow';
@@ -9,17 +9,15 @@ import { VideoSlideDTO } from '@/lib/dto';
 interface LocalVideoPlayerProps {
     slide: VideoSlideDTO;
     isActive: boolean;
-    shouldLoad: boolean;
+    isNext: boolean;
+    isPrevious: boolean;
 }
 
-const LocalVideoPlayer = ({ slide, isActive, shouldLoad }: LocalVideoPlayerProps) => {
+const LocalVideoPlayer = ({ slide, isActive, isNext, isPrevious }: LocalVideoPlayerProps) => {
     const videoRef = useRef<HTMLVideoElement>(null);
     const hlsRef = useRef<Hls | null>(null);
 
-    // LOKALNY STAN WIDOCZNOŚCI - NASZ "BEZPIECZNIK"
-    const [isPhysicallyVisible, setIsPhysicallyVisible] = useState(false);
-
-    // Pobieramy stany globalne
+    // Global state for controls (play/pause, mute) - still relevant
     const { isPlaying, isMuted } = useStore(
         (state) => ({
             isPlaying: state.isPlaying,
@@ -28,90 +26,95 @@ const LocalVideoPlayer = ({ slide, isActive, shouldLoad }: LocalVideoPlayerProps
         shallow
     );
 
-    // 1. WEWNĘTRZNY INTERSECTION OBSERVER ("BEZPIECZNIK")
+    // --- EFFECT 1: HLS Lifecycle Management & "Double Check" Safety ---
     useEffect(() => {
-        const videoElement = videoRef.current;
-        if (!videoElement) return;
+        const video = videoRef.current;
+        if (!video) return;
 
+        const { hlsUrl, mp4Url } = slide.data;
+        let hls: Hls | null = null;
+
+        if (Hls.isSupported() && hlsUrl) {
+            hls = new Hls({
+                capLevelToPlayerSize: true,
+            });
+            hlsRef.current = hls;
+            hls.attachMedia(video);
+        }
+
+        // "Double Check" Intersection Observer
         const observer = new IntersectionObserver(
             ([entry]) => {
-                setIsPhysicallyVisible(entry.isIntersecting);
+                if (!entry.isIntersecting && video.played.length > 0 && !video.paused) {
+                    video.pause();
+                }
             },
-            { threshold: 0.5 } // Wystarczy, że widać co najmniej połowę wideo
+            { threshold: 0 }
         );
-        observer.observe(videoElement);
+        observer.observe(video);
 
+        // Cleanup function on component unmount
         return () => {
-            if (videoElement) {
-                observer.unobserve(videoElement);
+            observer.unobserve(video);
+            if (hlsRef.current) {
+                hlsRef.current.destroy();
+                hlsRef.current = null;
             }
         };
-    }, []);
+    }, [slide.data.hlsUrl, slide.data.mp4Url]); // Reruns only if URL changes
 
-    // 2. ZARZĄDZANIE CYKLEM ŻYCIA HLS.js
+    // --- EFFECT 2: Smart Loading (Preloading) ---
     useEffect(() => {
+        const hls = hlsRef.current;
         const video = videoRef.current;
-        const { hlsUrl, mp4Url } = slide.data;
-
         if (!video) return;
 
-        // Jeśli slajd jest "w pobliżu" i ma URL HLS
-        if (shouldLoad && hlsUrl) {
-            if (hlsRef.current === null) { // Inicjalizuj tylko raz
-                if (Hls.isSupported()) {
-                    const hls = new Hls({ capLevelToPlayerSize: true });
-                    hlsRef.current = hls;
+        const { hlsUrl, mp4Url } = slide.data;
+        const shouldLoad = isActive || isNext || isPrevious;
+
+        if (hls && hlsUrl) {
+            if (shouldLoad) {
+                if (hls.url !== hlsUrl) {
                     hls.loadSource(hlsUrl);
-                    hls.attachMedia(video);
-                } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
-                    // Native HLS (iOS)
-                    video.src = hlsUrl;
+                    hls.startLoad();
                 }
+            } else {
+                 hls.stopLoad();
+            }
+        } else if (shouldLoad && (mp4Url || hlsUrl)) { // Fallback for native HLS / MP4
+            const sourceUrl = hlsUrl || mp4Url; // iOS handles HLS natively
+            if (video.src !== sourceUrl) {
+                video.src = sourceUrl!;
             }
         }
-        // Jeśli slajd już nie jest potrzebny
-        else if (!shouldLoad && hlsRef.current) {
-            hlsRef.current.destroy();
-            hlsRef.current = null;
-        } else if (shouldLoad && mp4Url && !video.src) {
-             // Fallback do MP4
-             video.src = mp4Url;
-        }
 
-    }, [shouldLoad, slide.data.hlsUrl, slide.data.mp4Url, slide.id]);
+    }, [isActive, isNext, isPrevious, slide.data.hlsUrl, slide.data.mp4Url]);
 
-
-    // 3. LOGIKA ODTWARZANIA - "PODWÓJNY BEZPIECZNIK"
+    // --- EFFECT 3: Playback Logic ("First Check") ---
     useEffect(() => {
         const video = videoRef.current;
         if (!video) return;
 
-        // Warunek odtwarzania:
-        // 1. React uważa, że to slajd aktywny (`isActive`).
-        // 2. Użytkownik chce odtwarzać (`isPlaying`).
-        // 3. I NAJWAŻNIEJSZE: Nasz Observer potwierdza, że wideo jest FIZYCZNIE WIDOCZNE.
-        const shouldPlay = isActive && isPlaying && isPhysicallyVisible;
+        const shouldPlay = isActive && isPlaying;
 
         if (shouldPlay) {
             const playPromise = video.play();
             if (playPromise !== undefined) {
                 playPromise.catch(error => {
-                    if (error.name !== 'AbortError') {
-                        console.warn("Autoplay prevented", error);
+                    if (error.name !== "AbortError") {
+                        console.warn("Autoplay was prevented.", error);
                     }
                 });
             }
         } else {
             video.pause();
-            // Przewiń do początku, gdy slajd przestaje być aktywny
-            if (!isActive && video.currentTime > 0) {
+            if(!isActive) {
                 video.currentTime = 0;
             }
         }
-    }, [isActive, isPlaying, isPhysicallyVisible]);
+    }, [isActive, isPlaying]);
 
-
-    // 4. Obsługa wyciszenia
+    // --- EFFECT 4: Mute Handling ---
     useEffect(() => {
         if (videoRef.current) {
             videoRef.current.muted = isMuted;
@@ -125,7 +128,7 @@ const LocalVideoPlayer = ({ slide, isActive, shouldLoad }: LocalVideoPlayerProps
                 className="w-full h-full object-cover"
                 loop
                 playsInline
-                muted // Zawsze `muted` na starcie, stanem zarządza React
+                muted={isMuted}
                 poster={slide.data.poster}
             />
         </div>

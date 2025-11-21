@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import { useInfiniteQuery } from '@tanstack/react-query';
 import { Virtuoso } from 'react-virtuoso';
 import Slide from '@/components/Slide';
@@ -23,6 +23,8 @@ const fetchSlides = async ({ pageParam = '' }) => {
 };
 
 const MainFeed = () => {
+  const [activeSlideIndex, setActiveSlideIndex] = useState(0);
+
   const {
     data,
     fetchNextPage,
@@ -58,7 +60,12 @@ const MainFeed = () => {
       itemContent={(index, slide) => {
         return (
           <div className="h-screen w-full snap-start">
-             <Slide slide={slide} index={index} />
+             <Slide
+                slide={slide}
+                index={index}
+                activeSlideIndex={activeSlideIndex}
+                setActiveSlideIndex={setActiveSlideIndex}
+              />
           </div>
         );
       }}
