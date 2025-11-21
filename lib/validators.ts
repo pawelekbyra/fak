@@ -11,43 +11,60 @@ export const PublicUserSchema = z.object({
   role: z.string().default('user'),
 });
 
-// Helper for recursive type definition
-const BaseCommentSchema = z.object({
+// Explicit Interface Definition for Recursive Comment
+export interface CommentSchemaType {
+  id: string;
+  text: string;
+  createdAt: string;
+  authorId: string;
+  slideId: string;
+  author?: {
+    id: string;
+    username: string | null;
+    displayName: string | null;
+    avatar: string | null;
+  };
+  likedBy: string[];
+  _count?: {
+    likes?: number;
+  };
+  user?: {
+    displayName: string | null;
+    avatar: string | null;
+  };
+  parentId?: string | null | undefined;
+  replies: CommentSchemaType[];
+}
+
+// Recursive Comment Schema implementation
+export const CommentSchema: z.ZodType<CommentSchemaType> = z.lazy(() =>
+  z.object({
     id: z.string(),
     text: z.string(),
-    createdAt: z.string().or(z.date().transform(d => d.toISOString())),
+    createdAt: z.union([z.string(), z.date()]).transform((val) => {
+        if (val instanceof Date) return val.toISOString();
+        return val;
+    }),
     authorId: z.string(),
     slideId: z.string(),
-
     author: z.object({
       id: z.string(),
       username: z.string().nullable(),
       displayName: z.string().nullable(),
       avatar: z.string().nullable(),
     }).optional(),
-
     likedBy: z.array(z.string()).default([]),
-
     _count: z.object({
       likes: z.number().optional(),
     }).optional(),
-
     user: z.object({
-       displayName: z.string().nullable(),
-       avatar: z.string().nullable(),
+      displayName: z.string().nullable(),
+      avatar: z.string().nullable(),
     }).optional(),
-
     parentId: z.string().nullable().optional(),
-});
-
-export type CommentSchemaType = z.infer<typeof BaseCommentSchema> & {
-  replies?: CommentSchemaType[];
-};
-
-// Recursive Comment Schema
-export const CommentSchema: z.ZodType<CommentSchemaType> = BaseCommentSchema.extend({
-  replies: z.lazy(() => z.array(CommentSchema).default([])),
-});
+    replies: z.array(CommentSchema).default([]),
+  })
+);
 
 export const BaseSlideSchema = z.object({
   id: z.string(),

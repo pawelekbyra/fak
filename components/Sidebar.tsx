@@ -8,6 +8,7 @@ import { useTranslation } from '@/context/LanguageContext';
 import { useStore } from '@/store/useStore';
 import { formatCount } from '@/lib/utils';
 import { shallow } from 'zustand/shallow';
+import { useUser } from '@/context/UserContext';
 
 interface SidebarProps {
   initialLikes: number;
@@ -24,20 +25,19 @@ const Sidebar: React.FC<SidebarProps> = ({
 }) => {
   const { addToast } = useToast();
   const { t } = useTranslation();
+  const { isLoggedIn } = useUser();
   const {
-    isLoggedIn,
     setActiveModal,
     toggleLike,
-  likeChanges,
-  openAuthorProfileModal,
-  openTippingModal
+    likeChanges,
+    openAuthorProfileModal,
+    openTippingModal
   } = useStore(state => ({
-    isLoggedIn: state.isLoggedIn,
     setActiveModal: state.setActiveModal,
     toggleLike: state.toggleLike,
     likeChanges: state.likeChanges,
-  openAuthorProfileModal: state.openAuthorProfileModal,
-  openTippingModal: state.openTippingModal
+    openAuthorProfileModal: state.openAuthorProfileModal,
+    openTippingModal: state.openTippingModal
   }), shallow);
 
   const likeState = likeChanges[slideId];

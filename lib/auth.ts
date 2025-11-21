@@ -35,14 +35,17 @@ export async function verifySession(): Promise<AuthPayload | null> {
     // Map NextAuth session user to the application's User interface
     // Thanks to module augmentation in types/next-auth.d.ts, TypeScript now knows about these fields.
 
-    const user: any = {
+    const user: Omit<User, 'password'> = {
         id: session.user.id,
         email: session.user.email || '',
-        role: session.user.role || 'user',
-        displayName: session.user.name || '',
-        avatar: session.user.image || '',
+        role: (session.user.role as User['role']) || 'user',
+        displayName: session.user.displayName || session.user.name || '',
+        avatar: session.user.avatar || session.user.image || '',
         username: session.user.username || '',
-        sessionVersion: 1
+        sessionVersion: session.user.sessionVersion || 1,
+        // Fields required by User interface but potentially missing in session:
+        emailConsent: false, // Default fallback
+        emailLanguage: 'pl', // Default fallback
     };
 
     // We return a structure compatible with AuthPayload

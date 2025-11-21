@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useMemo, useState, useEffect } from 'react';
+import React, { useMemo, useState, useEffect, useRef } from 'react';
 import { useInfiniteQuery } from '@tanstack/react-query';
 import { Virtuoso } from 'react-virtuoso';
 import Slide from '@/components/Slide';
@@ -29,6 +29,9 @@ const MainFeed = () => {
   const setActiveSlide = useStore(state => state.setActiveSlide);
   const setNextSlide = useStore(state => state.setNextSlide);
   const playVideo = useStore(state => state.playVideo);
+
+  // Timer ref for debounce
+  const debounceTimerRef = useRef<NodeJS.Timeout | null>(null);
 
   const {
     data,
@@ -76,22 +79,29 @@ const MainFeed = () => {
         </div>
       )}
       rangeChanged={(range) => {
-          // Detect which slide is active.
-          // Since items are full screen, startIndex is effectively the active one when snapping completes.
-          // We might want to double check logic if partially scrolling, but for full page snap, startIndex is reliable.
-          const activeIndex = range.startIndex;
-
-          if (activeIndex >= 0 && activeIndex < slides.length) {
-              const currentSlide = slides[activeIndex];
-              const nextSlide = slides[activeIndex + 1] || null;
-
-              setActiveSlide(currentSlide);
-              setNextSlide(nextSlide);
-
-              if (currentSlide.type === 'video') {
-                  playVideo();
-              }
+          // Clear any existing timer to debounce rapid scrolling
+          if (debounceTimerRef.current) {
+              clearTimeout(debounceTimerRef.current);
           }
+
+          // Set a new timer
+          debounceTimerRef.current = setTimeout(() => {
+              // Detect which slide is active.
+              // Since items are full screen, startIndex is effectively the active one when snapping completes.
+              const activeIndex = range.startIndex;
+
+              if (activeIndex >= 0 && activeIndex < slides.length) {
+                  const currentSlide = slides[activeIndex];
+                  const nextSlide = slides[activeIndex + 1] || null;
+
+                  setActiveSlide(currentSlide);
+                  setNextSlide(nextSlide);
+
+                  if (currentSlide.type === 'video') {
+                      playVideo();
+                  }
+              }
+          }, 250); // 250ms delay
       }}
     />
   );

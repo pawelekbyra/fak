@@ -9,6 +9,7 @@ Witaj w dokumentacji produkcyjnej wersji Ting Tong (FAK). To nie jest zwykły kl
 3. [🚀 ROADMAPA: Co i dlaczego musimy zbudować?](#-roadmapa-co-i-dlaczego-musimy-zbudować)
     *   [Faza 1: Silnik Wideo (Płynność ponad wszystko)](#faza-1-silnik-wideo-płynność-ponad-wszystko)
     *   [Faza 2: Komentarze i Społeczność (Gold Standard)](#faza-2-komentarze-i-społeczność-gold-standard)
+    *   [Faza 3: Architektura i Bezpieczeństwo Typów (Clean Code)](#faza-3-architektura-i-bezpieczeństwo-typów-clean-code)
 4. [📦 Instalacja: Jak to odpalić?](#-instalacja-jak-to-odpalić)
 5. [🔑 Zmienne Środowiskowe](#-zmienne-środowiskowe)
 
@@ -32,7 +33,7 @@ Projekt to nowoczesna aplikacja typu Serverless, zoptymalizowana pod mobile.
 *   **Baza Danych:** PostgreSQL (Neon) – Skalowalna baza SQL w chmurze.
 *   **ORM:** Prisma – Typowane bezpiecznie zapytania do bazy danych.
 *   **Styling:** Tailwind CSS + Shadcn UI – Komponenty interfejsu.
-*   **State Management:** Zustand – Lekkie zarządzanie stanem aplikacji (odtwarzacz, modale).
+*   **State Management:** Zustand (Slice Pattern) – Modularne zarządzanie stanem aplikacji.
 *   **Real-time:** Ably – Obsługa powiadomień i komentarzy na żywo.
 
 ---
@@ -74,6 +75,17 @@ Aktualizacja schematu Prisma, aby obsługiwał zaawansowane relacje.
 *   [x] Optimistic Updates: Komentarz pojawia się natychmiast, zanim serwer potwierdzi zapis.
 *   [ ] Nested UI: Renderowanie drzewiastej struktury dyskusji w `CommentsModal`.
 *   [ ] Lazy Loading Replies: Przycisk "Pokaż odpowiedzi" zamiast ładowania wszystkiego naraz.
+
+### Faza 3: Architektura i Bezpieczeństwo Typów (Clean Code)
+Cel: Eliminacja długu technologicznego, poprawa stabilności i Developer Experience (DX).
+
+*   [x] **Module Augmentation (NextAuth):** Rozszerzenie typów `Session` i `User` w `types/next-auth.d.ts`. Eliminacja rzutowania `as any` w `lib/auth.ts`.
+*   [x] **Zustand Slice Pattern:** Podział monolitycznego magazynu stanu (`useStore`) na domeny logiczne:
+    *   `createVideoSlice`: Odtwarzacz wideo.
+    *   `createUISlice`: Modale i interfejs.
+    *   `createContentSlice`: Zarządzanie feedem i slajdami.
+    *   `createInteractionSlice`: Lajki i interakcje.
+*   [x] **Zod Recursion Fix:** Poprawa definicji typów dla zagnieżdżonych komentarzy w `lib/validators.ts` poprzez jawne interfejsy TypeScript.
 
 ---
 

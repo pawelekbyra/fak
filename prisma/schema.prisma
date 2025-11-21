@@ -31,7 +31,13 @@ model User {
   accounts       Account[]
   sessions       Session[]
 
+  // Relations added for completeness and to satisfy Prisma validation
+  notificationsReceived Notification[] @relation("UserNotifications")
+  notificationsSent     Notification[] @relation("NotificationSender")
+  pushSubscription      PushSubscription?
+
   @@map("users")
+  // Index for admin listing or search could be added, but username/email are already unique/indexed.
 }
 
 model Account {
@@ -98,6 +104,8 @@ model Slide {
   likes        Like[]
 
   @@map("slides")
+  @@index([createdAt(sort: Desc)]) // Optimized for Main Feed (Order By CreatedAt)
+  @@index([userId])              // Optimized for Profile Feed (Filter by Author)
 }
 
 model Comment {
@@ -117,6 +125,9 @@ model Comment {
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  @@index([slideId])   // Optimized for fetching comments for a video
+  @@index([parentId])  // Optimized for fetching replies
 }
 
 model Like {
@@ -127,7 +138,8 @@ model Like {
   slide     Slide    @relation(fields: [slideId], references: [id])
   createdAt DateTime @default(now())
 
-  @@unique([authorId, slideId])
+  @@unique([authorId, slideId]) // Ensures 1 user = 1 like per video
+  @@index([slideId])            // Optimized for deleting all likes of a video
 }
 
 model CommentLike {
@@ -139,4 +151,31 @@ model CommentLike {
   createdAt DateTime @default(now())
 
   @@unique([userId, commentId])
+  @@index([commentId]) // Optimized for deleting all likes of a comment
+}
+
+model Notification {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation("UserNotifications", fields: [userId], references: [id]) // Receiver
+  type      String   // 'like', 'comment', 'follow', 'system'
+  text      String
+  link      String?
+  fromUserId String?
+  fromUser  User?    @relation("NotificationSender", fields: [fromUserId], references: [id]) // Sender
+
+  read      Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  @@index([userId, createdAt(sort: Desc)]) // Optimized for "My Notifications" feed
+}
+
+model PushSubscription {
+  id               String  @id @default(uuid())
+  userId           String  @unique
+  user             User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  subscription     Json
+  is_pwa_installed Boolean @default(false)
+
+  @@map("push_subscriptions")
 }

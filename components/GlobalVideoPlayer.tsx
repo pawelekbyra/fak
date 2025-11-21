@@ -159,22 +159,22 @@ const GlobalVideoPlayer = () => {
   }, [activePlayer, isPlaying]);
 
   return (
-    <>
+    <div className="absolute inset-0 z-0 pointer-events-none">
       <video
         ref={playerARef}
-        className={`absolute top-0 left-0 w-full h-full object-cover transition-opacity duration-300 ${activePlayer === 'A' ? 'opacity-100 z-10' : 'opacity-0 z-0'}`}
+        className={`absolute top-0 left-0 w-full h-full object-cover transition-opacity duration-300 ${activePlayer === 'A' ? 'opacity-100' : 'opacity-0'}`}
         playsInline
         loop
         preload="auto"
       />
       <video
         ref={playerBRef}
-        className={`absolute top-0 left-0 w-full h-full object-cover transition-opacity duration-300 ${activePlayer === 'B' ? 'opacity-100 z-10' : 'opacity-0 z-0'}`}
+        className={`absolute top-0 left-0 w-full h-full object-cover transition-opacity duration-300 ${activePlayer === 'B' ? 'opacity-100' : 'opacity-0'}`}
         playsInline
         loop
         preload="auto"
       />
-    </>
+    </div>
   );
 };
 

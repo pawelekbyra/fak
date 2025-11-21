@@ -43,7 +43,7 @@ const DeleteTab: React.FC<DeleteTabProps> = ({ onClose }) => {
       const result = await deleteAccount(null, formData);
 
       if (result.success) {
-        addToast(result.message, 'success');
+        addToast(result.message || t('deleteAccountSuccess'), 'success');
         setTimeout(() => {
           logout();
           if (onClose) onClose();
