@@ -1,107 +1,110 @@
 "use client";
 
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef } from 'react';
 import Hls from 'hls.js';
 import { useStore } from '@/store/useStore';
 import { shallow } from 'zustand/shallow';
 import { VideoSlideDTO } from '@/lib/dto';
-import { cn } from '@/lib/utils';
 
 interface LocalVideoPlayerProps {
     slide: VideoSlideDTO;
     isActive: boolean;
-    shouldLoad?: boolean; // Odbieramy prop do preloadingu
+    isNext: boolean;
 }
 
-const LocalVideoPlayer = ({ slide, isActive, shouldLoad = false }: LocalVideoPlayerProps) => {
+const LocalVideoPlayer = ({ slide, isActive, isNext }: LocalVideoPlayerProps) => {
     const videoRef = useRef<HTMLVideoElement>(null);
     const hlsRef = useRef<Hls | null>(null);
-    const [isReadyToPlay, setIsReadyToPlay] = useState(false);
 
-    // Global state
-    const { isPlaying, isMuted } = useStore(
+    // Global state for mute is acceptable as it's a global UI control
+    const { isMuted, isPlaying } = useStore(
         (state) => ({
-            isPlaying: state.isPlaying,
             isMuted: state.isMuted,
+            isPlaying: state.isPlaying
         }),
         shallow
     );
 
-    // 1. Inicjalizacja HLS (tylko raz)
+    // Step 1: Initialize HLS.js and IntersectionObserver (runs once)
     useEffect(() => {
-        const video = videoRef.current;
-        if (!video) return;
+        const videoElement = videoRef.current;
+        if (!videoElement) return;
 
         const { hlsUrl, mp4Url } = slide.data;
 
+        // A. Initialize HLS.js
         if (Hls.isSupported() && hlsUrl) {
             const hls = new Hls({
-                autoStartLoad: false, // WAŻNE: Nie ładuj automatycznie, czekaj na sygnał
+                autoStartLoad: false,
                 capLevelToPlayerSize: true,
             });
             hlsRef.current = hls;
-            hls.attachMedia(video);
-            hls.on(Hls.Events.MANIFEST_PARSED, () => {
-                setIsReadyToPlay(true);
-            });
-
-            // Cleanup
-            return () => {
-                if (hlsRef.current) {
-                    hlsRef.current.destroy();
-                    hlsRef.current = null;
-                }
-            };
-        } else if (video.canPlayType('application/vnd.apple.mpegurl') && hlsUrl) {
-             // Native HLS (iOS)
-             video.src = hlsUrl;
-             setIsReadyToPlay(true);
+            hls.attachMedia(videoElement);
+        } else if (videoElement.canPlayType('application/vnd.apple.mpegurl') && hlsUrl) {
+            videoElement.src = hlsUrl;
         } else if (mp4Url) {
-             video.src = mp4Url;
-             setIsReadyToPlay(true);
+            videoElement.src = mp4Url;
         }
-    }, [slide.data.hlsUrl, slide.data.mp4Url]);
 
-    // 2. Logika Preloadingu (Smart Loading)
+        // B. Initialize IntersectionObserver ("Double Check")
+        const observer = new IntersectionObserver(
+            ([entry]) => {
+                if (!entry.isIntersecting) {
+                    videoElement.pause();
+                }
+            },
+            { threshold: 0.5 } // Trigger when 50% of the element is visible
+        );
+        observer.observe(videoElement);
+
+        // C. Cleanup function
+        return () => {
+            observer.disconnect();
+            if (hlsRef.current) {
+                hlsRef.current.destroy();
+                hlsRef.current = null;
+            }
+        };
+    }, [slide.data]);
+
+    // Step 2: Smart Preloading Logic
     useEffect(() => {
         const hls = hlsRef.current;
-        
-        // Jeśli slajd jest aktywny LUB jest następny w kolejce (shouldLoad) -> ładujemy dane
-        if ((isActive || shouldLoad) && hls && slide.data.hlsUrl) {
-            // Sprawdź, czy już nie załadowano, aby uniknąć duplikatów
-            if (hls.url !== slide.data.hlsUrl) {
-                 console.log(`Preloading video ${slide.id}`);
-                 hls.loadSource(slide.data.hlsUrl);
-                 hls.startLoad();
-            }
-        }
-    }, [isActive, shouldLoad, slide.data.hlsUrl, slide.id]);
+        if (!hls) return;
 
-    // 3. Logika Odtwarzania (Tylko Active)
+        const shouldLoadData = isActive || isNext;
+
+        if (shouldLoadData) {
+            hls.loadSource(slide.data.hlsUrl);
+            hls.startLoad();
+        } else {
+            hls.stopLoad();
+        }
+    }, [isActive, isNext, slide.data.hlsUrl]);
+
+    // Step 3: Playback Logic
     useEffect(() => {
-        const video = videoRef.current;
-        if (!video) return;
+        const videoElement = videoRef.current;
+        if (!videoElement) return;
 
         const shouldPlay = isActive && isPlaying;
 
         if (shouldPlay) {
-            const playPromise = video.play();
+            const playPromise = videoElement.play();
             if (playPromise !== undefined) {
                 playPromise.catch(error => {
-                    console.warn("Autoplay prevented", error);
-                    // Tu można dodać logikę pokazania przycisku "Play" w razie błędu
+                    console.warn("Autoplay was prevented.", error);
                 });
             }
         } else {
-            video.pause();
-            if (!isActive) {
-                // Opcjonalnie: przewiń do początku po przewinięciu dalej
-                // video.currentTime = 0; 
+            videoElement.pause();
+            if (!isActive && videoElement.currentTime > 0) {
+                 videoElement.currentTime = 0;
             }
         }
     }, [isActive, isPlaying]);
 
-    // 4. Obsługa Mute
+    // Step 4: Mute Logic
     useEffect(() => {
         if (videoRef.current) {
             videoRef.current.muted = isMuted;
@@ -115,7 +118,7 @@ const LocalVideoPlayer = ({ slide, isActive, shouldLoad = false }: LocalVideoPla
                 className="w-full h-full object-cover"
                 loop
                 playsInline
-                muted={isMuted}
+                muted={isMuted} // Mute initially based on global state
                 poster={slide.data.poster}
             />
         </div>
@@ -123,3 +126,4 @@ const LocalVideoPlayer = ({ slide, isActive, shouldLoad = false }: LocalVideoPla
 };
 
 export default LocalVideoPlayer;
+// EOL comment
