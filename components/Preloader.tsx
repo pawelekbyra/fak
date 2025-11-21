@@ -49,7 +49,7 @@ const Preloader: React.FC = () => {
     selectInitialLang(lang);
     setIsMuted(false);
 
-    // The GlobalVideoPlayer will react to the isPlaying state.
+    // Ensure video starts playing
     if (!useStore.getState().isPlaying) {
       togglePlay();
     }

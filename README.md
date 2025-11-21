@@ -52,7 +52,7 @@ Zamiast renderować setki filmów naraz (co zabija pamięć RAM telefonu), używ
 
 #### 1.2. Architektura "Double Buffering" (Podwójny Odtwarzacz)
 Eliminujemy czarny ekran przy zmianie wideo.
-*   [x] Mechanizm: Dwa elementy `<video>` (Player A i Player B) w `GlobalVideoPlayer`.
+*   [x] Mechanizm: Lokalny odtwarzacz wideo (`LocalVideoPlayer`) w każdym slajdzie.
 *   [x] Logika: Gdy Player A odtwarza obecny film, Player B w tle ładuje i buforuje następny (`nextSlide`).
 *   [x] Swap: Przy scrollu następuje natychmiastowa zamiana widoczności i start odtwarzania z Playera B.
 
