@@ -27,10 +27,11 @@ const fetchSlides = async ({ pageParam = '' }) => {
 const TOTAL_VIRTUAL_COUNT = 10000;
 
 const MainFeed = () => {
-  const { setActiveSlide, setNextSlide, playVideo, activeSlide } = useStore(state => ({
+  const { setActiveSlide, setNextSlide, playVideo, pauseVideo, activeSlide } = useStore(state => ({
     setActiveSlide: state.setActiveSlide,
     setNextSlide: state.setNextSlide,
     playVideo: state.playVideo,
+    pauseVideo: state.pauseVideo,
     activeSlide: state.activeSlide
   }), shallow);
 
@@ -117,6 +118,7 @@ const MainFeed = () => {
               const nextSlide = slides[(realIndex + 1) % slides.length] || null;
 
               if (activeSlide?.id !== currentSlide.id) {
+                  pauseVideo();
                   setActiveSlide(currentSlide);
                   setNextSlide(nextSlide);
 
