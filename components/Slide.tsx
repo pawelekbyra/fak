@@ -16,6 +16,7 @@ import { cn } from '@/lib/utils';
 import SecretOverlay from './SecretOverlay';
 import { DEFAULT_AVATAR_URL } from '@/lib/constants';
 import LocalVideoPlayer from './LocalVideoPlayer';
+import { useInView } from 'react-intersection-observer';
 
 // --- Prop Types for Sub-components ---
 interface HtmlContentProps {
@@ -165,8 +166,28 @@ interface SlideProps {
 
 const Slide = memo<SlideProps>(({ slide, priorityLoad = false }) => {
     const { isLoggedIn } = useUser();
-    const activeSlideId = useStore(state => state.activeSlide?.id);
-    const isActive = activeSlideId === slide.id;
+    const { setActiveSlide, playVideo, activeSlide } = useStore(state => ({
+        setActiveSlide: state.setActiveSlide,
+        playVideo: state.playVideo,
+        activeSlide: state.activeSlide
+    }), shallow);
+
+    const { ref, inView } = useInView({
+        threshold: 0.6, // Activate when 60% visible
+    });
+
+    useEffect(() => {
+        // If this slide comes into major view, make it active
+        if (inView && activeSlide?.id !== slide.id) {
+            console.log(`Slide ${slide.id} became active`);
+            setActiveSlide(slide);
+            if (slide.type === 'video') {
+                playVideo();
+            }
+        }
+    }, [inView, slide, setActiveSlide, playVideo, activeSlide]);
+
+    const isActive = activeSlide?.id === slide.id;
     const showSecretOverlay = slide.access === 'secret' && !isLoggedIn;
 
     const renderContent = () => {
@@ -182,7 +203,9 @@ const Slide = memo<SlideProps>(({ slide, priorityLoad = false }) => {
     };
 
     return (
-        <div className={cn(
+        <div
+            ref={ref}
+            className={cn(
             "relative w-full h-full z-10 bg-black", // Changed from bg-transparent to bg-black
             showSecretOverlay && "blur-md brightness-50"
         )}>
