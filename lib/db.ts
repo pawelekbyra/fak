@@ -1,6 +1,6 @@
 // lib/db.ts
 import * as postgres from './db-postgres';
-import { Slide } from './types';
+import { SlideDTO as Slide } from './dto';
 
 // This type definition merges the exported functions from db-postgres with additional,
 // potentially custom or dynamically determined methods that might be added at runtime.

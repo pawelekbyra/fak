@@ -50,7 +50,7 @@ const SlideUI = ({ slide }: SlideUIProps) => {
         togglePlay,
         isPlaying,
         isMuted,
-        seek,
+        seekTo,
         setIsMuted
     } = useStore(state => ({
         activeModal: state.activeModal,
@@ -58,7 +58,7 @@ const SlideUI = ({ slide }: SlideUIProps) => {
         togglePlay: state.togglePlay,
         isPlaying: state.isPlaying,
         isMuted: state.isMuted,
-        seek: state.seek,
+        seekTo: state.seekTo,
         setIsMuted: state.setIsMuted,
     }), shallow);
 
@@ -145,7 +145,7 @@ const SlideUI = ({ slide }: SlideUIProps) => {
                     isMuted={isMuted}
                     onTogglePlay={togglePlay}
                     onToggleMute={() => setIsMuted(!isMuted)}
-                    onSeek={seek}
+                    onSeek={seekTo}
                 />
             </div>
         )}

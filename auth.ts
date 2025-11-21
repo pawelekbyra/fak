@@ -5,24 +5,32 @@ import Credentials from "next-auth/providers/credentials"
 import * as bcrypt from "@node-rs/bcrypt"
 import { authConfig } from "./auth.config"
 import { z } from "zod"
+import { Adapter } from "next-auth/adapters"
 
 export const { auth, handlers, signIn, signOut } = NextAuth({
   ...authConfig,
-  adapter: PrismaAdapter(prisma),
+  // Explicit cast to Adapter to bypass strict type checks between PrismaAdapter and NextAuth Adapter
+  // caused by our custom fields in User model
+  adapter: PrismaAdapter(prisma) as Adapter,
   session: { strategy: "jwt" },
   callbacks: {
     async jwt({ token, user }) {
         if (user) {
             token.id = user.id;
-            token.role = (user as any).role;
-            token.username = (user as any).username;
+            token.role = user.role;
+            token.username = user.username;
+            token.displayName = user.displayName;
+            token.avatar = user.avatar;
         }
         return token;
     },
     async session({ session, token }) {
         if (token && session.user) {
-            session.user.id = token.id as string;
-            (session.user as any).role = token.role as string;
+            session.user.id = token.id;
+            session.user.role = token.role;
+            session.user.username = token.username;
+            session.user.displayName = token.displayName;
+            session.user.avatar = token.avatar;
         }
         return session;
     }
