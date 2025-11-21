@@ -81,7 +81,7 @@ const MainFeed = () => {
       endReached={() => hasNextPage && fetchNextPage()}
       itemContent={(index, slide) => (
         <div className="h-screen w-full snap-start">
-           <Slide slide={slide} isActive={activeSlide?.id === slide.id} />
+           <Slide slide={slide} />
         </div>
       )}
       rangeChanged={(range) => {

@@ -160,11 +160,12 @@ const SlideUI = ({ slide }: SlideUIProps) => {
 
 interface SlideProps {
     slide: SlideDTO;
-    isActive?: boolean;
 }
 
-const Slide = memo<SlideProps>(({ slide, isActive = false }) => {
+const Slide = memo<SlideProps>(({ slide }) => {
     const { isLoggedIn } = useUser();
+    const activeSlideId = useStore(state => state.activeSlide?.id);
+    const isActive = activeSlideId === slide.id;
     const showSecretOverlay = slide.access === 'secret' && !isLoggedIn;
 
     const renderContent = () => {
