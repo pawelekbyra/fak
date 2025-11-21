@@ -165,14 +165,39 @@ interface SlideProps {
 
 const Slide = memo<SlideProps>(({ slide, priorityLoad = false }) => {
     const { isLoggedIn } = useUser();
-    const activeSlideId = useStore(state => state.activeSlide?.id);
-    const isActive = activeSlideId === slide.id;
+    const { activeSlide, setActiveSlide, setNextSlide } = useStore(state => ({
+        activeSlide: state.activeSlide,
+        setActiveSlide: state.setActiveSlide,
+        setNextSlide: state.setNextSlide
+    }), shallow);
+    const isActive = activeSlide?.id === slide.id;
     const showSecretOverlay = slide.access === 'secret' && !isLoggedIn;
+    const slideRef = useRef<HTMLDivElement>(null);
+
+    useEffect(() => {
+        const observer = new IntersectionObserver(
+            ([entry]) => {
+                if (entry.isIntersecting) {
+                    setActiveSlide(slide);
+                }
+            },
+            { threshold: 0.8 }
+        );
+
+        if (slideRef.current) {
+            observer.observe(slideRef.current);
+        }
+
+        return () => {
+            if (slideRef.current) {
+                observer.unobserve(slideRef.current);
+            }
+        };
+    }, [slide, setActiveSlide]);
 
     const renderContent = () => {
         switch (slide.type) {
             case 'video':
-                // Pass priorityLoad as shouldLoad to LocalVideoPlayer
                 return <LocalVideoPlayer slide={slide as VideoSlideDTO} isActive={isActive} shouldLoad={priorityLoad} />;
             case 'html':
                 return <HtmlContent slide={slide as HtmlSlideDTO} />;
@@ -182,8 +207,8 @@ const Slide = memo<SlideProps>(({ slide, priorityLoad = false }) => {
     };
 
     return (
-        <div className={cn(
-            "relative w-full h-full z-10 bg-black", // Changed from bg-transparent to bg-black
+        <div ref={slideRef} className={cn(
+            "relative w-full h-full z-10 bg-black",
             showSecretOverlay && "blur-md brightness-50"
         )}>
             {renderContent()}

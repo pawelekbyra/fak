@@ -25,17 +25,11 @@ const fetchSlides = async ({ pageParam = '' }) => {
 };
 
 const MainFeed = () => {
-  const { setActiveSlide, setNextSlide, playVideo, activeSlide } = useStore(state => ({
+  const { activeSlide, setActiveSlide, setNextSlide } = useStore(state => ({
+    activeSlide: state.activeSlide,
     setActiveSlide: state.setActiveSlide,
     setNextSlide: state.setNextSlide,
-    playVideo: state.playVideo,
-    activeSlide: state.activeSlide
   }), shallow);
-
-  const [currentViewIndex, setCurrentViewIndex] = useState(0);
-
-  // Timer ref for debounce
-  const debounceTimerRef = useRef<NodeJS.Timeout | null>(null);
 
   const {
     data,
@@ -50,19 +44,26 @@ const MainFeed = () => {
     getNextPageParam: (lastPage) => lastPage.nextCursor,
   });
 
+  const virtuosoRef = useRef(null);
   const slides = useMemo(() => {
     return (data?.pages.flatMap(page => page.slides) ?? []) as SlideDTO[];
   }, [data]);
 
-  // Initialize active slide if not set
   useEffect(() => {
-      if (slides.length > 0 && !activeSlide) {
-          // Initialize first slide as active
-          setActiveSlide(slides[0]);
-          setNextSlide(slides[1] || null);
-      }
-  }, [slides, activeSlide, setActiveSlide, setNextSlide]);
+    if (slides.length > 0 && !activeSlide) {
+      setActiveSlide(slides[0]);
+    }
+  }, [slides, activeSlide, setActiveSlide]);
 
+  useEffect(() => {
+    if (activeSlide) {
+      const currentIndex = slides.findIndex(s => s.id === activeSlide.id);
+      if (currentIndex !== -1) {
+        const nextSlide = slides[(currentIndex + 1) % slides.length] || null;
+        setNextSlide(nextSlide);
+      }
+    }
+  }, [activeSlide, slides, setNextSlide]);
 
   if (isLoading && slides.length === 0) {
     return <div className="w-screen h-screen bg-black flex items-center justify-center"><Skeleton className="w-full h-full" /></div>;
@@ -74,47 +75,25 @@ const MainFeed = () => {
 
   return (
     <Virtuoso
+      ref={virtuosoRef}
       className="snap-y snap-mandatory"
       style={{ height: '100vh' }}
-      data={slides}
+      totalCount={hasNextPage ? slides.length + 1 : slides.length}
       overscan={200}
       endReached={() => hasNextPage && fetchNextPage()}
-      itemContent={(index, slide) => {
-        const priorityLoad = index === currentViewIndex || index === currentViewIndex + 1;
+      itemContent={(index) => {
+        const slide = slides[index % slides.length];
+        if (!slide) return null;
+
+        const isActive = activeSlide?.id === slide.id;
+        const isNext = activeSlide?.id === slides[(index - 1 + slides.length) % slides.length]?.id;
+        const priorityLoad = isActive || isNext;
+
         return (
           <div className="h-screen w-full snap-start">
              <Slide slide={slide} priorityLoad={priorityLoad} />
           </div>
         );
-      }}
-      rangeChanged={(range) => {
-          // Clear any existing timer to debounce rapid scrolling
-          if (debounceTimerRef.current) {
-              clearTimeout(debounceTimerRef.current);
-          }
-
-          // Set a new timer
-          debounceTimerRef.current = setTimeout(() => {
-              // Detect which slide is active.
-              // Since items are full screen, startIndex is effectively the active one when snapping completes.
-              const activeIndex = range.startIndex;
-              setCurrentViewIndex(activeIndex);
-
-              if (activeIndex >= 0 && activeIndex < slides.length) {
-                  const currentSlide = slides[activeIndex];
-                  const nextSlide = slides[activeIndex + 1] || null;
-
-                  // Only update if changed to avoid unnecessary re-renders
-                  if (activeSlide?.id !== currentSlide.id) {
-                      setActiveSlide(currentSlide);
-                      setNextSlide(nextSlide);
-
-                      if (currentSlide.type === 'video') {
-                          playVideo();
-                      }
-                  }
-              }
-          }, 80); // Reduced debounce to 80ms for snappier response
       }}
     />
   );
