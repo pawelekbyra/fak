@@ -1,5 +1,6 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  transpilePackages: ['swiper'],
   experimental: {
     serverComponentsExternalPackages: ['@node-rs/bcrypt'],
   },

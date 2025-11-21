@@ -2,7 +2,8 @@
 
 import React, { useMemo, useState, useEffect, useRef } from 'react';
 import { useInfiniteQuery } from '@tanstack/react-query';
-import Swiper, { Mousewheel, Keyboard } from 'swiper';
+import Swiper from 'swiper';
+import { Mousewheel, Keyboard } from 'swiper/modules';
 import 'swiper/css';
 import Slide from '@/components/Slide';
 import { Skeleton } from '@/components/ui/skeleton';
