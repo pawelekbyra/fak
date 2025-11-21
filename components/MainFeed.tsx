@@ -1,6 +1,5 @@
-import React, { useMemo, useState, useEffect, useRef } from 'react';
+import React, { useMemo, useEffect, useRef } from 'react';
 import { useInfiniteQuery } from '@tanstack/react-query';
-import { Virtuoso } from 'react-virtuoso';
 import Slide from '@/components/Slide';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useStore } from '@/store/useStore';
@@ -32,10 +31,10 @@ const MainFeed = () => {
     activeSlide: state.activeSlide
   }), shallow);
 
-  const [currentViewIndex, setCurrentViewIndex] = useState(0);
-
-  // Timer ref for debounce
-  const debounceTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const observerRef = useRef<IntersectionObserver | null>(null);
+  const loadMoreObserverRef = useRef<IntersectionObserver | null>(null);
+  const loadMoreRef = useRef<HTMLDivElement>(null);
 
   const {
     data,
@@ -54,69 +53,110 @@ const MainFeed = () => {
     return (data?.pages.flatMap(page => page.slides) ?? []) as SlideDTO[];
   }, [data]);
 
-  // Initialize active slide if not set
+  const activeIndex = useMemo(() => {
+      if (!activeSlide) return 0;
+      return slides.findIndex(s => s.id === activeSlide.id);
+  }, [slides, activeSlide]);
+
+  // Initialize first slide
   useEffect(() => {
       if (slides.length > 0 && !activeSlide) {
-          // Initialize first slide as active
           setActiveSlide(slides[0]);
           setNextSlide(slides[1] || null);
       }
   }, [slides, activeSlide, setActiveSlide, setNextSlide]);
 
+  // Active Slide Observer
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container) return;
+
+    const options = {
+      root: container,
+      threshold: 0.6,
+    };
+
+    const callback: IntersectionObserverCallback = (entries) => {
+      entries.forEach((entry) => {
+        if (entry.isIntersecting) {
+          const index = Number(entry.target.getAttribute('data-index'));
+          if (!isNaN(index) && slides[index]) {
+             const currentSlide = slides[index];
+
+             if (activeSlide?.id !== currentSlide.id) {
+                 setActiveSlide(currentSlide);
+                 setNextSlide(slides[index + 1] || null);
+                 if (currentSlide.type === 'video') {
+                     playVideo();
+                 }
+             }
+          }
+        }
+      });
+    };
+
+    observerRef.current = new IntersectionObserver(callback, options);
+
+    const elements = container.querySelectorAll('.slide-item');
+    elements.forEach((el) => observerRef.current?.observe(el));
+
+    return () => {
+      if (observerRef.current) {
+        observerRef.current.disconnect();
+      }
+    };
+  }, [slides, activeSlide, setActiveSlide, setNextSlide, playVideo]);
+
+  // Infinite Scroll Observer
+  useEffect(() => {
+      if (loadMoreObserverRef.current) loadMoreObserverRef.current.disconnect();
+
+      loadMoreObserverRef.current = new IntersectionObserver((entries) => {
+          if (entries[0].isIntersecting && hasNextPage) {
+              fetchNextPage();
+          }
+      });
+
+      if (loadMoreRef.current) {
+          loadMoreObserverRef.current.observe(loadMoreRef.current);
+      }
+
+      return () => {
+          loadMoreObserverRef.current?.disconnect();
+      };
+  }, [hasNextPage, fetchNextPage]);
+
 
   if (isLoading && slides.length === 0) {
-    return <div className="w-screen h-screen bg-black flex items-center justify-center"><Skeleton className="w-full h-full" /></div>;
+    return <div className="w-screen h-[100dvh] bg-black flex items-center justify-center"><Skeleton className="w-full h-full" /></div>;
   }
 
   if (isError) {
-    return <div className="w-screen h-screen bg-black flex items-center justify-center text-white">Error loading slides.</div>;
+    return <div className="w-screen h-[100dvh] bg-black flex items-center justify-center text-white">Error loading slides.</div>;
   }
 
   return (
-    <Virtuoso
-      className="snap-y snap-mandatory"
-      style={{ height: '100vh' }}
-      data={slides}
-      overscan={200}
-      endReached={() => hasNextPage && fetchNextPage()}
-      itemContent={(index, slide) => {
-        const priorityLoad = index === currentViewIndex || index === currentViewIndex + 1;
-        return (
-          <div className="h-screen w-full snap-start">
-             <Slide slide={slide} priorityLoad={priorityLoad} />
-          </div>
-        );
-      }}
-      rangeChanged={(range) => {
-          // Clear any existing timer to debounce rapid scrolling
-          if (debounceTimerRef.current) {
-              clearTimeout(debounceTimerRef.current);
-          }
+    <div
+        ref={containerRef}
+        className="h-[100dvh] w-full overflow-y-scroll snap-y snap-mandatory [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none] bg-black"
+    >
+        {slides.map((slide, index) => {
+            const priorityLoad = index === activeIndex || index === activeIndex + 1;
+            return (
+                <div
+                    key={slide.id}
+                    data-index={index}
+                    className="slide-item h-[100dvh] w-full snap-start flex-shrink-0"
+                >
+                    <Slide slide={slide} priorityLoad={priorityLoad} />
+                </div>
+            )
+        })}
 
-          // Set a new timer
-          debounceTimerRef.current = setTimeout(() => {
-              // Detect which slide is active.
-              // Since items are full screen, startIndex is effectively the active one when snapping completes.
-              const activeIndex = range.startIndex;
-              setCurrentViewIndex(activeIndex);
-
-              if (activeIndex >= 0 && activeIndex < slides.length) {
-                  const currentSlide = slides[activeIndex];
-                  const nextSlide = slides[activeIndex + 1] || null;
-
-                  // Only update if changed to avoid unnecessary re-renders
-                  if (activeSlide?.id !== currentSlide.id) {
-                      setActiveSlide(currentSlide);
-                      setNextSlide(nextSlide);
-
-                      if (currentSlide.type === 'video') {
-                          playVideo();
-                      }
-                  }
-              }
-          }, 80); // Reduced debounce to 80ms for snappier response
-      }}
-    />
+        <div ref={loadMoreRef} className="h-20 w-full snap-start flex items-center justify-center text-white/50 text-sm">
+             {hasNextPage && "Loading..."}
+        </div>
+    </div>
   );
 };
 
