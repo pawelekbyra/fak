@@ -10,7 +10,7 @@ import { cn } from '@/lib/utils';
 interface LocalVideoPlayerProps {
     slide: VideoSlideDTO;
     isActive: boolean;
-    shouldLoad?: boolean; // Odbieramy prop do preloadingu
+    shouldLoad?: boolean;
 }
 
 const LocalVideoPlayer = ({ slide, isActive, shouldLoad = false }: LocalVideoPlayerProps) => {
@@ -66,11 +66,8 @@ const LocalVideoPlayer = ({ slide, isActive, shouldLoad = false }: LocalVideoPla
     useEffect(() => {
         const hls = hlsRef.current;
         
-        // Jeśli slajd jest aktywny LUB jest następny w kolejce (shouldLoad) -> ładujemy dane
         if ((isActive || shouldLoad) && hls && slide.data.hlsUrl) {
-            // Sprawdź, czy już nie załadowano, aby uniknąć duplikatów
             if (hls.url !== slide.data.hlsUrl) {
-                 console.log(`Preloading video ${slide.id}`);
                  hls.loadSource(slide.data.hlsUrl);
                  hls.startLoad();
             }
