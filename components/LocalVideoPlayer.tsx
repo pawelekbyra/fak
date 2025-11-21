@@ -1,103 +1,92 @@
 "use client";
 
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef } from 'react';
 import Hls from 'hls.js';
-import { useStore } from '@/store/useStore';
-import { shallow } from 'zustand/shallow';
 import { VideoSlideDTO } from '@/lib/dto';
-import { cn } from '@/lib/utils';
 
 interface LocalVideoPlayerProps {
     slide: VideoSlideDTO;
     isActive: boolean;
-    shouldLoad?: boolean; // Odbieramy prop do preloadingu
+    shouldLoad: boolean;
+    isPlaying: boolean;
+    isMuted: boolean;
 }
 
-const LocalVideoPlayer = ({ slide, isActive, shouldLoad = false }: LocalVideoPlayerProps) => {
+const LocalVideoPlayer = ({ slide, isActive, shouldLoad, isPlaying, isMuted }: LocalVideoPlayerProps) => {
     const videoRef = useRef<HTMLVideoElement>(null);
     const hlsRef = useRef<Hls | null>(null);
-    const [isReadyToPlay, setIsReadyToPlay] = useState(false);
+    const containerRef = useRef<HTMLDivElement>(null);
 
-    // Global state
-    const { isPlaying, isMuted } = useStore(
-        (state) => ({
-            isPlaying: state.isPlaying,
-            isMuted: state.isMuted,
-        }),
-        shallow
-    );
-
-    // 1. Inicjalizacja HLS (tylko raz)
+    // 1. Inicjalizacja HLS i "Double Check" Intersection Observer
     useEffect(() => {
         const video = videoRef.current;
-        if (!video) return;
+        if (!video || !containerRef.current) return;
 
         const { hlsUrl, mp4Url } = slide.data;
 
+        // "Double Check" Intersection Observer
+        const observer = new IntersectionObserver(
+            ([entry]) => {
+                // If the video is not intersecting (not visible), forcefully pause it.
+                if (!entry.isIntersecting) {
+                    video.pause();
+                }
+            },
+            { threshold: 0.5 } // Trigger when 50% of the video is out of view
+        );
+        observer.observe(containerRef.current);
+
         if (Hls.isSupported() && hlsUrl) {
             const hls = new Hls({
-                autoStartLoad: false, // WAŻNE: Nie ładuj automatycznie, czekaj na sygnał
+                autoStartLoad: false,
                 capLevelToPlayerSize: true,
             });
             hlsRef.current = hls;
             hls.attachMedia(video);
-            hls.on(Hls.Events.MANIFEST_PARSED, () => {
-                setIsReadyToPlay(true);
-            });
-
-            // Cleanup
-            return () => {
-                if (hlsRef.current) {
-                    hlsRef.current.destroy();
-                    hlsRef.current = null;
-                }
-            };
         } else if (video.canPlayType('application/vnd.apple.mpegurl') && hlsUrl) {
-             // Native HLS (iOS)
              video.src = hlsUrl;
-             setIsReadyToPlay(true);
         } else if (mp4Url) {
              video.src = mp4Url;
-             setIsReadyToPlay(true);
         }
+
+        return () => {
+            if (hlsRef.current) {
+                hlsRef.current.destroy();
+                hlsRef.current = null;
+            }
+            if (containerRef.current) {
+                observer.unobserve(containerRef.current);
+            }
+        };
     }, [slide.data.hlsUrl, slide.data.mp4Url]);
 
     // 2. Logika Preloadingu (Smart Loading)
     useEffect(() => {
         const hls = hlsRef.current;
-        
-        // Jeśli slajd jest aktywny LUB jest następny w kolejce (shouldLoad) -> ładujemy dane
-        if ((isActive || shouldLoad) && hls && slide.data.hlsUrl) {
-            // Sprawdź, czy już nie załadowano, aby uniknąć duplikatów
+        if (!hls || !slide.data.hlsUrl) return;
+
+        if (shouldLoad) {
             if (hls.url !== slide.data.hlsUrl) {
-                 console.log(`Preloading video ${slide.id}`);
                  hls.loadSource(slide.data.hlsUrl);
                  hls.startLoad();
             }
         }
-    }, [isActive, shouldLoad, slide.data.hlsUrl, slide.id]);
+    }, [shouldLoad, slide.data.hlsUrl]);
 
-    // 3. Logika Odtwarzania (Tylko Active)
+    // 3. Logika Odtwarzania
     useEffect(() => {
         const video = videoRef.current;
         if (!video) return;
 
-        const shouldPlay = isActive && isPlaying;
-
-        if (shouldPlay) {
+        if (isActive && isPlaying) {
             const playPromise = video.play();
             if (playPromise !== undefined) {
                 playPromise.catch(error => {
-                    console.warn("Autoplay prevented", error);
-                    // Tu można dodać logikę pokazania przycisku "Play" w razie błędu
+                    console.warn("Autoplay was prevented.", error);
                 });
             }
         } else {
             video.pause();
-            if (!isActive) {
-                // Opcjonalnie: przewiń do początku po przewinięciu dalej
-                // video.currentTime = 0; 
-            }
         }
     }, [isActive, isPlaying]);
 
@@ -109,7 +98,7 @@ const LocalVideoPlayer = ({ slide, isActive, shouldLoad = false }: LocalVideoPla
     }, [isMuted]);
 
     return (
-        <div className="absolute inset-0 z-0 bg-black">
+        <div ref={containerRef} className="absolute inset-0 z-0 bg-black">
              <video
                 ref={videoRef}
                 className="w-full h-full object-cover"

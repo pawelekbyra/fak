@@ -4,9 +4,7 @@ import React, { memo, useState, useEffect, useRef, useMemo } from 'react';
 import Image from 'next/image';
 import DOMPurify from 'dompurify';
 import { SlideDTO, HtmlSlideDTO, VideoSlideDTO } from '@/lib/dto';
-import { useStore } from '@/store/useStore';
 import VideoControls from './VideoControls';
-import { shallow } from 'zustand/shallow';
 import { AnimatePresence, motion } from 'framer-motion';
 import PlayIcon from './icons/PlayIcon';
 import PauseIcon from './icons/PauseIcon';
@@ -23,6 +21,10 @@ interface HtmlContentProps {
 }
 interface SlideUIProps {
     slide: SlideDTO;
+    isPlaying: boolean;
+    isMuted: boolean;
+    togglePlay: () => void;
+    toggleMute: () => void;
 }
 
 // --- Sub-components ---
@@ -45,25 +47,7 @@ const HtmlContent = ({ slide }: HtmlContentProps) => {
   );
 };
 
-const SlideUI = ({ slide }: SlideUIProps) => {
-    const {
-        activeModal,
-        setActiveModal,
-        togglePlay,
-        isPlaying,
-        isMuted,
-        seekTo,
-        setIsMuted
-    } = useStore(state => ({
-        activeModal: state.activeModal,
-        setActiveModal: state.setActiveModal,
-        togglePlay: state.togglePlay,
-        isPlaying: state.isPlaying,
-        isMuted: state.isMuted,
-        seekTo: state.seekTo,
-        setIsMuted: state.setIsMuted,
-    }), shallow);
-
+const SlideUI = ({ slide, isPlaying, isMuted, togglePlay, toggleMute }: SlideUIProps) => {
     const [showPlaybackIcon, setShowPlaybackIcon] = useState(false);
     const iconTimer = useRef<NodeJS.Timeout | null>(null);
 
@@ -110,7 +94,7 @@ const SlideUI = ({ slide }: SlideUIProps) => {
                     transition={{ duration: 0.2 }}
                 >
                     <div className="bg-black/50 rounded-full p-4">
-                        {isPlaying ? (
+                        {!isPlaying ? (
                             <PlayIcon className="w-12 h-12 text-white" />
                         ) : (
                             <PauseIcon className="w-12 h-12 text-white" />
@@ -146,8 +130,8 @@ const SlideUI = ({ slide }: SlideUIProps) => {
                     isPlaying={isPlaying}
                     isMuted={isMuted}
                     onTogglePlay={togglePlay}
-                    onToggleMute={() => setIsMuted(!isMuted)}
-                    onSeek={seekTo}
+                    onToggleMute={toggleMute}
+                    onSeek={() => {}} // Seeking logic can be handled inside the player
                 />
             </div>
         )}
@@ -160,20 +144,39 @@ const SlideUI = ({ slide }: SlideUIProps) => {
 
 interface SlideProps {
     slide: SlideDTO;
-    priorityLoad?: boolean;
+    isActive: boolean;
+    loadingPriority: boolean;
 }
 
-const Slide = memo<SlideProps>(({ slide, priorityLoad = false }) => {
+const Slide = memo<SlideProps>(({ slide, isActive, loadingPriority }) => {
     const { isLoggedIn } = useUser();
-    const activeSlideId = useStore(state => state.activeSlide?.id);
-    const isActive = activeSlideId === slide.id;
+    const [isPlaying, setIsPlaying] = useState(false);
+    const [isMuted, setIsMuted] = useState(true);
+
+    // When slide becomes inactive, pause the video.
+    useEffect(() => {
+        if (!isActive) {
+            setIsPlaying(false);
+        }
+    }, [isActive]);
+
+    const togglePlay = () => setIsPlaying(prev => isActive && !prev);
+    const toggleMute = () => setIsMuted(prev => !prev);
+
     const showSecretOverlay = slide.access === 'secret' && !isLoggedIn;
 
     const renderContent = () => {
         switch (slide.type) {
             case 'video':
-                // Pass priorityLoad as shouldLoad to LocalVideoPlayer
-                return <LocalVideoPlayer slide={slide as VideoSlideDTO} isActive={isActive} shouldLoad={priorityLoad} />;
+                return (
+                    <LocalVideoPlayer
+                        slide={slide as VideoSlideDTO}
+                        isActive={isActive}
+                        shouldLoad={loadingPriority}
+                        isPlaying={isPlaying}
+                        isMuted={isMuted}
+                    />
+                );
             case 'html':
                 return <HtmlContent slide={slide as HtmlSlideDTO} />;
             default:
@@ -183,11 +186,21 @@ const Slide = memo<SlideProps>(({ slide, priorityLoad = false }) => {
 
     return (
         <div className={cn(
-            "relative w-full h-full z-10 bg-black", // Changed from bg-transparent to bg-black
+            "relative w-full h-full z-10 bg-black",
             showSecretOverlay && "blur-md brightness-50"
         )}>
             {renderContent()}
-            {showSecretOverlay ? <SecretOverlay /> : <SlideUI slide={slide} />}
+            {showSecretOverlay ? (
+                <SecretOverlay />
+            ) : (
+                <SlideUI
+                    slide={slide}
+                    isPlaying={isPlaying}
+                    isMuted={isMuted}
+                    togglePlay={togglePlay}
+                    toggleMute={toggleMute}
+                />
+            )}
         </div>
     );
 });
