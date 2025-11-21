@@ -1,6 +1,5 @@
-import React, { useMemo, useState, useEffect, useRef } from 'react';
+import React, { useMemo, useEffect, useRef, useState, useCallback } from 'react';
 import { useInfiniteQuery } from '@tanstack/react-query';
-import { Virtuoso } from 'react-virtuoso';
 import Slide from '@/components/Slide';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useStore } from '@/store/useStore';
@@ -32,10 +31,13 @@ const MainFeed = () => {
     activeSlide: state.activeSlide
   }), shallow);
 
-  const [currentViewIndex, setCurrentViewIndex] = useState(0);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const observerRef = useRef<IntersectionObserver | null>(null);
+  const loadMoreObserverRef = useRef<IntersectionObserver | null>(null);
+  const loadMoreTriggerRef = useRef<HTMLDivElement>(null);
 
-  // Timer ref for debounce
-  const debounceTimerRef = useRef<NodeJS.Timeout | null>(null);
+  // Local state to track active index for priority loading
+  const [activeIndex, setActiveIndex] = useState(0);
 
   const {
     data,
@@ -57,66 +59,127 @@ const MainFeed = () => {
   // Initialize active slide if not set
   useEffect(() => {
       if (slides.length > 0 && !activeSlide) {
-          // Initialize first slide as active
           setActiveSlide(slides[0]);
           setNextSlide(slides[1] || null);
+          playVideo();
       }
-  }, [slides, activeSlide, setActiveSlide, setNextSlide]);
+  }, [slides, activeSlide, setActiveSlide, setNextSlide, playVideo]);
+
+  // Setup Intersection Observer for slides
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container || slides.length === 0) return;
+
+    const options = {
+      root: container,
+      threshold: 0.6, // Item must be 60% visible to be considered "active"
+    };
+
+    observerRef.current = new IntersectionObserver((entries) => {
+      entries.forEach((entry) => {
+        if (entry.isIntersecting) {
+          const index = Number(entry.target.getAttribute('data-index'));
+          if (!isNaN(index)) {
+            setActiveIndex(index);
+            const currentSlide = slides[index];
+            const nextSlide = slides[index + 1] || null;
+
+            // Update global store only if changed
+            // We access the latest state via useStore directly or just trust the effect
+            // Since activeSlide is in dep array of this effect, we need to be careful to not create loops.
+            // But here we use the Ref/Closure.
+            // Ideally we check against the current store value, but we don't have it in the closure unless activeSlide is in deps.
+            // Instead, we rely on state updates.
+            setActiveSlide(currentSlide);
+            setNextSlide(nextSlide);
+            if (currentSlide.type === 'video') {
+                playVideo();
+            }
+          }
+        }
+      });
+    }, options);
+
+    const slideElements = container.querySelectorAll('.slide-item');
+    slideElements.forEach((el) => observerRef.current?.observe(el));
+
+    return () => {
+      observerRef.current?.disconnect();
+    };
+  }, [slides, setActiveSlide, setNextSlide, playVideo]); // Re-run when slides list changes
+
+  // Setup "Load More" observer
+  useEffect(() => {
+    const trigger = loadMoreTriggerRef.current;
+    if (!trigger || !hasNextPage) return;
+
+    loadMoreObserverRef.current = new IntersectionObserver((entries) => {
+      if (entries[0].isIntersecting && hasNextPage) {
+        fetchNextPage();
+      }
+    }, { root: containerRef.current, threshold: 0.1 });
+
+    loadMoreObserverRef.current.observe(trigger);
+
+    return () => {
+      loadMoreObserverRef.current?.disconnect();
+    };
+  }, [hasNextPage, fetchNextPage, slides]); // Re-bind when content changes/grows
 
 
   if (isLoading && slides.length === 0) {
-    return <div className="w-screen h-screen bg-black flex items-center justify-center"><Skeleton className="w-full h-full" /></div>;
+    return (
+      <div className="h-[100dvh] w-full bg-black flex items-center justify-center">
+        <Skeleton className="w-full h-full bg-zinc-900" />
+      </div>
+    );
   }
 
   if (isError) {
-    return <div className="w-screen h-screen bg-black flex items-center justify-center text-white">Error loading slides.</div>;
+    return (
+      <div className="h-[100dvh] w-full bg-black flex items-center justify-center text-white">
+        <p>Błąd ładowania treści.</p>
+      </div>
+    );
   }
 
   return (
-    <Virtuoso
-      className="snap-y snap-mandatory"
-      style={{ height: '100vh' }}
-      data={slides}
-      overscan={200}
-      endReached={() => hasNextPage && fetchNextPage()}
-      itemContent={(index, slide) => {
-        const priorityLoad = index === currentViewIndex || index === currentViewIndex + 1;
-        return (
-          <div className="h-screen w-full snap-start">
-             <Slide slide={slide} priorityLoad={priorityLoad} />
-          </div>
-        );
+    <div
+      ref={containerRef}
+      className="h-[100dvh] w-full overflow-y-scroll snap-y snap-mandatory bg-black scroll-smooth"
+      style={{
+        scrollbarWidth: 'none',
+        msOverflowStyle: 'none',
+        overscrollBehaviorY: 'contain' // Prevent bounce on parent
       }}
-      rangeChanged={(range) => {
-          // Clear any existing timer to debounce rapid scrolling
-          if (debounceTimerRef.current) {
-              clearTimeout(debounceTimerRef.current);
-          }
+    >
+      {slides.map((slide, index) => (
+        <div
+          key={slide.id}
+          data-index={index}
+          className="h-full w-full snap-start slide-item relative"
+        >
+          <Slide
+            slide={slide}
+            priorityLoad={Math.abs(index - activeIndex) <= 1}
+          />
+        </div>
+      ))}
 
-          // Set a new timer
-          debounceTimerRef.current = setTimeout(() => {
-              // Detect which slide is active.
-              // Since items are full screen, startIndex is effectively the active one when snapping completes.
-              const activeIndex = range.startIndex;
-              setCurrentViewIndex(activeIndex);
+      {/* Bottom Sentinel for Infinite Scroll */}
+      {hasNextPage && (
+        <div
+          ref={loadMoreTriggerRef}
+          className="h-1 w-full snap-align-none pointer-events-none opacity-0"
+        />
+      )}
 
-              if (activeIndex >= 0 && activeIndex < slides.length) {
-                  const currentSlide = slides[activeIndex];
-                  const nextSlide = slides[activeIndex + 1] || null;
-
-                  // Only update if changed to avoid unnecessary re-renders
-                  if (activeSlide?.id !== currentSlide.id) {
-                      setActiveSlide(currentSlide);
-                      setNextSlide(nextSlide);
-
-                      if (currentSlide.type === 'video') {
-                          playVideo();
-                      }
-                  }
-              }
-          }, 80); // Reduced debounce to 80ms for snappier response
-      }}
-    />
+      {!hasNextPage && slides.length > 0 && (
+        <div className="h-20 w-full flex items-center justify-center text-white/50 snap-align-none pb-10">
+          <p className="text-sm">To już wszystko!</p>
+        </div>
+      )}
+    </div>
   );
 };
 
