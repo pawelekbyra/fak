@@ -1,11 +1,11 @@
-import React, { useMemo, useState, useEffect, useRef } from 'react';
+import React, { useCallback, useEffect, useState, useMemo } from 'react';
 import { useInfiniteQuery } from '@tanstack/react-query';
-import { Virtuoso } from 'react-virtuoso';
-import Slide from '@/components/Slide';
-import { Skeleton } from '@/components/ui/skeleton';
+import useEmblaCarousel from 'embla-carousel-react';
 import { useStore } from '@/store/useStore';
 import { SlidesResponseSchema } from '@/lib/validators';
 import { SlideDTO } from '@/lib/dto';
+import Slide from '@/components/Slide';
+import { Skeleton } from '@/components/ui/skeleton';
 import { shallow } from 'zustand/shallow';
 
 const fetchSlides = async ({ pageParam = '' }) => {
@@ -25,6 +25,16 @@ const fetchSlides = async ({ pageParam = '' }) => {
 };
 
 const MainFeed = () => {
+  // 1. Setup Embla Carousel: Vertical, Loop enabled
+  // dragFree: false means it snaps to slides.
+  const [emblaRef, emblaApi] = useEmblaCarousel({
+    axis: 'y',
+    loop: true,
+    dragFree: false,
+    duration: 25, // Slightly faster snapping
+    skipSnaps: false
+  });
+
   const { setActiveSlide, setNextSlide, playVideo, activeSlide } = useStore(state => ({
     setActiveSlide: state.setActiveSlide,
     setNextSlide: state.setNextSlide,
@@ -32,11 +42,7 @@ const MainFeed = () => {
     activeSlide: state.activeSlide
   }), shallow);
 
-  const [currentViewIndex, setCurrentViewIndex] = useState(0);
-
-  // Timer ref for debounce
-  const debounceTimerRef = useRef<NodeJS.Timeout | null>(null);
-
+  // 2. Infinite Query for data
   const {
     data,
     fetchNextPage,
@@ -54,10 +60,53 @@ const MainFeed = () => {
     return (data?.pages.flatMap(page => page.slides) ?? []) as SlideDTO[];
   }, [data]);
 
-  // Initialize active slide if not set
+  // 3. Embla Event Listeners
+  const onSelect = useCallback(() => {
+    if (!emblaApi) return;
+
+    // Get the index of the slide currently in focus
+    const index = emblaApi.selectedScrollSnap();
+    const slide = slides[index];
+
+    if (slide && slide.id !== activeSlide?.id) {
+        // Set Active Slide
+        setActiveSlide(slide);
+        setNextSlide(slides[index + 1] || slides[0] || null); // Loop logic for next slide
+
+        // Auto Play if it's a video
+        if (slide.type === 'video') {
+            playVideo();
+        }
+    }
+
+    // Infinite Scroll Trigger:
+    // If we are near the end of the list, fetch more.
+    // Note: 'scroll-progress' isn't ideal for loops, but checking index vs length works.
+    if (hasNextPage && (index >= slides.length - 2)) {
+         fetchNextPage();
+    }
+
+  }, [emblaApi, slides, activeSlide, setActiveSlide, setNextSlide, playVideo, hasNextPage, fetchNextPage]);
+
+  // Attach listeners
+  useEffect(() => {
+    if (!emblaApi) return;
+
+    // Trigger once on init to set the first slide active
+    onSelect();
+
+    emblaApi.on('select', onSelect);
+    emblaApi.on('reInit', onSelect);
+
+    return () => {
+        emblaApi.off('select', onSelect);
+        emblaApi.off('reInit', onSelect);
+    };
+  }, [emblaApi, onSelect]);
+
+  // 4. Ensure Store is initialized with the first slide if needed
   useEffect(() => {
       if (slides.length > 0 && !activeSlide) {
-          // Initialize first slide as active
           setActiveSlide(slides[0]);
           setNextSlide(slides[1] || null);
       }
@@ -65,58 +114,50 @@ const MainFeed = () => {
 
 
   if (isLoading && slides.length === 0) {
-    return <div className="w-screen h-screen bg-black flex items-center justify-center"><Skeleton className="w-full h-full" /></div>;
+    return (
+        <div className="w-full h-[100dvh] bg-black flex items-center justify-center">
+            <Skeleton className="w-full h-full bg-zinc-900" />
+        </div>
+    );
   }
 
   if (isError) {
-    return <div className="w-screen h-screen bg-black flex items-center justify-center text-white">Error loading slides.</div>;
+    return (
+        <div className="w-full h-[100dvh] bg-black flex items-center justify-center text-white">
+            <p>Błąd ładowania wideo.</p>
+        </div>
+    );
   }
 
   return (
-    <Virtuoso
-      className="snap-y snap-mandatory"
-      style={{ height: '100vh' }}
-      data={slides}
-      overscan={200}
-      endReached={() => hasNextPage && fetchNextPage()}
-      itemContent={(index, slide) => {
-        const priorityLoad = index === currentViewIndex || index === currentViewIndex + 1;
-        return (
-          <div className="h-screen w-full snap-start">
-             <Slide slide={slide} priorityLoad={priorityLoad} />
-          </div>
-        );
-      }}
-      rangeChanged={(range) => {
-          // Clear any existing timer to debounce rapid scrolling
-          if (debounceTimerRef.current) {
-              clearTimeout(debounceTimerRef.current);
-          }
+    <div className="w-full h-[100dvh] overflow-hidden bg-black" ref={emblaRef}>
+      <div className="flex flex-col h-full touch-pan-y touch-pinch-zoom">
+        {slides.map((slide, index) => {
+             // Determine priority load based on distance from active slide
+             // (Approximation, since Embla handles the exact viewport)
+             // In a loop, we might need smarter logic, but this suffices for typical cases.
+             // We rely on LocalVideoPlayer's 'shouldLoad' prop which we can derive here if needed.
+             // Actually, Slide checks 'activeSlide.id === slide.id' internally for playback.
+             // For preloading, we can pass 'true' if it's the next one.
 
-          // Set a new timer
-          debounceTimerRef.current = setTimeout(() => {
-              // Detect which slide is active.
-              // Since items are full screen, startIndex is effectively the active one when snapping completes.
-              const activeIndex = range.startIndex;
-              setCurrentViewIndex(activeIndex);
+             const isNext = activeSlide ? (slides.indexOf(activeSlide) + 1 === index) : false;
+             // Also handle the loop edge case: if active is last, next is 0
+             const isNextLoop = activeSlide ? (slides.indexOf(activeSlide) === slides.length - 1 && index === 0) : false;
 
-              if (activeIndex >= 0 && activeIndex < slides.length) {
-                  const currentSlide = slides[activeIndex];
-                  const nextSlide = slides[activeIndex + 1] || null;
+             const shouldLoad = isNext || isNextLoop;
 
-                  // Only update if changed to avoid unnecessary re-renders
-                  if (activeSlide?.id !== currentSlide.id) {
-                      setActiveSlide(currentSlide);
-                      setNextSlide(nextSlide);
-
-                      if (currentSlide.type === 'video') {
-                          playVideo();
-                      }
-                  }
-              }
-          }, 80); // Reduced debounce to 80ms for snappier response
-      }}
-    />
+             return (
+                <div
+                    key={slide.id}
+                    className="flex-[0_0_100%] min-w-0 relative"
+                    // flex-[0_0_100%] ensures it takes full height of the flex container (which is h-full)
+                >
+                    <Slide slide={slide} priorityLoad={!!shouldLoad} />
+                </div>
+             )
+        })}
+      </div>
+    </div>
   );
 };
 
