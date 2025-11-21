@@ -6,7 +6,6 @@ import { useTranslation } from '@/context/LanguageContext';
 import TopBar from './TopBar';
 import { useStore } from '@/store/useStore';
 import { shallow } from 'zustand/shallow';
-import GlobalVideoPlayer from './GlobalVideoPlayer';
 import { AuthorProfileModal } from './AuthorProfileModal';
 import TippingModal from './TippingModal';
 import CommentsModal from './CommentsModal';
@@ -35,7 +34,6 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="flex h-full flex-col relative">
-      <GlobalVideoPlayer />
       <TopBar />
       <div className="flex-1 overflow-auto z-10">
         {children}

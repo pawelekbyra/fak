@@ -8,6 +8,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { useStore } from '@/store/useStore';
 import { SlidesResponseSchema } from '@/lib/validators';
 import { SlideDTO } from '@/lib/dto';
+import { shallow } from 'zustand/shallow';
 
 const fetchSlides = async ({ pageParam = '' }) => {
   const res = await fetch(`/api/slides?cursor=${pageParam}&limit=5`);
@@ -26,9 +27,12 @@ const fetchSlides = async ({ pageParam = '' }) => {
 };
 
 const MainFeed = () => {
-  const setActiveSlide = useStore(state => state.setActiveSlide);
-  const setNextSlide = useStore(state => state.setNextSlide);
-  const playVideo = useStore(state => state.playVideo);
+  const { setActiveSlide, setNextSlide, playVideo, activeSlide } = useStore(state => ({
+    setActiveSlide: state.setActiveSlide,
+    setNextSlide: state.setNextSlide,
+    playVideo: state.playVideo,
+    activeSlide: state.activeSlide
+  }), shallow);
 
   // Timer ref for debounce
   const debounceTimerRef = useRef<NodeJS.Timeout | null>(null);
@@ -52,10 +56,12 @@ const MainFeed = () => {
 
   // Initialize active slide if not set
   useEffect(() => {
-      if (slides.length > 0) {
-          // Set initial slides logic can be here or handled by rangeChanged on mount
+      if (slides.length > 0 && !activeSlide) {
+          // Initialize first slide as active
+          setActiveSlide(slides[0]);
+          setNextSlide(slides[1] || null);
       }
-  }, [slides]);
+  }, [slides, activeSlide, setActiveSlide, setNextSlide]);
 
 
   if (isLoading && slides.length === 0) {
@@ -75,7 +81,7 @@ const MainFeed = () => {
       endReached={() => hasNextPage && fetchNextPage()}
       itemContent={(index, slide) => (
         <div className="h-screen w-full snap-start">
-           <Slide slide={slide} />
+           <Slide slide={slide} isActive={activeSlide?.id === slide.id} />
         </div>
       )}
       rangeChanged={(range) => {
@@ -94,14 +100,17 @@ const MainFeed = () => {
                   const currentSlide = slides[activeIndex];
                   const nextSlide = slides[activeIndex + 1] || null;
 
-                  setActiveSlide(currentSlide);
-                  setNextSlide(nextSlide);
+                  // Only update if changed to avoid unnecessary re-renders
+                  if (activeSlide?.id !== currentSlide.id) {
+                      setActiveSlide(currentSlide);
+                      setNextSlide(nextSlide);
 
-                  if (currentSlide.type === 'video') {
-                      playVideo();
+                      if (currentSlide.type === 'video') {
+                          playVideo();
+                      }
                   }
               }
-          }, 250); // 250ms delay
+          }, 80); // Reduced debounce to 80ms for snappier response
       }}
     />
   );
