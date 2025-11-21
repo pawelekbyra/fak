@@ -7,6 +7,9 @@ import Image from 'next/image';
 import { useStore } from '@/store/useStore';
 import { useQuery } from '@tanstack/react-query';
 import { shallow } from 'zustand/shallow';
+// Importujemy komponent odtwarzacza i typy
+import LocalVideoPlayer from './LocalVideoPlayer';
+import { VideoSlideDTO, SlideDTO } from '@/lib/dto';
 
 const fetchSlides = async () => {
     const res = await fetch(`/api/slides?cursor=&limit=1`);
@@ -33,12 +36,15 @@ const Preloader: React.FC = () => {
   const [isHiding, setIsHiding] = useState(false);
   const [showLangButtons, setShowLangButtons] = useState(false);
 
-  // We still fetch the first slide to warm up the cache, but don't interact with video state here.
-  useQuery({
+  // Zmieniamy użycie useQuery, aby odebrać 'data'
+  const { data } = useQuery({
       queryKey: ['slides', 'preload'],
       queryFn: fetchSlides,
       staleTime: Infinity,
   });
+
+  // Wyciągamy pierwszy slajd (jeśli istnieje)
+  const firstSlide = data?.slides?.[0] as SlideDTO | undefined;
 
   useEffect(() => {
     const timer = setTimeout(() => setShowLangButtons(true), 500);
@@ -65,6 +71,21 @@ const Preloader: React.FC = () => {
           initial={{ opacity: 1 }}
           exit={{ opacity: 0, transition: { duration: 0.3, delay: 0.2 } }}
         >
+          {/* --- UKRYTY PREFETCHER --- */}
+          {/* Renderujemy LocalVideoPlayer dla pierwszego filmu w trybie 'shouldLoad'.
+              Ustawiamy isActive={false}, żeby nie próbował odtwarzać (tylko buforował).
+              Ukrywamy go wizualnie (hidden), ale musi być w DOM. */}
+          {firstSlide && firstSlide.type === 'video' && (
+            <div className="absolute w-0 h-0 overflow-hidden opacity-0 pointer-events-none">
+                <LocalVideoPlayer
+                    slide={firstSlide as VideoSlideDTO}
+                    isActive={false}
+                    shouldLoad={true}
+                />
+            </div>
+          )}
+          {/* ------------------------- */}
+
           <motion.div
             className="w-[150px] h-[150px] flex-shrink-0"
             animate={{ opacity: showLangButtons ? 1 : 0 }}
