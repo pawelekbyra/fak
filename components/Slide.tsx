@@ -26,7 +26,7 @@ interface HtmlContentProps {
   slide: HtmlSlideDTO;
 }
 interface SlideUIProps {
-    slide: SlideDTO;
+  slide: SlideDTO;
 }
 
 // --- Sub-components ---
@@ -175,27 +175,36 @@ const Slide = memo<SlideProps>(({ slide, priorityLoad = false }) => {
     const queryClient = useQueryClient();
 
     useEffect(() => {
-        if (isActive) {
-            queryClient.prefetchQuery({
-                queryKey: ['comments', slide.id],
-                queryFn: async () => {
-                     const res = await fetch(`/api/comments?slideId=${slide.id}&limit=50`);
-                     if (!res.ok) throw new Error('Failed to fetch comments');
-                     const data = await res.json();
-                     if (!data.success) throw new Error(data.message || 'Failed to fetch comments');
+        if (isActive && slide?.id) {
+            try {
+                queryClient.prefetchQuery({
+                    queryKey: ['comments', slide.id],
+                    queryFn: async () => {
+                          try {
+                             const res = await fetch(`/api/comments?slideId=${slide.id}&limit=50`);
+                             if (!res.ok) return []; // Fail silently or return empty
+                             const data = await res.json();
+                             if (!data.success || !data.comments) return [];
 
-                     const parsedComments = z.array(CommentSchema).parse(data.comments);
-                     return parsedComments.map((c: any) => ({
-                       ...c,
-                       author: c.author || c.user,
-                       replies: c.replies || [],
-                       likedBy: c.likedBy || []
-                     })) as CommentWithRelations[];
-                },
-                staleTime: 1000 * 60 * 5,
-            });
+                             const parsedComments = z.array(CommentSchema).parse(data.comments);
+                             return parsedComments.map((c: any) => ({
+                               ...c,
+                               author: c.author || c.user,
+                               replies: c.replies || [],
+                               likedBy: c.likedBy || []
+                             })) as CommentWithRelations[];
+                          } catch (e) {
+                             console.error("Prefetch error:", e);
+                             return [];
+                          }
+                    },
+                    staleTime: 1000 * 60 * 5,
+                });
+            } catch (err) {
+                console.error("Prefetch setup error:", err);
+            }
         }
-    }, [isActive, slide.id, queryClient]);
+    }, [isActive, slide?.id, queryClient]);
 
     const renderContent = () => {
         switch (slide.type) {

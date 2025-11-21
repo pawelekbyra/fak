@@ -59,16 +59,21 @@ const CommentItem: React.FC<CommentItemProps> = ({ comment, onLike, onReplySubmi
 
   // Render text with hashtags and mentions
   const renderText = (text: string) => {
-    const parts = text.split(/(\s+)/);
-    return parts.map((part, index) => {
-      if (part.startsWith('#')) {
-        return <span key={index} className="text-blue-400 font-semibold">{part}</span>;
-      }
-      if (part.startsWith('@')) {
-        return <span key={index} className="text-pink-400 font-semibold">{part}</span>;
-      }
-      return part;
-    });
+    if (!text || typeof text !== 'string') return null;
+    try {
+        const parts = text.split(/(\s+)/);
+        return parts.map((part, index) => {
+          if (part.startsWith('#')) {
+            return <span key={index} className="text-blue-400 font-semibold">{part}</span>;
+          }
+          if (part.startsWith('@')) {
+            return <span key={index} className="text-pink-400 font-semibold">{part}</span>;
+          }
+          return part;
+        });
+    } catch (e) {
+        return text;
+    }
   };
 
   // Only show the menu if the current user is the author
