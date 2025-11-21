@@ -14,6 +14,7 @@ import Sidebar from './Sidebar';
 import { useUser } from '@/context/UserContext';
 import { cn } from '@/lib/utils';
 import SecretOverlay from './SecretOverlay';
+import { DEFAULT_AVATAR_URL } from '@/lib/constants';
 
 // --- Prop Types for Sub-components ---
 interface HtmlContentProps {
@@ -122,7 +123,7 @@ const SlideUI = ({ slide }: SlideUIProps) => {
         {/* UI Controls Container */}
         <div className="relative z-20 pointer-events-none">
             <div className="flex items-center gap-2 mb-2 pointer-events-auto">
-                <Image src={slide.avatar || '/avatars/default.png'} alt={slide.username} width={40} height={40} className="rounded-full border-2 border-white" />
+                <Image src={slide.avatar || DEFAULT_AVATAR_URL} alt={slide.username} width={40} height={40} className="rounded-full border-2 border-white" />
                 <p className="font-bold text-lg">{slide.username}</p>
             </div>
 

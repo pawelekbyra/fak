@@ -5,7 +5,8 @@ import { auth, signIn, signOut } from '@/auth';
 import { revalidatePath } from 'next/cache';
 import * as bcrypt from '@node-rs/bcrypt';
 import { AuthError } from 'next-auth';
-import { put } from '@vercel/blob';
+import { put, del } from '@vercel/blob';
+import { DEFAULT_AVATAR_URL } from '@/lib/constants';
 
 export interface ActionResponse {
   success: boolean;
@@ -71,8 +72,23 @@ export async function updateUserProfile(prevState: ActionResponse | any, formDat
     try {
         // Handle File Upload
         if (avatarFile && avatarFile.size > 0 && avatarFile.name !== 'undefined') {
+            // Delete old avatar if it exists and is not the default one
+            if (session.user.avatar && session.user.avatar !== DEFAULT_AVATAR_URL) {
+                try {
+                   // Only attempt to delete if it looks like a Vercel Blob URL to avoid errors with external/legacy URLs
+                   if (session.user.avatar.includes('.public.blob.vercel-storage.com')) {
+                       await del(session.user.avatar);
+                   }
+                } catch (e) {
+                    console.warn("Failed to delete old avatar:", e);
+                }
+            }
+
             const blob = await put(avatarFile.name, avatarFile, { access: 'public' });
             updateData.avatar = blob.url;
+        } else if (!session.user.avatar) {
+             // If user has no avatar, set it to default
+             updateData.avatar = DEFAULT_AVATAR_URL;
         }
 
         // Check if email is taken by another user (if email changed)

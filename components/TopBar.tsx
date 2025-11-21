@@ -172,7 +172,9 @@ const TopBar = () => {
             animate={{ y: '0%', transition: { type: 'spring', stiffness: 200, damping: 30 } }}
             exit={{ y: '-100%', transition: { ease: 'easeInOut', duration: 0.5 } }}
           >
-            <LoginForm onLoginSuccess={() => setIsLoginPanelOpen(false)} />
+            <div className="relative z-[70]">
+                <LoginForm onLoginSuccess={() => setIsLoginPanelOpen(false)} />
+            </div>
           </motion.div>
         )}
       </AnimatePresence>

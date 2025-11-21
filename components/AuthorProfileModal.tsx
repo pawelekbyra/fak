@@ -6,6 +6,7 @@ import { X } from 'lucide-react';
 import { useStore } from '@/store/useStore';
 import { Skeleton } from '@/components/ui/skeleton';
 import Image from 'next/image';
+import { DEFAULT_AVATAR_URL } from '@/lib/constants';
 
 interface AuthorProfile {
     id: string;
@@ -82,7 +83,7 @@ export function AuthorProfileModal() {
                                 <>
                                     <div className="flex items-center space-x-4 mb-6">
                                         <Image
-                                          src={profile.avatarUrl || '/avatars/default.png'}
+                                          src={profile.avatarUrl || DEFAULT_AVATAR_URL}
                                           alt={profile.username}
                                           width={80}
                                           height={80}

@@ -11,6 +11,7 @@ import Image from 'next/image';
 import { useTranslation } from '@/context/LanguageContext';
 import { useToast } from '@/context/ToastContext';
 import { updateUserProfile } from '@/lib/actions';
+import { DEFAULT_AVATAR_URL } from '@/lib/constants';
 import CropModal from './CropModal';
 
 interface ProfileTabProps {
@@ -101,7 +102,7 @@ const ProfileTab: React.FC<ProfileTabProps> = ({ onClose }) => {
     return <div className="p-5 text-center text-white/60">{t('loadingProfile')}</div>;
   }
 
-  const currentAvatar = previewUrl || profile.avatar;
+  const currentAvatar = previewUrl || profile.avatar || DEFAULT_AVATAR_URL;
 
   return (
     <div className="tab-pane active p-4" id="profile-tab">
@@ -111,19 +112,15 @@ const ProfileTab: React.FC<ProfileTabProps> = ({ onClose }) => {
         <div className="bg-white/5 border border-white/10 rounded-xl p-6 flex flex-col items-center text-center">
             <div className="relative w-24 h-24 mb-4 group cursor-pointer" onClick={handleAvatarEditClick}>
                 <div className="w-full h-full rounded-full overflow-hidden border-4 border-white/10 shadow-lg bg-gray-800 flex items-center justify-center relative">
-                    {currentAvatar ? (
-                        <Image
-                          src={currentAvatar}
-                          alt={t('avatarAlt')}
-                          width={96}
-                          height={96}
-                          className="w-full h-full object-cover"
-                          id="userAvatar"
-                          unoptimized={!!previewUrl}
-                        />
-                    ) : (
-                        <span className="text-4xl text-gray-500">{profile.displayName?.charAt(0).toUpperCase() || 'U'}</span>
-                    )}
+                    <Image
+                      src={currentAvatar}
+                      alt={t('avatarAlt')}
+                      width={96}
+                      height={96}
+                      className="w-full h-full object-cover"
+                      id="userAvatar"
+                      unoptimized={!!previewUrl}
+                    />
 
                     {/* Overlay on hover */}
                     <div className="absolute inset-0 bg-black/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-200">

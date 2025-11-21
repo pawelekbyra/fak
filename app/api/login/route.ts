@@ -3,6 +3,7 @@ import { prisma } from '@/lib/prisma';
 import * as bcrypt from '@node-rs/bcrypt';
 import { signIn } from '@/auth';
 import { isRedirectError } from 'next/dist/client/components/redirect';
+import { DEFAULT_AVATAR_URL } from '@/lib/constants';
 
 export async function POST(req: Request) {
   try {
@@ -47,7 +48,7 @@ export async function POST(req: Request) {
       displayName: user.displayName || user.name, // Fallback
       username: user.username,
       role: user.role,
-      avatar: user.avatar || user.image, // Fallback
+      avatar: user.avatar || user.image || DEFAULT_AVATAR_URL, // Fallback
       // Add other necessary fields for Context
     };
 

@@ -619,7 +619,7 @@ export async function getSlides(options: { limit?: number, cursor?: string, curr
             createdAt: new Date(row.createdAt).toISOString(),
             initialLikes: row.likeCount || 0,
             initialComments: row.commentCount || 0,
-            isLiked: row.isLiked,
+            isLiked: !!row.isLiked,
             avatar: content.avatar || '',
             access: content.access || 'public',
             data: content.data,

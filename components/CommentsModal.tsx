@@ -15,6 +15,7 @@ import { CommentSchema } from '@/lib/validators';
 import { formatDistanceToNow } from 'date-fns';
 import { pl, enUS } from 'date-fns/locale';
 import { Skeleton } from "@/components/ui/skeleton";
+import { DEFAULT_AVATAR_URL } from '@/lib/constants';
 
 import * as DropdownMenu from '@radix-ui/react-dropdown-menu';
 import * as Tooltip from '@radix-ui/react-tooltip';
@@ -77,7 +78,7 @@ const CommentItem: React.FC<CommentItemProps> = ({ comment, onLike, onReplySubmi
       exit={{ opacity: 0, y: -20 }}
       className={`flex items-start gap-3 ${isReply ? 'ml-8' : ''} group`}
     >
-      <Image src={author.avatar || '/avatars/default.png'} alt={t('userAvatar', { user: author.displayName || 'User' })} width={32} height={32} className="w-8 h-8 rounded-full mt-1" />
+      <Image src={author.avatar || DEFAULT_AVATAR_URL} alt={t('userAvatar', { user: author.displayName || 'User' })} width={32} height={32} className="w-8 h-8 rounded-full mt-1" />
       <div className="flex-1 min-w-0">
         <div className="flex justify-between items-start">
             <div className="flex items-center gap-2">
