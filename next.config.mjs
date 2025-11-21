@@ -16,6 +16,12 @@ const nextConfig = {
         hostname: 'pawelperfect.pl',
         port: '',
         pathname: '/wp-content/uploads/**',
+      },
+      {
+        protocol: 'https',
+        hostname: '4r6bgzvgnm5exo49.public.blob.vercel-storage.com',
+        port: '',
+        pathname: '/**',
       }
     ],
   },
