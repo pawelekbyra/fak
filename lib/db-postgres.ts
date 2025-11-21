@@ -416,6 +416,35 @@ export async function addComment(
   };
 }
 
+export async function deleteComment(commentId: string, userId: string): Promise<void> {
+    // Verify ownership first
+    const comment = await prisma.comment.findUnique({
+        where: { id: commentId },
+        select: { authorId: true, slideId: true }
+    });
+
+    if (!comment) {
+        throw new Error("Comment not found");
+    }
+
+    if (comment.authorId !== userId) {
+        // Optionally allow admin to delete? For now, strict ownership.
+        throw new Error("Unauthorized");
+    }
+
+    // Transaction to delete comment and decrement count
+    await prisma.$transaction([
+        prisma.comment.delete({
+            where: { id: commentId }
+        }),
+        prisma.slide.update({
+            where: { id: comment.slideId },
+            data: { commentCount: { decrement: 1 } }
+        })
+    ]);
+}
+
+
 // --- Notification Functions ---
 export async function createNotification(notificationData: Omit<Notification, 'id' | 'createdAt' | 'read'>): Promise<Notification> {
     const sql = getDb();

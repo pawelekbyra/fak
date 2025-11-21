@@ -1,5 +1,5 @@
 import { db, User } from '@/lib/db';
-import { Slide } from '@/lib/types';
+import { SlideDTO } from '@/lib/dto';
 import React from 'react';
 import { verifySession } from '@/lib/auth';
 import { revalidatePath } from 'next/cache';
@@ -17,7 +17,49 @@ export default async function SlideManagementPage() {
   }
 
   // Use the new getAllSlides function
-  const slides = await db.getAllSlides();
+  // We need to cast the DB result to SlideDTO because db-postgres returns strict DB types
+  // and we are in a transition phase where we want to use DTOs in frontend components.
+  const slidesRaw = await db.getAllSlides();
+
+  // Mapping DB slides to SlideDTO
+  // Note: getAllSlides returns a type that matches the DB schema.
+  // We need to ensure it matches SlideDTO structure.
+  const slides: SlideDTO[] = slidesRaw.map(s => {
+      const base = {
+          id: s.id,
+          userId: s.userId,
+          username: s.username,
+          avatar: s.avatar,
+          createdAt: new Date(s.createdAt).toISOString(), // DTO expects string
+          initialLikes: s.initialLikes,
+          isLiked: s.isLiked,
+          initialComments: s.initialComments,
+          access: s.access,
+      };
+
+      if (s.type === 'video') {
+          return {
+              ...base,
+              type: 'video',
+              data: {
+                  mp4Url: s.data.mp4Url || '',
+                  hlsUrl: s.data.hlsUrl || null,
+                  poster: s.data.poster || '',
+                  title: s.data.title || '',
+                  description: s.data.description || '',
+              }
+          } as SlideDTO;
+      } else {
+           return {
+              ...base,
+              type: 'html',
+              data: {
+                  htmlContent: s.data.htmlContent || ''
+              }
+          } as SlideDTO;
+      }
+  });
+
   const users: User[] = await db.getAllUsers();
 
   async function createSlideAction(formData: FormData): Promise<{ success: boolean, error?: string }> {
@@ -36,6 +78,10 @@ export default async function SlideManagementPage() {
         return { success: false, error: 'Author not found' };
       }
 
+      // Common data structure for creation
+      // Note: We are passing this to db.createSlide which expects specific DB types.
+      // We'll construct the object that matches what db.createSlide expects.
+
       const commonData = {
         userId: author.id,
         username: author.username,
@@ -43,26 +89,35 @@ export default async function SlideManagementPage() {
         x: 0, // Default value
         y: 0, // Default value
         access: 'public' as const,
-        data: {
-          title: formData.get('title') as string,
-          content: formData.get('content') as string,
-        },
       };
 
-      let newSlide: Omit<Slide, 'id' | 'createdAt' | 'initialLikes' | 'isLiked' | 'initialComments'>;
+      let newSlideData: any; // Using any to bypass strict type checks for now during refactor
 
-      switch (type) {
-        case 'video':
-          newSlide = { ...commonData, type: 'video', data: { mp4Url: commonData.data.content, hlsUrl: null, poster: '', title: commonData.data.title, description: '' } };
-          break;
-        case 'html':
-          newSlide = { ...commonData, type: 'html', data: { htmlContent: sanitize(commonData.data.content) } };
-          break;
-        default:
+      if (type === 'video') {
+          newSlideData = {
+              ...commonData,
+              type: 'video',
+              data: {
+                  mp4Url: formData.get('content') as string,
+                  hlsUrl: null,
+                  poster: '',
+                  title: formData.get('title') as string,
+                  description: ''
+              }
+          };
+      } else if (type === 'html') {
+          newSlideData = {
+              ...commonData,
+              type: 'html',
+              data: {
+                  htmlContent: sanitize(formData.get('content') as string)
+              }
+          };
+      } else {
           return { success: false, error: 'Invalid slide type' };
       }
 
-      await db.createSlide(newSlide);
+      await db.createSlide(newSlideData);
       revalidatePath('/admin/slides');
       return { success: true };
     } catch (error) {
@@ -84,7 +139,7 @@ export default async function SlideManagementPage() {
       const title = formData.get('title') as string;
       const content = formData.get('content') as string;
 
-      let updatedData: Slide['data'];
+      let updatedData: any;
 
       switch (type) {
         case 'video':
@@ -97,11 +152,12 @@ export default async function SlideManagementPage() {
           return { success: false, error: 'Invalid slide type' };
       }
 
-      const updatedSlide: Partial<Omit<Slide, 'id' | 'createdAt' | 'userId' | 'username' | 'x' | 'y'>> = {
+      // We cast to any here because the exact Partial<Slide> type is tricky with the union
+      const updatedSlide = {
         data: updatedData
       };
 
-      await db.updateSlide(slideId, updatedSlide as unknown as Partial<Slide>);
+      await db.updateSlide(slideId, updatedSlide as any);
       revalidatePath('/admin/slides');
       return { success: true };
     } catch (error) {

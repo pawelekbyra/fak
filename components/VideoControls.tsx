@@ -1,11 +1,9 @@
 "use client";
 
-import React from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Play, Pause, Volume2, VolumeX } from 'lucide-react';
 
 interface VideoControlsProps {
-    currentTime: number;
-    duration: number;
     isPlaying: boolean;
     isMuted: boolean;
     onTogglePlay: () => void;
@@ -14,14 +12,31 @@ interface VideoControlsProps {
 }
 
 const VideoControls: React.FC<VideoControlsProps> = ({
-    currentTime,
-    duration,
     isPlaying,
     isMuted,
     onTogglePlay,
     onToggleMute,
     onSeek,
 }) => {
+  const [currentTime, setCurrentTime] = useState(0);
+  const [duration, setDuration] = useState(0);
+  const [isDragging, setIsDragging] = useState(false);
+  const progressRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+      const handleProgress = (event: Event) => {
+          const customEvent = event as CustomEvent;
+          if (!isDragging) {
+            const { currentTime, duration } = customEvent.detail;
+            setCurrentTime(currentTime);
+            setDuration(duration);
+          }
+      };
+
+      window.addEventListener('video-progress', handleProgress);
+      return () => window.removeEventListener('video-progress', handleProgress);
+  }, [isDragging]);
+
   const formatTime = (time: number) => {
     if (isNaN(time)) return '0:00';
     const minutes = Math.floor(time / 60);
@@ -29,32 +44,51 @@ const VideoControls: React.FC<VideoControlsProps> = ({
     return `${minutes}:${seconds}`;
   };
 
-  const handleSeek = (e: React.ChangeEvent<HTMLInputElement>) => {
-    onSeek(Number(e.target.value));
+  const handleSeekChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setCurrentTime(Number(e.target.value));
   };
 
-  // Don't render controls if duration is 0 or NaN
-  if (!duration || isNaN(duration)) {
-    return null;
+  const handleSeekStart = () => {
+      setIsDragging(true);
   }
 
+  const handleSeekEnd = () => {
+      setIsDragging(false);
+      onSeek(currentTime);
+  }
+
+  // Hide controls if no duration (optional, but might flash 0:00 initially)
+  // Keeping it visible but 0:00 is usually better UX than popping in.
+
   return (
-    <div className="absolute bottom-4 left-4 right-4 flex items-center gap-2 text-white z-20 bg-black/30 p-2 rounded-lg">
-      <button onClick={onTogglePlay} className="p-1">
+    <div
+        className="flex items-center gap-2 text-white bg-black/30 p-2 rounded-lg mt-4 backdrop-blur-sm"
+        onClick={(e) => e.stopPropagation()}
+    >
+      <button onClick={onTogglePlay} className="p-1 hover:text-pink-500 transition-colors">
         {isPlaying ? <Pause size={20} /> : <Play size={20} />}
       </button>
-      <span className="text-xs font-mono w-12 text-center">{formatTime(currentTime)}</span>
+
+      <span className="text-xs font-mono w-10 text-center">{formatTime(currentTime)}</span>
+
       <input
+        ref={progressRef}
         type="range"
         min="0"
-        max={duration}
-        step="1"
+        max={duration || 100}
+        step="0.1"
         value={currentTime}
-        onChange={handleSeek}
-        className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer dark:bg-gray-700"
+        onMouseDown={handleSeekStart}
+        onTouchStart={handleSeekStart}
+        onChange={handleSeekChange}
+        onMouseUp={handleSeekEnd}
+        onTouchEnd={handleSeekEnd}
+        className="flex-1 h-1 bg-white/30 rounded-lg appearance-none cursor-pointer hover:bg-white/50 transition-colors accent-pink-500"
       />
-      <span className="text-xs font-mono w-12 text-center">{formatTime(duration)}</span>
-      <button onClick={onToggleMute} className="p-1">
+
+      <span className="text-xs font-mono w-10 text-center">{formatTime(duration)}</span>
+
+      <button onClick={onToggleMute} className="p-1 hover:text-pink-500 transition-colors">
         {isMuted ? <VolumeX size={20} /> : <Volume2 size={20} />}
       </button>
     </div>

@@ -1,10 +1,10 @@
 "use client";
 
 import React, { useMemo } from 'react';
-import { HtmlSlideData } from '@/lib/types';
+import { HtmlSlideDataDTO } from '@/lib/dto';
 import DOMPurify from 'dompurify';
 interface HtmlContentProps {
-  data: HtmlSlideData;
+  data: HtmlSlideDataDTO;
   isActive: boolean;
 }
 

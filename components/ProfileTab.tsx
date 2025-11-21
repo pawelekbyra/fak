@@ -39,11 +39,9 @@ const ProfileTab: React.FC<ProfileTabProps> = ({ onClose }) => {
   // Initialize state from profile when available
   useEffect(() => {
     if (profile) {
-      // We need to cast profile to any because the frontend type might not match the DB type immediately
-      // pending context update, but we access the fields if they exist.
-      const p = profile as any;
-      if (p.emailConsent !== undefined) setEmailConsent(p.emailConsent);
-      if (p.emailLanguage) setEmailLanguage(p.emailLanguage);
+      // No need to cast to any, as User interface in lib/db.interfaces.ts now includes these fields
+      if (profile.emailConsent !== undefined) setEmailConsent(profile.emailConsent);
+      if (profile.emailLanguage) setEmailLanguage(profile.emailLanguage);
     }
   }, [profile]);
 

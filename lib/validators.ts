@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { CommentWithRelations } from '@/lib/dto';
 
 // --- Schemas ---
 
@@ -10,40 +11,43 @@ export const PublicUserSchema = z.object({
   role: z.string().default('user'),
 });
 
-// Recursive Comment Schema
-export const CommentSchema: z.ZodType<any> = z.lazy(() =>
-  z.object({
+// Helper for recursive type definition
+const BaseCommentSchema = z.object({
     id: z.string(),
     text: z.string(),
-    createdAt: z.string().or(z.date().transform(d => d.toISOString())), // Handle both Date objects and ISO strings
+    createdAt: z.string().or(z.date().transform(d => d.toISOString())),
     authorId: z.string(),
     slideId: z.string(),
-    // Author relation (often flattened or nested depending on query, aligning with DTO)
+
     author: z.object({
       id: z.string(),
       username: z.string().nullable(),
       displayName: z.string().nullable(),
       avatar: z.string().nullable(),
     }).optional(),
-    // Legacy frontend format often expects 'user' instead of 'author' or a flat structure
-    // We will enforce the 'author' object structure but can transform if needed.
-    // For now, let's stick to the DTO definition:
 
     likedBy: z.array(z.string()).default([]),
-    replies: z.array(CommentSchema).optional().default([]),
+
     _count: z.object({
       likes: z.number().optional(),
     }).optional(),
 
-    // Handling the specific frontend requirement where user details are attached
     user: z.object({
        displayName: z.string().nullable(),
        avatar: z.string().nullable(),
     }).optional(),
 
     parentId: z.string().nullable().optional(),
-  })
-);
+});
+
+export type CommentSchemaType = z.infer<typeof BaseCommentSchema> & {
+  replies?: CommentSchemaType[];
+};
+
+// Recursive Comment Schema
+export const CommentSchema: z.ZodType<CommentSchemaType> = BaseCommentSchema.extend({
+  replies: z.lazy(() => z.array(CommentSchema).default([])),
+});
 
 export const BaseSlideSchema = z.object({
   id: z.string(),

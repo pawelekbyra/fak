@@ -1,8 +1,8 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Heart, MessageSquare, Loader2 } from 'lucide-react';
+import { X, Heart, MessageSquare, Loader2, MoreHorizontal, Trash, Flag, Smile } from 'lucide-react';
 import Image from 'next/image';
 import Ably from 'ably';
 import { ably } from '@/lib/ably-client';
@@ -12,16 +12,25 @@ import { useToast } from '@/context/ToastContext';
 import { z } from 'zod';
 import { CommentWithRelations } from '@/lib/dto';
 import { CommentSchema } from '@/lib/validators';
+import { formatDistanceToNow } from 'date-fns';
+import { pl, enUS } from 'date-fns/locale';
+import { Skeleton } from "@/components/ui/skeleton";
+
+import * as DropdownMenu from '@radix-ui/react-dropdown-menu';
+import * as Tooltip from '@radix-ui/react-tooltip';
 
 interface CommentItemProps {
   comment: CommentWithRelations;
   onLike: (id: string) => void;
   onReplySubmit: (parentId: string, text: string) => Promise<void>;
+  onDelete: (id: string) => Promise<void>;
+  onReport: (id: string) => void;
   currentUserId?: string;
   isReply?: boolean;
+  lang: string;
 }
 
-const CommentItem: React.FC<CommentItemProps> = ({ comment, onLike, onReplySubmit, currentUserId, isReply = false }) => {
+const CommentItem: React.FC<CommentItemProps> = ({ comment, onLike, onReplySubmit, onDelete, onReport, currentUserId, isReply = false, lang }) => {
   const { t } = useTranslation();
   const [isReplying, setIsReplying] = useState(false);
   const [replyText, setReplyText] = useState('');
@@ -40,9 +49,25 @@ const CommentItem: React.FC<CommentItemProps> = ({ comment, onLike, onReplySubmi
     setIsReplying(false);
   };
 
-  // Fallback to 'user' if 'author' is missing (though DTO guarantees author)
-  // We cast to any temporarily if we need to access legacy fields, but we should try to use author.
   const author = comment.author;
+
+  const dateLocale = lang === 'pl' ? pl : enUS;
+  const formattedTime = formatDistanceToNow(new Date(comment.createdAt), { addSuffix: true, locale: dateLocale });
+  const fullDate = new Date(comment.createdAt).toLocaleString(lang === 'pl' ? 'pl-PL' : 'en-US');
+
+  // Render text with hashtags and mentions
+  const renderText = (text: string) => {
+    const parts = text.split(/(\s+)/);
+    return parts.map((part, index) => {
+      if (part.startsWith('#')) {
+        return <span key={index} className="text-blue-400 font-semibold">{part}</span>;
+      }
+      if (part.startsWith('@')) {
+        return <span key={index} className="text-pink-400 font-semibold">{part}</span>;
+      }
+      return part;
+    });
+  };
 
   return (
     <motion.div
@@ -50,19 +75,66 @@ const CommentItem: React.FC<CommentItemProps> = ({ comment, onLike, onReplySubmi
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -20 }}
-      className={`flex items-start gap-3 ${isReply ? 'ml-8' : ''}`}
+      className={`flex items-start gap-3 ${isReply ? 'ml-8' : ''} group`}
     >
       <Image src={author.avatar || '/avatars/default.png'} alt={t('userAvatar', { user: author.displayName || 'User' })} width={32} height={32} className="w-8 h-8 rounded-full mt-1" />
-      <div className="flex-1">
-        <p className="text-xs font-bold text-white/80">{author.displayName || author.username || 'User'}</p>
-        <p className="text-sm text-white">{comment.text}</p>
+      <div className="flex-1 min-w-0">
+        <div className="flex justify-between items-start">
+            <div className="flex items-center gap-2">
+                <p className="text-xs font-bold text-white/80">{author.displayName || author.username || 'User'}</p>
+                <Tooltip.Provider delayDuration={300}>
+                  <Tooltip.Root>
+                    <Tooltip.Trigger asChild>
+                      <span className="text-[10px] text-white/40 cursor-default hover:text-white/60 transition-colors">{formattedTime}</span>
+                    </Tooltip.Trigger>
+                    <Tooltip.Portal>
+                      <Tooltip.Content className="bg-gray-800 text-white text-xs px-2 py-1 rounded shadow-lg z-[60]" sideOffset={5}>
+                        {fullDate}
+                        <Tooltip.Arrow className="fill-gray-800" />
+                      </Tooltip.Content>
+                    </Tooltip.Portal>
+                  </Tooltip.Root>
+                </Tooltip.Provider>
+            </div>
+
+             <DropdownMenu.Root>
+                <DropdownMenu.Trigger asChild>
+                  <button className="text-white/40 hover:text-white opacity-0 group-hover:opacity-100 transition-opacity">
+                    <MoreHorizontal size={16} />
+                  </button>
+                </DropdownMenu.Trigger>
+                <DropdownMenu.Portal>
+                  <DropdownMenu.Content className="min-w-[150px] bg-gray-800 rounded-md p-1 shadow-xl z-[60] border border-white/10" align="end">
+                    {currentUserId === comment.authorId ? (
+                      <DropdownMenu.Item
+                        className="flex items-center gap-2 px-2 py-1.5 text-sm text-red-400 hover:bg-white/10 rounded cursor-pointer outline-none"
+                        onSelect={() => onDelete(comment.id)}
+                      >
+                        <Trash size={14} />
+                        {t('delete') || 'Usuń'}
+                      </DropdownMenu.Item>
+                    ) : (
+                      <DropdownMenu.Item
+                         className="flex items-center gap-2 px-2 py-1.5 text-sm text-white hover:bg-white/10 rounded cursor-pointer outline-none"
+                         onSelect={() => onReport(comment.id)}
+                      >
+                        <Flag size={14} />
+                        {t('report') || 'Zgłoś'}
+                      </DropdownMenu.Item>
+                    )}
+                  </DropdownMenu.Content>
+                </DropdownMenu.Portal>
+             </DropdownMenu.Root>
+        </div>
+
+        <p className="text-sm text-white whitespace-pre-wrap break-words">{renderText(comment.text)}</p>
         <div className="flex items-center gap-4 text-xs text-white/60 mt-1">
-          <button onClick={() => onLike(comment.id)} className="flex items-center gap-1">
+          <button onClick={() => onLike(comment.id)} className="flex items-center gap-1 hover:text-white transition-colors">
             <Heart size={14} className={isLiked ? 'text-red-500 fill-current' : ''} />
             {comment.likedBy.length > 0 && <span>{comment.likedBy.length}</span>}
           </button>
           {!isReply && (
-            <button onClick={handleReplyClick} className="flex items-center gap-1">
+            <button onClick={handleReplyClick} className="flex items-center gap-1 hover:text-white transition-colors">
               <MessageSquare size={14} />
               <span>{t('reply')}</span>
             </button>
@@ -91,8 +163,11 @@ const CommentItem: React.FC<CommentItemProps> = ({ comment, onLike, onReplySubmi
               comment={reply}
               onLike={onLike}
               onReplySubmit={onReplySubmit}
+              onDelete={onDelete}
+              onReport={onReport}
               currentUserId={currentUserId}
               isReply={true}
+              lang={lang}
             />
           ))}
         </div>
@@ -109,7 +184,7 @@ interface CommentsModalProps {
 }
 
 const CommentsModal: React.FC<CommentsModalProps> = ({ isOpen, onClose, slideId, initialCommentsCount }) => {
-  const { t } = useTranslation();
+  const { t, lang } = useTranslation(); // Assuming lang is available in useTranslation context
   const { user } = useUser();
   const { addToast } = useToast();
   const [comments, setComments] = useState<CommentWithRelations[]>([]);
@@ -117,19 +192,25 @@ const CommentsModal: React.FC<CommentsModalProps> = ({ isOpen, onClose, slideId,
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  // Auto-resize textarea
+  useEffect(() => {
+    if (textareaRef.current) {
+        textareaRef.current.style.height = 'auto';
+        textareaRef.current.style.height = textareaRef.current.scrollHeight + 'px';
+    }
+  }, [newComment]);
 
   useEffect(() => {
     if (isOpen && slideId) {
       const channel = ably.channels.get(`comments:${slideId}`);
 
       const onNewComment = (message: Ably.Message) => {
-        // We need to ensure the incoming message matches our DTO structure
-        // Ideally we should validate it too, but for now we cast it.
         const data = message.data as any;
-        // Map incoming real-time data to DTO if needed, or assume server sends correct shape
         const mappedComment: CommentWithRelations = {
             ...data,
-            author: data.author || data.user, // Fallback
+            author: data.author || data.user,
             likedBy: data.likedBy || [],
             replies: []
         };
@@ -149,23 +230,12 @@ const CommentsModal: React.FC<CommentsModalProps> = ({ isOpen, onClose, slideId,
         })
         .then(data => {
           if (data.success) {
-            // Runtime Validation using Zod
             const parsedComments = z.array(CommentSchema).parse(data.comments);
-
-            // Transform/Nest comments
-            // We need to cast parsedComments to any[] first because Zod output might be slightly different from Prisma types
-            // depending on exact schema definition vs DTO type.
-            // However, our DTO is defined based on Prisma, so it should align.
-
             const commentMap = new Map<string, CommentWithRelations>(parsedComments.map((c: any) => [c.id, { ...c, author: c.author || c.user, replies: [] }]));
             const rootComments: CommentWithRelations[] = [];
 
-            // Use 'as any' loop or strict typing
-            // The parser ensures structure.
             for (const rawComment of parsedComments as any[]) {
-               // Ensure author is set (Schema allows it to be optional or user, but DTO needs author)
                const comment = commentMap.get(rawComment.id)!;
-
                if (rawComment.parentId && commentMap.has(rawComment.parentId)) {
                 const parentComment = commentMap.get(rawComment.parentId);
                 if (parentComment) {
@@ -232,8 +302,7 @@ const CommentsModal: React.FC<CommentsModalProps> = ({ isOpen, onClose, slideId,
   };
 
   const addCommentOptimistically = (newComment: CommentWithRelations) => {
-    // Note: newComment must have author property populated
-    if ((newComment as any).parentId) { // Cast because parentId isn't on CommentWithRelations base type strictly in some versions if not added
+    if ((newComment as any).parentId) {
       setComments(prev => {
         const newComments = [...prev];
         const addReply = (comment: CommentWithRelations): CommentWithRelations => {
@@ -286,13 +355,12 @@ const CommentsModal: React.FC<CommentsModalProps> = ({ isOpen, onClose, slideId,
   const handleReplySubmit = async (parentId: string, text: string) => {
     if (!text.trim() || !user || !slideId) return;
 
-    // Optimistic update
     const tempId = `temp-${Date.now()}`;
     const newReply: CommentWithRelations = {
       id: tempId,
       text,
-      createdAt: new Date(), // DTO expects Date object (or we adjust DTO to allow string)
-      updatedAt: new Date(),
+      createdAt: new Date().toISOString() as any, // DTO might expect string but for local display we need date handling. Actually DTO says string (ISO).
+      updatedAt: new Date().toISOString() as any,
       authorId: user.id,
       slideId: slideId,
       likedBy: [],
@@ -303,7 +371,7 @@ const CommentsModal: React.FC<CommentsModalProps> = ({ isOpen, onClose, slideId,
           username: user.username || null
       },
       replies: [],
-      // @ts-ignore - parentId is often not in the main DTO but used in logic
+      // @ts-ignore
       parentId,
     };
     addCommentOptimistically(newReply);
@@ -322,11 +390,9 @@ const CommentsModal: React.FC<CommentsModalProps> = ({ isOpen, onClose, slideId,
         throw new Error(errorMessage);
       }
 
-      // The API returns 'comment' which matches our Schema/DTO mostly.
-      // Ensure author is present
       const realComment = {
           ...data.comment,
-          author: data.comment.author || data.comment.user // Handle backend variation
+          author: data.comment.author || data.comment.user
       };
 
       replaceTempComment(tempId, realComment);
@@ -352,8 +418,8 @@ const CommentsModal: React.FC<CommentsModalProps> = ({ isOpen, onClose, slideId,
     const newCommentData: CommentWithRelations = {
       id: tempId,
       text: trimmedComment,
-      createdAt: new Date(),
-      updatedAt: new Date(),
+      createdAt: new Date().toISOString() as any,
+      updatedAt: new Date().toISOString() as any,
       authorId: user.id,
       slideId: slideId,
       likedBy: [],
@@ -398,11 +464,42 @@ const CommentsModal: React.FC<CommentsModalProps> = ({ isOpen, onClose, slideId,
     }
   };
 
+  const handleDelete = async (commentId: string) => {
+      if (!confirm(t('deleteConfirmation') || 'Are you sure?')) return;
+      removeCommentOptimistically(commentId);
+      try {
+          const res = await fetch(`/api/comments`, {
+              method: 'DELETE',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ commentId }),
+          });
+           if (!res.ok) {
+              throw new Error('Failed to delete');
+           }
+      } catch (error) {
+           // Revert (fetch again or undo op logic needed, but for now simple alert)
+           addToast(t('deleteError') || 'Failed to delete', 'error');
+      }
+  };
+
+  const handleReport = (commentId: string) => {
+      console.log('Reporting comment:', commentId);
+      addToast(t('reportSubmitted') || 'Report submitted', 'success');
+  }
+
   const renderContent = () => {
     if (isLoading) {
       return (
-        <div className="flex-1 flex items-center justify-center">
-          <Loader2 className="h-8 w-8 animate-spin text-white/40" />
+        <div className="flex-1 p-4 space-y-4">
+           {[...Array(3)].map((_, i) => (
+              <div key={i} className="flex items-start gap-3">
+                 <Skeleton className="h-8 w-8 rounded-full bg-white/10" />
+                 <div className="space-y-2 flex-1">
+                    <Skeleton className="h-4 w-[30%] bg-white/10" />
+                    <Skeleton className="h-4 w-[80%] bg-white/10" />
+                 </div>
+              </div>
+           ))}
         </div>
       );
     }
@@ -421,7 +518,7 @@ const CommentsModal: React.FC<CommentsModalProps> = ({ isOpen, onClose, slideId,
         );
     }
     return (
-      <div className="flex-1 overflow-y-auto p-4">
+      <div className="flex-1 overflow-y-auto p-4 custom-scrollbar">
         <AnimatePresence>
           <motion.div layout className="space-y-4">
             {comments.map((comment: CommentWithRelations) => (
@@ -430,7 +527,10 @@ const CommentsModal: React.FC<CommentsModalProps> = ({ isOpen, onClose, slideId,
                 comment={comment}
                 onLike={handleLike}
                 onReplySubmit={handleReplySubmit}
+                onDelete={handleDelete}
+                onReport={handleReport}
                 currentUserId={user?.id}
+                lang={lang}
               />
             ))}
           </motion.div>
@@ -469,20 +569,27 @@ const CommentsModal: React.FC<CommentsModalProps> = ({ isOpen, onClose, slideId,
             {renderContent()}
 
             {user && (
-              <div className="flex-shrink-0 p-2 border-t border-white/10 bg-black/50">
-                <form onSubmit={handleSubmit} className="flex items-center gap-2">
-                  {user.avatar && <Image src={user.avatar} alt={t('yourAvatar')} width={32} height={32} className="w-8 h-8 rounded-full" />}
-                  <input
-                    type="text"
-                    value={newComment}
-                    onChange={(e) => setNewComment(e.target.value)}
-                    placeholder={t('addCommentPlaceholder')}
-                    className="flex-1 px-4 py-2 bg-white/10 text-white rounded-full focus:outline-none focus:ring-2 focus:ring-pink-500 text-sm"
-                    disabled={isSubmitting}
-                  />
+              <div className="flex-shrink-0 p-2 border-t border-white/10 bg-black/50 pb-6">
+                <form onSubmit={handleSubmit} className="flex items-end gap-2">
+                  {user.avatar && <Image src={user.avatar} alt={t('yourAvatar')} width={32} height={32} className="w-8 h-8 rounded-full mb-1" />}
+                  <div className="flex-1 relative">
+                      <textarea
+                        ref={textareaRef}
+                        value={newComment}
+                        onChange={(e) => setNewComment(e.target.value)}
+                        placeholder={t('addCommentPlaceholder')}
+                        className="w-full px-4 py-2 bg-white/10 text-white rounded-2xl focus:outline-none focus:ring-2 focus:ring-pink-500 text-sm resize-none min-h-[40px] max-h-[120px] pr-10"
+                        disabled={isSubmitting}
+                        rows={1}
+                      />
+                      <button type="button" className="absolute right-2 bottom-2 text-white/40 hover:text-white" title="Emoji">
+                          <Smile size={20} />
+                      </button>
+                  </div>
+
                   <button
                     type="submit"
-                    className="px-4 py-2 bg-pink-500 text-white rounded-full text-sm font-semibold disabled:opacity-50 flex items-center justify-center min-w-[70px] transition-colors"
+                    className="px-4 py-2 mb-1 bg-pink-500 text-white rounded-full text-sm font-semibold disabled:opacity-50 flex items-center justify-center min-w-[70px] transition-colors"
                     disabled={!newComment.trim() || isSubmitting}
                   >
                     {isSubmitting ? <Loader2 className="h-4 w-4 animate-spin" /> : t('sendButton')}

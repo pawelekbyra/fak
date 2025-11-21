@@ -1,6 +1,6 @@
 'use client';
 
-import { Slide } from '@/lib/types';
+import { SlideDTO } from '@/lib/dto';
 import { User } from '@/lib/db.interfaces';
 import React, { useState } from 'react';
 import SlideEditModal from '@/components/admin/SlideEditModal';
@@ -8,7 +8,7 @@ import SlideEditModal from '@/components/admin/SlideEditModal';
 type ActionResponse = { success: boolean; error?: string };
 
 interface SlideManagementClientProps {
-  slides: Slide[];
+  slides: SlideDTO[];
   users: User[];
   createSlideAction: (formData: FormData) => Promise<ActionResponse>;
   updateSlideAction: (formData: FormData) => Promise<ActionResponse>;
@@ -17,14 +17,14 @@ interface SlideManagementClientProps {
 
 export default function SlideManagementClient({ slides, users, createSlideAction, updateSlideAction, deleteSlideAction }: SlideManagementClientProps) {
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [editingSlide, setEditingSlide] = useState<Slide | null>(null);
+  const [editingSlide, setEditingSlide] = useState<SlideDTO | null>(null);
 
   const handleNewSlide = () => {
     setEditingSlide(null);
     setIsModalOpen(true);
   };
 
-  const handleEdit = (slide: Slide) => {
+  const handleEdit = (slide: SlideDTO) => {
     setEditingSlide(slide);
     setIsModalOpen(true);
   };
@@ -46,16 +46,15 @@ export default function SlideManagementClient({ slides, users, createSlideAction
   const handleDelete = async (slideId: string) => {
     if (confirm('Are you sure you want to delete this slide?')) {
       const formData = new FormData();
-      formData.append('id', slideId); // Corrected from 'slideId' to 'id' to match server action
+      formData.append('id', slideId);
       const result = await deleteSlideAction(formData);
       if (result && !result.success) {
         alert(`Error deleting slide: ${result.error}`);
       }
-      // The page will be revalidated by the server action on success
     }
   };
 
-  const getSlideDescription = (slide: Slide) => {
+  const getSlideDescription = (slide: SlideDTO) => {
     if (slide.type === 'video') return slide.data?.title || 'Video';
     if (slide.type === 'html') return 'HTML Content';
     return 'N/A';
@@ -83,9 +82,10 @@ export default function SlideManagementClient({ slides, users, createSlideAction
             </tr>
           </thead>
           <tbody>
+            {/* Removed problematic comments and handled potentially missing props */}
             {slides.map((slide) => (
               <tr key={slide.id} className="border-b border-gray-700 hover:bg-gray-700/50">
-                <td className="p-2 font-mono">{`(${slide.x},${slide.y})`}</td>
+                <td className="p-2 font-mono">{`(${(slide as any).x ?? 0},${(slide as any).y ?? 0})`}</td>
                 <td className="p-2 capitalize">{slide.type}</td>
                 <td className="p-2 truncate" title={getSlideDescription(slide)}>{getSlideDescription(slide)}</td>
                 <td className="p-2">{slide.username}</td>

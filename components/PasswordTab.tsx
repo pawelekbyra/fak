@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Loader2 } from 'lucide-react';
@@ -13,8 +13,28 @@ const PasswordTab: React.FC = () => {
   const { addToast } = useToast();
   const [isSaving, setIsSaving] = useState(false);
 
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [error, setError] = useState<string | null>(null);
+
+  const passwordsMatch = newPassword === confirmPassword;
+  const isValidLength = newPassword.length >= 6;
+  const isFormValid = passwordsMatch && isValidLength && newPassword.length > 0;
+
+  useEffect(() => {
+      if (confirmPassword && !passwordsMatch) {
+          setError(t('passwordsDoNotMatch') || 'Passwords do not match');
+      } else if (newPassword && !isValidLength) {
+          setError(t('passwordMinLength') || 'Password must be at least 6 characters');
+      } else {
+          setError(null);
+      }
+  }, [newPassword, confirmPassword, passwordsMatch, isValidLength, t]);
+
   const handlePasswordSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+    if (!isFormValid) return;
+
     setIsSaving(true);
 
     const formData = new FormData(event.currentTarget);
@@ -25,6 +45,8 @@ const PasswordTab: React.FC = () => {
       if (result.success) {
         addToast(result.message || t('passwordChangeSuccess'), 'success');
         (event.target as HTMLFormElement).reset();
+        setNewPassword('');
+        setConfirmPassword('');
       } else {
         throw new Error(result.message || t('passwordChangeError'));
       }
@@ -59,6 +81,8 @@ const PasswordTab: React.FC = () => {
             <Input
                 type="password"
                 name="newPassword"
+                value={newPassword}
+                onChange={(e) => setNewPassword(e.target.value)}
                 placeholder={t('newPasswordPlaceholder')}
                 required
                 autoComplete="new-password"
@@ -70,21 +94,30 @@ const PasswordTab: React.FC = () => {
             <Input
                 type="password"
                 name="confirmPassword"
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
                 placeholder={t('confirmPasswordPlaceholder')}
                 required
                 autoComplete="new-password"
-                className="bg-black/20 border-white/10 text-white focus:border-pink-500/50 focus:bg-black/40 transition-all"
+                className={`bg-black/20 border-white/10 text-white focus:bg-black/40 transition-all ${confirmPassword && !passwordsMatch ? 'border-red-500 focus:border-red-500' : 'focus:border-pink-500/50'}`}
             />
-            <p className="text-xs text-white/50 mt-1 ml-1">
-              {t('passwordMinLength')}
-            </p>
+            {error && (
+                <p className="text-xs text-red-400 mt-1 ml-1 animate-in fade-in slide-in-from-top-1">
+                    {error}
+                </p>
+            )}
+            {!error && (
+                <p className="text-xs text-white/50 mt-1 ml-1">
+                  {t('passwordMinLength')}
+                </p>
+            )}
           </div>
 
           <div className="pt-4">
             <Button
                 type="submit"
-                className="w-full bg-gradient-to-r from-pink-600 to-rose-600 hover:from-pink-500 hover:to-rose-500 text-white font-semibold py-6 rounded-xl shadow-lg shadow-pink-900/20 active:scale-[0.98] transition-all"
-                disabled={isSaving}
+                className="w-full bg-gradient-to-r from-pink-600 to-rose-600 hover:from-pink-500 hover:to-rose-500 text-white font-semibold py-6 rounded-xl shadow-lg shadow-pink-900/20 active:scale-[0.98] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                disabled={isSaving || !isFormValid}
             >
                 {isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
                 {isSaving ? t('changingPassword') : t('changePasswordButton')}

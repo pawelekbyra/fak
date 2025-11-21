@@ -3,12 +3,18 @@
 import React, { createContext, useState, useContext, useEffect, ReactNode, Dispatch, SetStateAction } from 'react';
 import { User } from '@/lib/db';
 
+export interface LoginCredentials {
+  email?: string;
+  username?: string;
+  password?: string;
+}
+
 interface UserContextType {
   user: User | null;
   isLoggedIn: boolean;
   isLoading: boolean;
   setUser: Dispatch<SetStateAction<User | null>>;
-  login: (data: any) => Promise<void>;
+  login: (data: LoginCredentials) => Promise<void>;
   logout: () => Promise<void>;
   checkUserStatus: () => Promise<void>;
 }
@@ -45,7 +51,7 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
     checkUserStatus();
   }, []);
 
-  const login = async (loginData: any) => {
+  const login = async (loginData: LoginCredentials) => {
     const res = await fetch('/api/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },

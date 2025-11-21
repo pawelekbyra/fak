@@ -3,8 +3,8 @@
 import React, { memo, useState, useEffect, useRef, useMemo } from 'react';
 import Image from 'next/image';
 import DOMPurify from 'dompurify';
-import { SlideDTO, HtmlSlideDTO, VideoSlideDTO } from '@/lib/dto';
-import { useStore, ModalType } from '@/store/useStore';
+import { SlideDTO, HtmlSlideDTO } from '@/lib/dto';
+import { useStore } from '@/store/useStore';
 import VideoControls from './VideoControls';
 import { shallow } from 'zustand/shallow';
 import { AnimatePresence, motion } from 'framer-motion';
@@ -48,8 +48,6 @@ const SlideUI = ({ slide }: SlideUIProps) => {
         activeModal,
         setActiveModal,
         togglePlay,
-        currentTime,
-        duration,
         isPlaying,
         isMuted,
         seek,
@@ -58,8 +56,6 @@ const SlideUI = ({ slide }: SlideUIProps) => {
         activeModal: state.activeModal,
         setActiveModal: state.setActiveModal,
         togglePlay: state.togglePlay,
-        currentTime: state.currentTime,
-        duration: state.duration,
         isPlaying: state.isPlaying,
         isMuted: state.isMuted,
         seek: state.seek,
@@ -105,7 +101,7 @@ const SlideUI = ({ slide }: SlideUIProps) => {
         <AnimatePresence>
             {showPlaybackIcon && (
                 <motion.div
-                    className="absolute inset-0 flex items-center justify-center"
+                    className="absolute inset-0 flex items-center justify-center pointer-events-none"
                     initial={{ opacity: 0, scale: 1.5 }}
                     animate={{ opacity: 1, scale: 1 }}
                     exit={{ opacity: 0, scale: 1.2 }}
@@ -124,8 +120,8 @@ const SlideUI = ({ slide }: SlideUIProps) => {
 
 
         {/* UI Controls Container */}
-        <div className="relative z-20">
-            <div className="flex items-center gap-2 mb-2">
+        <div className="relative z-20 pointer-events-none">
+            <div className="flex items-center gap-2 mb-2 pointer-events-auto">
                 <Image src={slide.avatar || '/avatars/default.png'} alt={slide.username} width={40} height={40} className="rounded-full border-2 border-white" />
                 <p className="font-bold text-lg">{slide.username}</p>
             </div>
@@ -143,15 +139,15 @@ const SlideUI = ({ slide }: SlideUIProps) => {
         />
 
         {isVideoSlide && (
-            <VideoControls
-              currentTime={currentTime}
-              duration={duration}
-              isPlaying={isPlaying}
-              isMuted={isMuted}
-              onTogglePlay={togglePlay}
-              onToggleMute={() => setIsMuted(!isMuted)}
-              onSeek={seek}
-            />
+            <div className="pointer-events-auto">
+                <VideoControls
+                    isPlaying={isPlaying}
+                    isMuted={isMuted}
+                    onTogglePlay={togglePlay}
+                    onToggleMute={() => setIsMuted(!isMuted)}
+                    onSeek={seek}
+                />
+            </div>
         )}
       </div>
     );
@@ -164,7 +160,7 @@ interface SlideProps {
     slide: SlideDTO;
 }
 
-const Slide = memo<SlideProps>(({ slide}) => {
+const Slide = memo<SlideProps>(({ slide }) => {
     const { isLoggedIn } = useUser();
     const showSecretOverlay = slide.access === 'secret' && !isLoggedIn;
 

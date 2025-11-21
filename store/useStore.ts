@@ -2,12 +2,6 @@ import { create } from 'zustand';
 import { SlideDTO } from '@/lib/dto';
 import React from 'react';
 
-// Backward compatibility for components that might still import Slide from types
-// but generally we should move to SlideDTO.
-// We'll alias it here if needed, or just use SlideDTO.
-// The GlobalVideoPlayer uses Slide | null, but we are moving to SlideDTO.
-type Slide = SlideDTO;
-
 export type ModalType = 'account' | 'comments' | 'info' | 'login' | 'tipping' | 'author' | null;
 
 interface LikeState {
@@ -32,14 +26,11 @@ interface AppState {
   openTippingModal: () => void;
   closeTippingModal: () => void;
 
-  // User state
-  isLoggedIn: boolean;
-
   // Slide state
-  activeSlide: Slide | null;
-  nextSlide: Slide | null;
-  setActiveSlide: (slide: Slide | null) => void;
-  setNextSlide: (slide: Slide | null) => void;
+  activeSlide: SlideDTO | null;
+  nextSlide: SlideDTO | null;
+  setActiveSlide: (slide: SlideDTO | null) => void;
+  setNextSlide: (slide: SlideDTO | null) => void;
 
   likeChanges: Record<string, LikeState>;
   toggleLike: (slideId: string, initialLikes: number, initialIsLiked: boolean) => void;
@@ -48,7 +39,6 @@ interface AppState {
   isMuted: boolean;
   isPlaying: boolean;
   userPlaybackIntent: 'play' | 'pause' | null;
-  currentTime: number;
   duration: number;
 
   // Video player actions
@@ -56,15 +46,12 @@ interface AppState {
   togglePlay: () => void;
   playVideo: () => void;
   pauseVideo: () => void;
-  setCurrentTime: (time: number) => void;
   setDuration: (duration: number) => void;
-  seek: (time: number) => void;
 }
 
 export const useStore = create<AppState>((set, get) => ({
   // --- STATE ---
   activeModal: null,
-  isLoggedIn: false,
   activeSlide: null,
   nextSlide: null,
   likeChanges: {},
@@ -77,7 +64,6 @@ export const useStore = create<AppState>((set, get) => ({
   isMuted: true,
   isPlaying: false,
   userPlaybackIntent: null,
-  currentTime: 0,
   duration: 0,
 
 
@@ -120,9 +106,7 @@ export const useStore = create<AppState>((set, get) => ({
   }),
   playVideo: () => set({ isPlaying: true }),
   pauseVideo: () => set({ isPlaying: false }),
-  setCurrentTime: (time) => set({ currentTime: time }),
   setDuration: (duration) => set({ duration: duration }),
-  seek: (time) => set({ currentTime: time }),
 
 
   // --- COMPUTED / SELECTORS ---

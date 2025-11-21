@@ -47,22 +47,26 @@ export interface BaseSlideDTO {
   access: 'public' | 'secret';
 }
 
+export interface HtmlSlideDataDTO {
+  htmlContent: string;
+}
+
 export interface HtmlSlideDTO extends BaseSlideDTO {
   type: 'html';
-  data: {
-    htmlContent: string;
-  };
+  data: HtmlSlideDataDTO;
+}
+
+export interface VideoSlideDataDTO {
+  mp4Url: string;
+  hlsUrl: string | null;
+  poster: string;
+  title: string;
+  description: string;
 }
 
 export interface VideoSlideDTO extends BaseSlideDTO {
   type: 'video';
-  data: {
-    mp4Url: string;
-    hlsUrl: string | null;
-    poster: string;
-    title: string;
-    description: string;
-  };
+  data: VideoSlideDataDTO;
 }
 
 export type SlideDTO = HtmlSlideDTO | VideoSlideDTO;
@@ -73,6 +77,7 @@ export interface ApiResponse<T> {
   success: boolean;
   message?: string;
   data?: T;
+  errors?: Record<string, string[] | string>;
 }
 
 export interface PaginatedResponse<T> extends ApiResponse<T> {

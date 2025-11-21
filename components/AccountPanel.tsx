@@ -9,6 +9,7 @@ import DeleteTab from './DeleteTab';
 import { useTranslation } from '@/context/LanguageContext';
 import { X } from 'lucide-react';
 import { Button } from './ui/button';
+import { useRouter } from 'next/navigation';
 
 interface AccountPanelProps {
   onClose: () => void;
@@ -20,6 +21,7 @@ const AccountPanel: React.FC<AccountPanelProps> = ({ onClose }) => {
   const [activeTab, setActiveTab] = useState<Tab>('profile');
   const { t } = useTranslation();
   const { user } = useUser();
+  const router = useRouter();
 
   useEffect(() => {
     // If the user logs out while this panel is open, close it automatically.
@@ -30,6 +32,10 @@ const AccountPanel: React.FC<AccountPanelProps> = ({ onClose }) => {
 
   const handleTabClick = (tab: Tab) => {
       setActiveTab(tab);
+  }
+
+  const handlePublishClick = () => {
+      router.push('/admin/slides');
   }
 
   const canPublish = user?.role === 'admin' || user?.role === 'author';
@@ -69,18 +75,21 @@ const AccountPanel: React.FC<AccountPanelProps> = ({ onClose }) => {
         <div className="flex-shrink-0 flex bg-[#1a1a1a] border-b border-white/5">
           <button
             onClick={() => handleTabClick('profile')}
+            aria-label={t('profileTab')}
             className={`flex-1 py-4 text-sm font-medium border-b-2 transition-all ${activeTab === 'profile' ? 'text-pink-500 border-pink-500 bg-white/5' : 'text-white/40 border-transparent hover:text-white/70 hover:bg-white/5'}`}
           >
             {t('profileTab')}
           </button>
           <button
             onClick={() => handleTabClick('password')}
+            aria-label={t('passwordTab')}
             className={`flex-1 py-4 text-sm font-medium border-b-2 transition-all ${activeTab === 'password' ? 'text-pink-500 border-pink-500 bg-white/5' : 'text-white/40 border-transparent hover:text-white/70 hover:bg-white/5'}`}
           >
             {t('passwordTab')}
           </button>
           <button
             onClick={() => handleTabClick('delete')}
+            aria-label={t('deleteTab')}
             className={`flex-1 py-4 text-sm font-medium border-b-2 transition-all ${activeTab === 'delete' ? 'text-pink-500 border-pink-500 bg-white/5' : 'text-white/40 border-transparent hover:text-white/70 hover:bg-white/5'}`}
           >
             {t('deleteTab')}
@@ -96,7 +105,7 @@ const AccountPanel: React.FC<AccountPanelProps> = ({ onClose }) => {
 
         {canPublish && (
           <div className="p-4 border-t border-white/10 bg-[#1a1a1a]/80 backdrop-blur-sm">
-             <Button className="w-full bg-gradient-to-r from-pink-600 to-rose-600 hover:from-pink-500 hover:to-rose-500 text-white font-semibold py-6 rounded-xl shadow-lg shadow-pink-900/20 active:scale-[0.98] transition-all" onClick={() => window.location.href = '/admin/slides'}>
+             <Button className="w-full bg-gradient-to-r from-pink-600 to-rose-600 hover:from-pink-500 hover:to-rose-500 text-white font-semibold py-6 rounded-xl shadow-lg shadow-pink-900/20 active:scale-[0.98] transition-all" onClick={handlePublishClick}>
                  {t('publishButton')}
              </Button>
           </div>

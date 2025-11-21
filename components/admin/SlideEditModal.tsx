@@ -1,14 +1,14 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Slide } from '@/lib/types';
+import { SlideDTO } from '@/lib/dto';
 import { User } from '@/lib/db.interfaces';
 
 interface SlideEditModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSubmit: (formData: FormData) => Promise<{ success: boolean, error?: string }>;
-  slide?: Slide | null;
+  slide?: SlideDTO | null;
   users: User[];
 }
 
@@ -25,10 +25,10 @@ export default function SlideEditModal({ isOpen, onClose, onSubmit, slide, users
     if (slide) {
       setType(slide.type);
       setAuthorId(slide.userId);
-      if (slide.type === 'video' && slide.data?.mp4Url) {
+      if (slide.type === 'video') {
         setTitle(slide.data.title || '');
         setContent(slide.data.mp4Url);
-      } else if (slide.type === 'html' && slide.data?.htmlContent) {
+      } else if (slide.type === 'html') {
         setTitle('HTML Content'); // HTML slides don't have a title in the same way
         setContent(slide.data.htmlContent);
       }

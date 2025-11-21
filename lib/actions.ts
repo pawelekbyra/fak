@@ -7,6 +7,12 @@ import * as bcrypt from '@node-rs/bcrypt';
 import { AuthError } from 'next-auth';
 import { put } from '@vercel/blob';
 
+export interface ActionResponse {
+  success: boolean;
+  message?: string;
+  errors?: Record<string, string[] | string>;
+}
+
 export async function authenticate(
   prevState: string | undefined,
   formData: FormData,
@@ -29,12 +35,12 @@ export async function authenticate(
 // Removed standalone uploadAvatar as it is now integrated into updateUserProfile
 // or can be kept if needed for other parts, but the prompt implies a replacement logic.
 // For safety, I'll keep the export but it won't be used by the new ProfileTab.
-export async function uploadAvatar(formData: FormData) {
+export async function uploadAvatar(formData: FormData): Promise<ActionResponse> {
   // Legacy/Unused in new ProfileTab flow, kept for backward compatibility if needed
   return { success: false, message: 'Please use the profile save button.' };
 }
 
-export async function updateUserProfile(prevState: any, formData: FormData) {
+export async function updateUserProfile(prevState: ActionResponse | any, formData: FormData): Promise<ActionResponse> {
     const session = await auth();
     if (!session || !session.user || !session.user.id) {
         return { success: false, message: 'Not authenticated' };
@@ -87,7 +93,7 @@ export async function updateUserProfile(prevState: any, formData: FormData) {
     }
 }
 
-export async function changePassword(prevState: any, formData: FormData) {
+export async function changePassword(prevState: ActionResponse | any, formData: FormData): Promise<ActionResponse> {
     const session = await auth();
     if (!session || !session.user || !session.user.id) {
         return { success: false, message: 'Not authenticated' };
@@ -134,7 +140,7 @@ export async function changePassword(prevState: any, formData: FormData) {
     }
 }
 
-export async function deleteAccount(prevState: any, formData: FormData) {
+export async function deleteAccount(prevState: ActionResponse | any, formData: FormData): Promise<ActionResponse> {
     const session = await auth();
     if (!session || !session.user || !session.user.id) {
         return { success: false, message: 'Not authenticated' };
