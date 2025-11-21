@@ -3,7 +3,7 @@
 import React, { memo, useState, useEffect, useRef, useMemo } from 'react';
 import Image from 'next/image';
 import DOMPurify from 'dompurify';
-import { SlideDTO, HtmlSlideDTO } from '@/lib/dto';
+import { SlideDTO, HtmlSlideDTO, VideoSlideDTO } from '@/lib/dto';
 import { useStore } from '@/store/useStore';
 import VideoControls from './VideoControls';
 import { shallow } from 'zustand/shallow';
@@ -15,6 +15,7 @@ import { useUser } from '@/context/UserContext';
 import { cn } from '@/lib/utils';
 import SecretOverlay from './SecretOverlay';
 import { DEFAULT_AVATAR_URL } from '@/lib/constants';
+import LocalVideoPlayer from './LocalVideoPlayer';
 
 // --- Prop Types for Sub-components ---
 interface HtmlContentProps {
@@ -159,17 +160,17 @@ const SlideUI = ({ slide }: SlideUIProps) => {
 
 interface SlideProps {
     slide: SlideDTO;
+    isActive?: boolean;
 }
 
-const Slide = memo<SlideProps>(({ slide }) => {
+const Slide = memo<SlideProps>(({ slide, isActive = false }) => {
     const { isLoggedIn } = useUser();
     const showSecretOverlay = slide.access === 'secret' && !isLoggedIn;
 
     const renderContent = () => {
         switch (slide.type) {
             case 'video':
-                // For video slides, we need a transparent background so the global player (z-0) shows through
-                return <div className="w-full h-full bg-transparent" />;
+                return <LocalVideoPlayer slide={slide as VideoSlideDTO} isActive={isActive} />;
             case 'html':
                 return <HtmlContent slide={slide as HtmlSlideDTO} />;
             default:
@@ -179,8 +180,7 @@ const Slide = memo<SlideProps>(({ slide }) => {
 
     return (
         <div className={cn(
-            "relative w-full h-full z-10", // Ensure Slide sits above GlobalVideoPlayer (z-0)
-            slide.type === 'video' ? "bg-transparent" : "bg-black", // Transparent hole for video
+            "relative w-full h-full z-10 bg-black", // Changed from bg-transparent to bg-black
             showSecretOverlay && "blur-md brightness-50"
         )}>
             {renderContent()}
