@@ -1,6 +1,7 @@
 import React, { useMemo, useState, useEffect, useRef } from 'react';
 import { useInfiniteQuery } from '@tanstack/react-query';
 import { Swiper, SwiperSlide } from 'swiper/react';
+import { Mousewheel, Keyboard } from 'swiper/modules';
 import 'swiper/css';
 import Slide from '@/components/Slide';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -70,8 +71,11 @@ const SwiperFeed = () => {
 
   return (
     <Swiper
+      modules={[Mousewheel, Keyboard]}
       direction={'vertical'}
-      className="w-full h-full"
+      className="w-full h-screen"
+      mousewheel
+      keyboard
       onSlideChange={(swiper) => {
         const activeIndex = swiper.realIndex;
         if (activeIndex >= 0 && activeIndex < slides.length) {
