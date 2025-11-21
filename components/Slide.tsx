@@ -161,9 +161,10 @@ const SlideUI = ({ slide }: SlideUIProps) => {
 interface SlideProps {
     slide: SlideDTO;
     priorityLoad?: boolean;
+    shouldRenderVideo?: boolean;
 }
 
-const Slide = memo<SlideProps>(({ slide, priorityLoad = false }) => {
+const Slide = memo<SlideProps>(({ slide, priorityLoad = false, shouldRenderVideo = true }) => {
     const { isLoggedIn } = useUser();
     const activeSlideId = useStore(state => state.activeSlide?.id);
     const isActive = activeSlideId === slide.id;
@@ -172,7 +173,22 @@ const Slide = memo<SlideProps>(({ slide, priorityLoad = false }) => {
     const renderContent = () => {
         switch (slide.type) {
             case 'video':
-                // Pass priorityLoad as shouldLoad to LocalVideoPlayer
+                // Check if we should render the heavy player or just the poster
+                if (!shouldRenderVideo) {
+                    const posterUrl = (slide as VideoSlideDTO).data?.poster;
+                    return (
+                        <div className="absolute inset-0 bg-black">
+                             {posterUrl && (
+                                <Image
+                                    src={posterUrl}
+                                    alt="Poster"
+                                    fill
+                                    className="object-cover opacity-50"
+                                />
+                             )}
+                        </div>
+                    );
+                }
                 return <LocalVideoPlayer slide={slide as VideoSlideDTO} isActive={isActive} shouldLoad={priorityLoad} />;
             case 'html':
                 return <HtmlContent slide={slide as HtmlSlideDTO} />;

@@ -1,23 +1,20 @@
-import React, { useMemo, useState, useEffect, useRef } from 'react';
+"use client";
+
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useInfiniteQuery } from '@tanstack/react-query';
-import { Virtuoso } from 'react-virtuoso';
+import { useStore } from '@/store/useStore';
+import { shallow } from 'zustand/shallow';
 import Slide from '@/components/Slide';
 import { Skeleton } from '@/components/ui/skeleton';
-import { useStore } from '@/store/useStore';
-import { SlidesResponseSchema } from '@/lib/validators';
 import { SlideDTO } from '@/lib/dto';
-import { shallow } from 'zustand/shallow';
+import { SlidesResponseSchema } from '@/lib/validators';
 
 const fetchSlides = async ({ pageParam = '' }) => {
   const res = await fetch(`/api/slides?cursor=${pageParam}&limit=5`);
-  if (!res.ok) {
-    throw new Error('Failed to fetch slides');
-  }
+  if (!res.ok) throw new Error('Failed to fetch slides');
   const data = await res.json();
-
   try {
-      const parsed = SlidesResponseSchema.parse(data);
-      return parsed;
+      return SlidesResponseSchema.parse(data);
   } catch (e) {
       console.error("Slides API validation error:", e);
       throw new Error("Invalid data received from Slides API");
@@ -25,99 +22,127 @@ const fetchSlides = async ({ pageParam = '' }) => {
 };
 
 const MainFeed = () => {
-  const { setActiveSlide, setNextSlide, playVideo, activeSlide } = useStore(state => ({
-    setActiveSlide: state.setActiveSlide,
-    setNextSlide: state.setNextSlide,
-    playVideo: state.playVideo,
-    activeSlide: state.activeSlide
-  }), shallow);
+    const { setActiveSlide, setNextSlide, playVideo, activeSlide } = useStore(state => ({
+        setActiveSlide: state.setActiveSlide,
+        setNextSlide: state.setNextSlide,
+        playVideo: state.playVideo,
+        activeSlide: state.activeSlide
+    }), shallow);
 
-  const [currentViewIndex, setCurrentViewIndex] = useState(0);
+    const containerRef = useRef<HTMLDivElement>(null);
+    const [activeIndex, setActiveIndex] = useState(0);
 
-  // Timer ref for debounce
-  const debounceTimerRef = useRef<NodeJS.Timeout | null>(null);
+    const {
+        data,
+        fetchNextPage,
+        hasNextPage,
+        isLoading,
+        isError,
+    } = useInfiniteQuery({
+        queryKey: ['slides'],
+        queryFn: fetchSlides,
+        initialPageParam: '',
+        getNextPageParam: (lastPage) => lastPage.nextCursor,
+    });
 
-  const {
-    data,
-    fetchNextPage,
-    hasNextPage,
-    isLoading,
-    isError,
-  } = useInfiniteQuery({
-    queryKey: ['slides'],
-    queryFn: fetchSlides,
-    initialPageParam: '',
-    getNextPageParam: (lastPage) => lastPage.nextCursor,
-  });
+    const slides = useMemo(() => {
+        return (data?.pages.flatMap(page => page.slides) ?? []) as SlideDTO[];
+    }, [data]);
 
-  const slides = useMemo(() => {
-    return (data?.pages.flatMap(page => page.slides) ?? []) as SlideDTO[];
-  }, [data]);
+    // Initialize active slide if not set
+    useEffect(() => {
+        if (slides.length > 0 && !activeSlide) {
+            setActiveSlide(slides[0]);
+            setNextSlide(slides[1] || null);
+        }
+    }, [slides, activeSlide, setActiveSlide, setNextSlide]);
 
-  // Initialize active slide if not set
-  useEffect(() => {
-      if (slides.length > 0 && !activeSlide) {
-          // Initialize first slide as active
-          setActiveSlide(slides[0]);
-          setNextSlide(slides[1] || null);
-      }
-  }, [slides, activeSlide, setActiveSlide, setNextSlide]);
+    // Setup Intersection Observer
+    useEffect(() => {
+        const container = containerRef.current;
+        if (!container) return;
 
+        const options = {
+            root: container,
+            threshold: 0.6, // Must be 60% visible to count
+        };
 
-  if (isLoading && slides.length === 0) {
-    return <div className="w-screen h-screen bg-black flex items-center justify-center"><Skeleton className="w-full h-full" /></div>;
-  }
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach((entry) => {
+                if (entry.isIntersecting) {
+                    const index = Number(entry.target.getAttribute('data-index'));
+                    if (!isNaN(index)) {
+                        setActiveIndex(index);
+                    }
+                }
+            });
+        }, options);
 
-  if (isError) {
-    return <div className="w-screen h-screen bg-black flex items-center justify-center text-white">Error loading slides.</div>;
-  }
+        const elements = container.querySelectorAll('.slide-item');
+        elements.forEach(el => observer.observe(el));
 
-  return (
-    <Virtuoso
-      className="snap-y snap-mandatory"
-      style={{ height: '100vh' }}
-      data={slides}
-      overscan={200}
-      endReached={() => hasNextPage && fetchNextPage()}
-      itemContent={(index, slide) => {
-        const priorityLoad = index === currentViewIndex || index === currentViewIndex + 1;
-        return (
-          <div className="h-screen w-full snap-start">
-             <Slide slide={slide} priorityLoad={priorityLoad} />
-          </div>
-        );
-      }}
-      rangeChanged={(range) => {
-          // Clear any existing timer to debounce rapid scrolling
-          if (debounceTimerRef.current) {
-              clearTimeout(debounceTimerRef.current);
-          }
+        return () => observer.disconnect();
+    }, [slides]);
 
-          // Set a new timer
-          debounceTimerRef.current = setTimeout(() => {
-              // Detect which slide is active.
-              // Since items are full screen, startIndex is effectively the active one when snapping completes.
-              const activeIndex = range.startIndex;
-              setCurrentViewIndex(activeIndex);
+    // Handle Active Slide Update and Infinite Scroll trigger
+    useEffect(() => {
+        if (slides.length > 0) {
+            const currentSlide = slides[activeIndex];
 
-              if (activeIndex >= 0 && activeIndex < slides.length) {
-                  const currentSlide = slides[activeIndex];
-                  const nextSlide = slides[activeIndex + 1] || null;
+            // Update store if changed
+            if (currentSlide && currentSlide.id !== activeSlide?.id) {
+                setActiveSlide(currentSlide);
+                setNextSlide(slides[activeIndex + 1] || null);
 
-                  // Only update if changed to avoid unnecessary re-renders
-                  if (activeSlide?.id !== currentSlide.id) {
-                      setActiveSlide(currentSlide);
-                      setNextSlide(nextSlide);
+                // Auto-play video
+                if (currentSlide.type === 'video') {
+                    playVideo();
+                }
+            }
 
-                      if (currentSlide.type === 'video') {
-                          playVideo();
-                      }
-                  }
-              }
-          }, 80); // Reduced debounce to 80ms for snappier response
-      }}
-    />
-  );
+            // Load more if near end (within 2 items)
+            if (activeIndex >= slides.length - 2 && hasNextPage) {
+                fetchNextPage();
+            }
+        }
+    }, [activeIndex, slides, activeSlide, setActiveSlide, setNextSlide, playVideo, hasNextPage, fetchNextPage]);
+
+    if (isLoading && slides.length === 0) {
+        return <div className="w-full h-[100dvh] bg-black flex items-center justify-center"><Skeleton className="w-full h-full" /></div>;
+    }
+
+    if (isError) {
+        return <div className="w-full h-[100dvh] bg-black flex items-center justify-center text-white">Error loading slides.</div>;
+    }
+
+    return (
+        <div
+            ref={containerRef}
+            className="h-[100dvh] w-full overflow-y-scroll snap-y snap-mandatory no-scrollbar bg-black"
+        >
+            {slides.map((slide, index) => {
+                // Optimization: "Manual Virtualization" / Windowing
+                // Only render video players for active index +/- 2.
+                // Others get a lightweight placeholder.
+                const isNear = Math.abs(index - activeIndex) <= 2;
+                const shouldLoad = index === activeIndex + 1; // Preload next
+
+                return (
+                    <div
+                        key={`${slide.id}-${index}`}
+                        data-index={index}
+                        className="slide-item h-[100dvh] w-full snap-start snap-always"
+                    >
+                        <Slide
+                            slide={slide}
+                            priorityLoad={shouldLoad}
+                            shouldRenderVideo={isNear}
+                        />
+                    </div>
+                );
+            })}
+        </div>
+    );
 };
 
 export default MainFeed;
