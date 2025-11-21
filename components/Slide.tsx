@@ -160,9 +160,10 @@ const SlideUI = ({ slide }: SlideUIProps) => {
 
 interface SlideProps {
     slide: SlideDTO;
+    priorityLoad?: boolean;
 }
 
-const Slide = memo<SlideProps>(({ slide }) => {
+const Slide = memo<SlideProps>(({ slide, priorityLoad = false }) => {
     const { isLoggedIn } = useUser();
     const activeSlideId = useStore(state => state.activeSlide?.id);
     const isActive = activeSlideId === slide.id;
@@ -171,7 +172,8 @@ const Slide = memo<SlideProps>(({ slide }) => {
     const renderContent = () => {
         switch (slide.type) {
             case 'video':
-                return <LocalVideoPlayer slide={slide as VideoSlideDTO} isActive={isActive} />;
+                // Pass priorityLoad as shouldLoad to LocalVideoPlayer
+                return <LocalVideoPlayer slide={slide as VideoSlideDTO} isActive={isActive} shouldLoad={priorityLoad} />;
             case 'html':
                 return <HtmlContent slide={slide as HtmlSlideDTO} />;
             default:

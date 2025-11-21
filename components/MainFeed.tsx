@@ -1,5 +1,3 @@
-"use client";
-
 import React, { useMemo, useState, useEffect, useRef } from 'react';
 import { useInfiniteQuery } from '@tanstack/react-query';
 import { Virtuoso } from 'react-virtuoso';
@@ -33,6 +31,8 @@ const MainFeed = () => {
     playVideo: state.playVideo,
     activeSlide: state.activeSlide
   }), shallow);
+
+  const [currentViewIndex, setCurrentViewIndex] = useState(0);
 
   // Timer ref for debounce
   const debounceTimerRef = useRef<NodeJS.Timeout | null>(null);
@@ -79,11 +79,14 @@ const MainFeed = () => {
       data={slides}
       overscan={200}
       endReached={() => hasNextPage && fetchNextPage()}
-      itemContent={(index, slide) => (
-        <div className="h-screen w-full snap-start">
-           <Slide slide={slide} />
-        </div>
-      )}
+      itemContent={(index, slide) => {
+        const priorityLoad = index === currentViewIndex || index === currentViewIndex + 1;
+        return (
+          <div className="h-screen w-full snap-start">
+             <Slide slide={slide} priorityLoad={priorityLoad} />
+          </div>
+        );
+      }}
       rangeChanged={(range) => {
           // Clear any existing timer to debounce rapid scrolling
           if (debounceTimerRef.current) {
@@ -95,6 +98,7 @@ const MainFeed = () => {
               // Detect which slide is active.
               // Since items are full screen, startIndex is effectively the active one when snapping completes.
               const activeIndex = range.startIndex;
+              setCurrentViewIndex(activeIndex);
 
               if (activeIndex >= 0 && activeIndex < slides.length) {
                   const currentSlide = slides[activeIndex];
