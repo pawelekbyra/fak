@@ -1,6 +1,6 @@
-import React, { useMemo, useState, useEffect, useRef } from 'react';
+import React, { useMemo, useEffect, useCallback } from 'react';
 import { useInfiniteQuery } from '@tanstack/react-query';
-import { Virtuoso } from 'react-virtuoso';
+import { useInView } from 'react-intersection-observer';
 import Slide from '@/components/Slide';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useStore } from '@/store/useStore';
@@ -14,110 +14,157 @@ const fetchSlides = async ({ pageParam = '' }) => {
     throw new Error('Failed to fetch slides');
   }
   const data = await res.json();
-
   try {
-      const parsed = SlidesResponseSchema.parse(data);
-      return parsed;
+      return SlidesResponseSchema.parse(data);
   } catch (e) {
       console.error("Slides API validation error:", e);
       throw new Error("Invalid data received from Slides API");
   }
 };
 
+interface FeedItemProps {
+    slide: SlideDTO;
+    nextSlide: SlideDTO | null;
+    onActive: (slide: SlideDTO, next: SlideDTO | null) => void;
+}
+
+const FeedItem = React.memo(({ slide, nextSlide, onActive }: FeedItemProps) => {
+    const { ref: activeRef, inView: isActiveView } = useInView({
+        threshold: 0.6, // Higher threshold to ensure it's the main focused item
+    });
+
+    const { ref: loadRef, inView: isLoadView } = useInView({
+        rootMargin: '200px 0px 200px 0px', // Preload when approaching
+    });
+
+    // Combine refs
+    const setRefs = useCallback((node: HTMLDivElement | null) => {
+        activeRef(node);
+        loadRef(node);
+    }, [activeRef, loadRef]);
+
+    useEffect(() => {
+        if (isActiveView) {
+            onActive(slide, nextSlide);
+        }
+    }, [isActiveView, slide, nextSlide, onActive]);
+
+    return (
+        <div ref={setRefs} className="h-[100dvh] w-full snap-start flex-shrink-0 relative">
+            <Slide slide={slide} priorityLoad={isLoadView} />
+        </div>
+    );
+});
+
+FeedItem.displayName = 'FeedItem';
+
 const MainFeed = () => {
-  const { setActiveSlide, setNextSlide, playVideo, activeSlide } = useStore(state => ({
-    setActiveSlide: state.setActiveSlide,
-    setNextSlide: state.setNextSlide,
-    playVideo: state.playVideo,
-    activeSlide: state.activeSlide
-  }), shallow);
+    const { setActiveSlide, setNextSlide, playVideo, activeSlide } = useStore(
+        (state) => ({
+            setActiveSlide: state.setActiveSlide,
+            setNextSlide: state.setNextSlide,
+            playVideo: state.playVideo,
+            activeSlide: state.activeSlide,
+        }),
+        shallow
+    );
 
-  const [currentViewIndex, setCurrentViewIndex] = useState(0);
+    const { data, fetchNextPage, hasNextPage, isLoading, isError } = useInfiniteQuery({
+        queryKey: ['slides'],
+        queryFn: fetchSlides,
+        initialPageParam: '',
+        getNextPageParam: (lastPage) => lastPage.nextCursor,
+    });
 
-  // Timer ref for debounce
-  const debounceTimerRef = useRef<NodeJS.Timeout | null>(null);
+    const slides = useMemo(() => {
+        return (data?.pages.flatMap((page) => page.slides) ?? []) as SlideDTO[];
+    }, [data]);
 
-  const {
-    data,
-    fetchNextPage,
-    hasNextPage,
-    isLoading,
-    isError,
-  } = useInfiniteQuery({
-    queryKey: ['slides'],
-    queryFn: fetchSlides,
-    initialPageParam: '',
-    getNextPageParam: (lastPage) => lastPage.nextCursor,
-  });
+    // Initialize first slide
+    useEffect(() => {
+        if (slides.length > 0 && !activeSlide) {
+            setActiveSlide(slides[0]);
+            setNextSlide(slides[1] || null);
+        }
+    }, [slides, activeSlide, setActiveSlide, setNextSlide]);
 
-  const slides = useMemo(() => {
-    return (data?.pages.flatMap(page => page.slides) ?? []) as SlideDTO[];
-  }, [data]);
+    // Infinite scroll trigger
+    const { ref: loadMoreRef, inView: loadMoreInView } = useInView({
+        rootMargin: '400px',
+    });
 
-  // Initialize active slide if not set
-  useEffect(() => {
-      if (slides.length > 0 && !activeSlide) {
-          // Initialize first slide as active
-          setActiveSlide(slides[0]);
-          setNextSlide(slides[1] || null);
-      }
-  }, [slides, activeSlide, setActiveSlide, setNextSlide]);
+    useEffect(() => {
+        if (loadMoreInView && hasNextPage) {
+            fetchNextPage();
+        }
+    }, [loadMoreInView, hasNextPage, fetchNextPage]);
 
+    const handleActive = useCallback((slide: SlideDTO, next: SlideDTO | null) => {
+        // Only update if the slide is different to avoid loops/renders
+        // Note: We can't access state directly inside useCallback if we want it stable,
+        // but we can rely on the component re-rendering if activeSlide changes.
+        // Actually, we want handleActive to NOT change so FeedItem doesn't re-render.
+        // So we use the functional updates or state.getState if outside, but here we rely on the store.
+        // To avoid dependency on 'activeSlide' (which changes often), we check inside the store action or here?
+        // Let's check if it matches the *current* store state to avoid dispatching.
 
-  if (isLoading && slides.length === 0) {
-    return <div className="w-screen h-screen bg-black flex items-center justify-center"><Skeleton className="w-full h-full" /></div>;
-  }
+        const currentActive = useStore.getState().activeSlide;
+        if (currentActive?.id !== slide.id) {
+            setActiveSlide(slide);
+            setNextSlide(next);
+            if (slide.type === 'video') {
+                playVideo();
+            }
+        }
+    }, [setActiveSlide, setNextSlide, playVideo]);
 
-  if (isError) {
-    return <div className="w-screen h-screen bg-black flex items-center justify-center text-white">Error loading slides.</div>;
-  }
-
-  return (
-    <Virtuoso
-      className="snap-y snap-mandatory"
-      style={{ height: '100vh' }}
-      data={slides}
-      overscan={200}
-      endReached={() => hasNextPage && fetchNextPage()}
-      itemContent={(index, slide) => {
-        const priorityLoad = index === currentViewIndex || index === currentViewIndex + 1;
+    if (isLoading && slides.length === 0) {
         return (
-          <div className="h-screen w-full snap-start">
-             <Slide slide={slide} priorityLoad={priorityLoad} />
-          </div>
+            <div className="w-screen h-[100dvh] bg-black flex items-center justify-center">
+                <Skeleton className="w-full h-full bg-zinc-900" />
+            </div>
         );
-      }}
-      rangeChanged={(range) => {
-          // Clear any existing timer to debounce rapid scrolling
-          if (debounceTimerRef.current) {
-              clearTimeout(debounceTimerRef.current);
-          }
+    }
 
-          // Set a new timer
-          debounceTimerRef.current = setTimeout(() => {
-              // Detect which slide is active.
-              // Since items are full screen, startIndex is effectively the active one when snapping completes.
-              const activeIndex = range.startIndex;
-              setCurrentViewIndex(activeIndex);
+    if (isError) {
+        return (
+            <div className="w-screen h-[100dvh] bg-black flex items-center justify-center text-white">
+                <div className="text-center">
+                    <p>Something went wrong.</p>
+                    <button onClick={() => window.location.reload()} className="mt-4 px-4 py-2 bg-pink-600 rounded-full text-sm font-bold">
+                        Reload
+                    </button>
+                </div>
+            </div>
+        );
+    }
 
-              if (activeIndex >= 0 && activeIndex < slides.length) {
-                  const currentSlide = slides[activeIndex];
-                  const nextSlide = slides[activeIndex + 1] || null;
+    return (
+        <div
+            className="h-[100dvh] w-full overflow-y-scroll snap-y snap-mandatory scroll-smooth"
+            style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+        >
+            <style jsx>{`
+                div::-webkit-scrollbar {
+                    display: none;
+                }
+            `}</style>
 
-                  // Only update if changed to avoid unnecessary re-renders
-                  if (activeSlide?.id !== currentSlide.id) {
-                      setActiveSlide(currentSlide);
-                      setNextSlide(nextSlide);
+            {slides.map((slide, index) => (
+                <FeedItem
+                    key={slide.id}
+                    slide={slide}
+                    nextSlide={slides[index + 1] || null}
+                    onActive={handleActive}
+                />
+            ))}
 
-                      if (currentSlide.type === 'video') {
-                          playVideo();
-                      }
-                  }
-              }
-          }, 80); // Reduced debounce to 80ms for snappier response
-      }}
-    />
-  );
+            {/* Sentinel for loading more */}
+            <div ref={loadMoreRef} className="h-20 w-full flex justify-center items-center snap-start">
+                {hasNextPage && <div className="w-6 h-6 border-2 border-white/30 border-t-pink-500 rounded-full animate-spin" />}
+            </div>
+        </div>
+    );
 };
 
 export default MainFeed;
