@@ -1,5 +1,3 @@
-"use client";
-
 import React, { useMemo, useState, useEffect, useRef } from 'react';
 import { useInfiniteQuery } from '@tanstack/react-query';
 import { Virtuoso } from 'react-virtuoso';

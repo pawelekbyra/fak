@@ -172,6 +172,7 @@ const Slide = memo<SlideProps>(({ slide, priorityLoad = false }) => {
     const renderContent = () => {
         switch (slide.type) {
             case 'video':
+                // Pass priorityLoad as shouldLoad to LocalVideoPlayer
                 return <LocalVideoPlayer slide={slide as VideoSlideDTO} isActive={isActive} shouldLoad={priorityLoad} />;
             case 'html':
                 return <HtmlContent slide={slide as HtmlSlideDTO} />;
