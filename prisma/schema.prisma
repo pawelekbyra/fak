@@ -18,6 +18,7 @@ model User {
   avatarUrl      String?
   avatar         String?
   image          String?
+  bio            String?   // User biography/description
   role           String    @default("user") // "user", "admin", "patron"
   emailConsent   Boolean   @default(false)
   emailLanguage  String?   @default("pl")

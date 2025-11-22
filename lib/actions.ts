@@ -49,6 +49,7 @@ export async function updateUserProfile(prevState: ActionResponse | any, formDat
     const userId = session.user.id!;
 
     const displayName = formData.get('displayName') as string;
+    const bio = formData.get('bio') as string;
     const email = formData.get('email') as string;
     const avatarFile = formData.get('avatar') as File;
 
@@ -64,6 +65,7 @@ export async function updateUserProfile(prevState: ActionResponse | any, formDat
     // Update Object
     const updateData: any = {
         displayName: displayName || undefined,
+        bio: bio || undefined,
         email: email,
         emailConsent: emailConsent,
         emailLanguage: emailConsent ? (emailLanguage || 'pl') : null

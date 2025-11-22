@@ -187,6 +187,17 @@ const ProfileTab: React.FC<ProfileTabProps> = ({ onClose }) => {
               />
             </div>
 
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-white/80 ml-1">{t('bio') || 'Opis'}</label>
+              <textarea
+                name="bio"
+                defaultValue={(profile as any).bio || ''}
+                placeholder={t('bioPlaceholder') || 'Napisz coś o sobie...'}
+                rows={3}
+                className="w-full bg-black/20 border border-white/10 rounded-lg p-3 text-sm text-white focus:border-pink-500/50 focus:bg-black/40 focus:outline-none transition-all resize-none placeholder:text-white/30"
+              />
+            </div>
+
             <div className="pt-4 border-t border-white/10">
                 <div className="flex items-center justify-between mb-4">
                     <div className="flex flex-col">

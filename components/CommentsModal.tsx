@@ -9,6 +9,7 @@ import { ably } from '@/lib/ably-client';
 import { useTranslation } from '@/context/LanguageContext';
 import { useUser } from '@/context/UserContext';
 import { useToast } from '@/context/ToastContext';
+import { useStore } from '@/store/useStore';
 import { z } from 'zod';
 import { CommentWithRelations } from '@/lib/dto';
 import { CommentSchema } from '@/lib/validators';
@@ -187,6 +188,7 @@ interface CommentsModalProps {
 const CommentsModal: React.FC<CommentsModalProps> = ({ isOpen, onClose, slideId, initialCommentsCount }) => {
   const { t, lang } = useTranslation();
   const { user } = useUser();
+  const { setActiveModal } = useStore();
   const { addToast } = useToast();
   const [comments, setComments] = useState<CommentWithRelations[]>([]);
   const [newComment, setNewComment] = useState('');
@@ -573,7 +575,7 @@ const CommentsModal: React.FC<CommentsModalProps> = ({ isOpen, onClose, slideId,
         );
     }
     return (
-      <div className="flex-1 overflow-y-auto p-4 custom-scrollbar">
+      <div className="p-4 custom-scrollbar">
         <AnimatePresence>
           <motion.div layout className="space-y-4">
             {comments.map((comment: CommentWithRelations) => (
@@ -626,6 +628,7 @@ const CommentsModal: React.FC<CommentsModalProps> = ({ isOpen, onClose, slideId,
             transition={{ type: 'spring', stiffness: 400, damping: 40 }}
             onClick={(e) => e.stopPropagation()}
           >
+            {/* Header - Fixed height */}
             <div className="flex-shrink-0 relative flex items-center justify-center p-4 border-b border-white/10">
               <h2 className="text-base font-semibold text-white">{t('commentsTitle', { count: (comments.length || initialCommentsCount).toString() })}</h2>
               <button onClick={onClose} className="absolute right-4 top-1/2 -translate-y-1/2 text-white/60 hover:text-white">
@@ -633,10 +636,14 @@ const CommentsModal: React.FC<CommentsModalProps> = ({ isOpen, onClose, slideId,
               </button>
             </div>
 
-            {renderContent()}
+            {/* Scrollable Content - Takes remaining space */}
+            <div className="flex-1 overflow-y-auto min-h-0">
+               {renderContent()}
+            </div>
 
-            {user && (
-              <div className="flex-shrink-0 p-2 border-t border-white/10 bg-black/50 pb-6">
+            {/* Footer - Sticky at bottom */}
+            <div className="flex-shrink-0 p-2 border-t border-white/10 bg-black/50 pb-6 z-10">
+            {user ? (
                 <form onSubmit={handleSubmit} className="flex items-end gap-2">
                   {user.avatar && <Image src={user.avatar} alt={t('yourAvatar')} width={32} height={32} className="w-8 h-8 rounded-full mb-1" />}
                   <div className="flex-1 relative">
@@ -662,8 +669,17 @@ const CommentsModal: React.FC<CommentsModalProps> = ({ isOpen, onClose, slideId,
                     {isSubmitting ? <Loader2 className="h-4 w-4 animate-spin" /> : t('sendButton')}
                   </button>
                 </form>
-              </div>
+            ) : (
+                <div className="flex justify-center p-2">
+                    <button
+                        onClick={() => setActiveModal('login')}
+                        className="w-full py-3 bg-white/10 text-white/80 rounded-xl text-sm font-semibold hover:bg-white/20 hover:text-white transition-colors border border-white/5"
+                    >
+                        Zaloguj się, aby skomentować
+                    </button>
+                </div>
             )}
+            </div>
           </motion.div>
         </motion.div>
       )}

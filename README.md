@@ -7,9 +7,6 @@ Witaj w dokumentacji produkcyjnej wersji Ting Tong (FAK). To nie jest zwykły kl
 1. [💡 Filozofia: O co tu chodzi?](#-filozofia-o-co-tu-chodzi)
 2. [🛠 Technologia: Na czym stoimy?](#-technologia-na-czym-stoimy)
 3. [🚀 ROADMAPA: Co i dlaczego musimy zbudować?](#-roadmapa-co-i-dlaczego-musimy-zbudować)
-    *   [Faza 1: Silnik Wideo (Płynność ponad wszystko)](#faza-1-silnik-wideo-płynność-ponad-wszystko)
-    *   [Faza 2: Komentarze i Społeczność (Gold Standard)](#faza-2-komentarze-i-społeczność-gold-standard)
-    *   [Faza 3: Architektura i Bezpieczeństwo Typów (Clean Code)](#faza-3-architektura-i-bezpieczeństwo-typów-clean-code)
 4. [📦 Instalacja: Jak to odpalić?](#-instalacja-jak-to-odpalić)
 5. [🔑 Zmienne Środowiskowe](#-zmienne-środowiskowe)
 
@@ -44,48 +41,24 @@ Oto aktualny plan prac technicznych, mający na celu przekształcenie prototypu 
 ### Faza 1: Silnik Wideo (Płynność ponad wszystko)
 Cel: Osiągnięcie "TikTokowej" płynności (0ms opóźnienia przy scrollowaniu) i eliminacja lagów.
 
-#### 1.1. Wirtualizacja Feedu (react-virtuoso)
-Zamiast renderować setki filmów naraz (co zabija pamięć RAM telefonu), używamy wirtualizacji.
-*   [x] Wybór biblioteki: `react-virtuoso`.
-*   [x] Wdrożenie: Zastąpienie manualnego scrollowania komponentem `<Virtuoso>`.
-*   [x] Efekt: W DOM przeglądarki istnieją tylko 3 aktywne slajdy (poprzedni, obecny, następny). Reszta jest wirtualna.
-
-#### 1.2. Architektura "Double Buffering" (Podwójny Odtwarzacz)
-Eliminujemy czarny ekran przy zmianie wideo.
-*   [x] Mechanizm: Lokalny odtwarzacz wideo (`LocalVideoPlayer`) w każdym slajdzie.
-*   [x] Logika: Gdy Player A odtwarza obecny film, Player B w tle ładuje i buforuje następny (`nextSlide`).
-*   [x] Swap: Przy scrollu następuje natychmiastowa zamiana widoczności i start odtwarzania z Playera B.
+*   [x] **Wirtualizacja Feedu:** Używamy `Virtuoso` zamiast renderować setki divów.
+*   [x] **Double Buffering:** Dwa playery wideo działające na przemian (active/next), aby wyeliminować mruganie przy zmianie slajdu.
 
 ### Faza 2: Komentarze i Społeczność (Gold Standard)
-Cel: Obsługa tysięcy komentarzy, wątków (replies) i interakcji w czasie rzeczywistym bez obciążania bazy.
+Cel: Obsługa tysięcy komentarzy, wątków (replies) i interakcji w czasie rzeczywistym.
 
-#### 2.1. Baza Danych (Schema Refactor)
-Aktualizacja schematu Prisma, aby obsługiwał zaawansowane relacje.
-*   [x] Self-Referencing Relation: Dodanie pola `parentId` w modelu `Comment` (obsługa odpowiedzi na komentarz).
-*   [x] Comment Likes: Nowa tabela `CommentLike` łącząca Usera i Komentarz (unikalne lajki).
-*   [x] Indeksy: Optymalizacja zapytań po `slideId` i `parentId`.
+*   [x] **Schema Refactor:** Dodanie relacji `parentId` dla zagnieżdżonych komentarzy.
+*   [x] **Optimistic UI:** Natychmiastowe dodawanie komentarzy na froncie przed odpowiedzią serwera.
+*   [x] **Real-time:** Synchronizacja komentarzy przez WebSockets (Ably).
+*   [x] **Auth Gate:** Warunkowe wyświetlanie formularza tylko dla zalogowanych.
+*   [x] **Sticky Footer:** Pole tekstowe przyklejone do dołu na mobile.
 
-#### 2.2. Backend & DTO (Type Safety)
-*   [x] Shared DTOs: Wprowadzenie `CommentWithRelations` w `lib/dto.ts` – jedno źródło prawdy dla typów Frontend/Backend.
-*   [x] Zod Validation: Runtime walidacja odpowiedzi z API.
-*   [ ] Cursor-Based Pagination: Zmiana endpointu `GET /api/comments` z pobierania wszystkiego na stronicowanie kursorowe (ładowanie po 20 sztuk).
-*   [x] Logic Update: Aktualizacja `lib/db-postgres.ts` o obsługę mapowania zagnieżdżonych odpowiedzi i lajków.
+### Faza 3: UX i Polish (Dopracowanie detali)
+Cel: Poprawa wrażeń użytkownika (Look & Feel).
 
-#### 2.3. Frontend (UX)
-*   [x] Optimistic Updates: Komentarz pojawia się natychmiast, zanim serwer potwierdzi zapis.
-*   [ ] Nested UI: Renderowanie drzewiastej struktury dyskusji w `CommentsModal`.
-*   [ ] Lazy Loading Replies: Przycisk "Pokaż odpowiedzi" zamiast ładowania wszystkiego naraz.
-
-### Faza 3: Architektura i Bezpieczeństwo Typów (Clean Code)
-Cel: Eliminacja długu technologicznego, poprawa stabilności i Developer Experience (DX).
-
-*   [x] **Module Augmentation (NextAuth):** Rozszerzenie typów `Session` i `User` w `types/next-auth.d.ts`. Eliminacja rzutowania `as any` w `lib/auth.ts`.
-*   [x] **Zustand Slice Pattern:** Podział monolitycznego magazynu stanu (`useStore`) na domeny logiczne:
-    *   `createVideoSlice`: Odtwarzacz wideo.
-    *   `createUISlice`: Modale i interfejs.
-    *   `createContentSlice`: Zarządzanie feedem i slajdami.
-    *   `createInteractionSlice`: Lajki i interakcje.
-*   [x] **Zod Recursion Fix:** Poprawa definicji typów dla zagnieżdżonych komentarzy w `lib/validators.ts` poprzez jawne interfejsy TypeScript.
+*   [x] **Profil Autora:** Połączenie Sidebara z backendem, wyświetlanie prawdziwych slajdów twórcy.
+*   [x] **Interaktywne elementy:** Lepszy feedback przy klikaniu ikon (efekt tap) dla niezalogowanych.
+*   [x] **TopBar:** Animowany "dropdown" przycisku logowania ("Nie masz psychy").
 
 ---
 
@@ -113,9 +86,9 @@ Standardowa procedura startowa dla dewelopera.
     ```
 
 4.  **Wgraj dane testowe (Seed):**
-    Wypełnij bazę przykładowymi slajdami i użytkownikami:
+    Napraw spójność danych autora i wgraj przykładowe treści:
     ```bash
-    npm run db:seed-test
+    npx tsx scripts/fix-author-data.ts
     ```
 
 5.  **Uruchom serwer deweloperski:**
@@ -129,25 +102,39 @@ Standardowa procedura startowa dla dewelopera.
 ---
 
 ## 🔑 Zmienne Środowiskowe
-Utwórz plik `.env.local` w głównym katalogu. Wymagane klucze:
+Utwórz plik `.env` (lub `.env.local`) w głównym katalogu. Poniżej znajduje się szablon wymaganych zmiennych.
+
+**Ważne:** Nigdy nie commituj prawdziwych haseł do repozytorium!
 
 ```env
-# Baza Danych (Neon/Postgres)
-DATABASE_URL="postgresql://..."
+# --- DATABASE (Neon / Vercel Postgres) ---
+# Zalecany connection string (Pooling)
+DATABASE_URL="postgresql://neondb_owner:*******@ep-plain-scene-agjwcwk3-pooler.c-2.eu-central-1.aws.neon.tech/neondb?sslmode=require"
 
-# Autoryzacja (NextAuth.js)
+# Opcjonalnie: Connection string bez poolingu (do migracji/deploy)
+DATABASE_URL_UNPOOLED="postgresql://neondb_owner:*******@ep-plain-scene-agjwcwk3.c-2.eu-central-1.aws.neon.tech/neondb?sslmode=require"
+
+# Parametry pomocnicze (opcjonalne, zależnie od klienta SQL)
+PGHOST="ep-plain-scene-agjwcwk3-pooler.c-2.eu-central-1.aws.neon.tech"
+PGUSER="neondb_owner"
+PGDATABASE="neondb"
+# PGPASSWORD="***"
+
+# --- AUTH (NextAuth.js) ---
 AUTH_SECRET="wygeneruj_losowy_string_openssl_rand_base64_32"
 NEXTAUTH_URL="http://localhost:3000"
 
-# Płatności (Stripe)
+# --- PAYMENT (Stripe) ---
 STRIPE_SECRET_KEY="sk_test_..."
 STRIPE_WEBHOOK_SECRET="whsec_..."
 
-# Real-time (Ably)
+# --- REAL-TIME (Ably) ---
 ABLY_API_KEY="twoj_klucz_ably"
 
-# Blob Storage (Vercel Blob - opcjonalnie dla wideo)
-BLOB_READ_WRITE_TOKEN="..."
+# --- STACK (Auth / Analytics - opcjonalne) ---
+NEXT_PUBLIC_STACK_PROJECT_ID="***"
+NEXT_PUBLIC_STACK_PUBLISHABLE_CLIENT_KEY="***"
+STACK_SECRET_SERVER_KEY="***"
 ```
 
-Status Projektu: **Active Development / Refactoring Phase**. Ostatnia aktualizacja dokumentacji: **Listopad 2025**.
+Status Projektu: **Active Development**. Ostatnia aktualizacja: **Listopad 2025**.

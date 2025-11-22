@@ -16,6 +16,7 @@ interface SidebarProps {
   slideId: string;
   commentsCount: number;
   authorId: string;
+  authorAvatar?: string;
 }
 
 const Sidebar: React.FC<SidebarProps> = ({
@@ -24,6 +25,7 @@ const Sidebar: React.FC<SidebarProps> = ({
   slideId,
   commentsCount,
   authorId,
+  authorAvatar,
 }) => {
   const { addToast } = useToast();
   const { t } = useTranslation();
@@ -102,7 +104,11 @@ const Sidebar: React.FC<SidebarProps> = ({
       {/* Avatar / Author Profile */}
       <div className="relative w-12 h-12 mb-1.5">
         <button onClick={handleOpenAuthorProfile} className="w-full h-full flex items-center justify-center text-white bg-gray-600 rounded-full overflow-hidden">
-           <User size={32} strokeWidth={1.4} />
+           {authorAvatar ? (
+             <img src={authorAvatar} alt="Author" className="w-full h-full object-cover" />
+           ) : (
+             <User size={32} strokeWidth={1.4} />
+           )}
         </button>
          <div
             className="absolute left-1/2 -translate-x-1/2 -bottom-1.5 w-5 h-5 rounded-full flex items-center justify-center text-white text-lg font-bold border-2 border-white pointer-events-none bg-primary"

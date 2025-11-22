@@ -61,7 +61,10 @@ const AccountPanel: React.FC<AccountPanelProps> = ({ onClose }) => {
             className="relative flex-shrink-0 flex items-center justify-center bg-[#121212]/90 backdrop-blur-md border-b border-white/5 shadow-sm z-10"
             style={{ height: 'var(--topbar-height)', paddingTop: 'var(--safe-area-top)'}}
         >
-          <h2 className="text-base font-semibold text-white tracking-wide">{t(`${activeTab}Tab`)}</h2>
+          <div className="flex flex-col items-center gap-1">
+             <h2 className="text-base font-semibold text-white tracking-wide">{user?.displayName || user?.username || t('account')}</h2>
+             {user && (user as any).bio && <p className="text-xs text-white/60 max-w-[200px] truncate">{(user as any).bio}</p>}
+          </div>
           <button
             onClick={onClose}
             className="absolute right-4 top-1/2 -translate-y-1/2 p-2 rounded-full text-white/60 hover:text-white hover:bg-white/10 transition-all active:scale-90"
@@ -102,14 +105,6 @@ const AccountPanel: React.FC<AccountPanelProps> = ({ onClose }) => {
             {activeTab === 'password' && <PasswordTab />}
             {activeTab === 'delete' && <DeleteTab onClose={onClose} />}
         </div>
-
-        {canPublish && (
-          <div className="p-4 border-t border-white/10 bg-[#1a1a1a]/80 backdrop-blur-sm">
-             <Button className="w-full bg-gradient-to-r from-pink-600 to-rose-600 hover:from-pink-500 hover:to-rose-500 text-white font-semibold py-6 rounded-xl shadow-lg shadow-pink-900/20 active:scale-[0.98] transition-all" onClick={handlePublishClick}>
-                 {t('publishButton')}
-             </Button>
-          </div>
-        )}
       </motion.div>
     </motion.div>
   );
