@@ -47,16 +47,21 @@ const CheckoutForm = ({ clientSecret, onClose }: { clientSecret: string, onClose
 
     return (
         <form onSubmit={handleSubmit} className="w-full">
-            <div className="mb-6 min-h-[200px]">
-                <PaymentElement options={{ layout: 'tabs' }} />
+            <div className="mb-6 min-h-[200px] mix-blend-multiply">
+                 {/* Stripe Elements with customized heavy variables for contrast on gold */}
+                <PaymentElement 
+                    options={{ 
+                        layout: 'tabs',
+                    }} 
+                />
             </div>
             <button
                 disabled={isProcessing || !stripe || !elements}
-                // GOLD BAR BUTTON STYLE
-                className="w-full py-4 rounded-xl font-black text-black text-lg bg-gradient-to-b from-yellow-200 via-yellow-500 to-yellow-600 border-2 border-white shadow-[0_0_25px_rgba(234,179,8,0.6)] hover:shadow-[0_0_40px_rgba(234,179,8,0.8)] hover:scale-[1.02] active:scale-95 transition-all disabled:opacity-50 disabled:hover:scale-100 tracking-widest relative overflow-hidden group"
+                // BLACK VIP BUTTON on GOLD Background
+                className="w-full py-4 rounded-xl font-black text-white text-lg bg-neutral-900 border border-black/20 shadow-[0_10px_20px_rgba(0,0,0,0.3)] hover:shadow-[0_15px_30px_rgba(0,0,0,0.4)] hover:scale-[1.02] active:scale-95 transition-all disabled:opacity-50 disabled:hover:scale-100 tracking-widest relative overflow-hidden group"
             >
-                {/* Shine effect overlay */}
-                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/40 to-transparent -translate-x-full group-hover:animate-[shimmer_1.5s_infinite]" />
+                {/* Shine effect */}
+                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:animate-[shimmer_1.5s_infinite]" />
                 
                 {isProcessing ? (t('processing') || "PRZETWARZANIE...") : "ENTER"}
             </button>
@@ -159,38 +164,44 @@ const TippingModal = () => {
   const suggestedAmounts = [10, 20, 50];
 
   return (
-    <div className="fixed inset-0 z-[10200] flex items-center justify-center bg-black/90 backdrop-blur-md">
+    <div className="fixed inset-0 z-[10200] flex items-center justify-center bg-black/80 backdrop-blur-md">
       <motion.div
         initial={{ scale: 0.9, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
         exit={{ scale: 0.9, opacity: 0 }}
         transition={{ type: "spring", damping: 25, stiffness: 300 }}
-        className="relative w-[90%] max-w-[420px] max-h-[85vh] flex flex-col rounded-[24px] border border-yellow-500/30 shadow-[0_0_60px_-10px_rgba(147,51,234,0.5)] overflow-hidden bg-[#050505]"
+        // GOLDEN MODAL STYLING
+        // Gradient: Rich Gold to Deep Amber
+        // Text: Black for contrast
+        className="relative w-[90%] max-w-[420px] max-h-[85vh] flex flex-col rounded-[24px] shadow-[0_0_100px_-20px_rgba(234,179,8,0.6)] overflow-hidden bg-gradient-to-br from-yellow-300 via-amber-400 to-yellow-600 border border-white/20"
       >
-        {/* Gold Gradient Line at very top */}
-        <div className="h-0.5 w-full bg-gradient-to-r from-transparent via-yellow-500 to-transparent opacity-70" />
+        {/* Shine Overlay (Texture) */}
+        <div className="absolute inset-0 opacity-20 pointer-events-none bg-[url('https://www.transparenttextures.com/patterns/noise.png')] mix-blend-overlay"></div>
+        
+        {/* Top Highlight Line */}
+        <div className="absolute top-0 left-0 right-0 h-[1px] bg-white/60 z-20"></div>
 
         {/* Header */}
-        <div className="relative p-6 text-center border-b border-white/5 shrink-0 bg-gradient-to-b from-purple-900/10 to-transparent">
+        <div className="relative p-6 text-center shrink-0 border-b border-black/5 bg-white/10 backdrop-blur-sm z-10">
             <div className="flex items-center justify-center gap-2 mb-1">
-                <Crown className="text-yellow-400 w-5 h-5 drop-shadow-[0_0_8px_rgba(250,204,21,0.5)]" />
-                <h2 className="text-xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-amber-200 via-yellow-400 to-amber-200 tracking-wide drop-shadow-sm">
+                <Crown className="text-black w-5 h-5" />
+                <h2 className="text-xl font-black text-black tracking-wide uppercase drop-shadow-sm opacity-90">
                     Bramka napiwkowa
                 </h2>
-                <Sparkles className="text-purple-400 w-4 h-4 animate-pulse" />
+                <Sparkles className="text-white w-4 h-4 animate-pulse" />
             </div>
             <button
                 onClick={closeTippingModal}
-                className="absolute right-4 top-1/2 -translate-y-1/2 p-2 text-white/30 hover:text-yellow-400 hover:bg-white/5 rounded-full transition-colors"
+                className="absolute right-4 top-1/2 -translate-y-1/2 p-2 text-black/40 hover:text-black hover:bg-black/10 rounded-full transition-colors"
             >
                 <X size={20} />
             </button>
         </div>
 
-        {/* Progress Bar - Purple to Gold */}
-        <div className="h-1 w-full bg-white/5 relative overflow-hidden">
+        {/* Progress Bar */}
+        <div className="h-1.5 w-full bg-black/10 relative overflow-hidden z-10">
             <motion.div
-                className="h-full bg-gradient-to-r from-purple-600 via-amber-500 to-yellow-400 shadow-[0_0_15px_rgba(234,179,8,0.6)]"
+                className="h-full bg-neutral-900"
                 initial={{ width: 0 }}
                 animate={{ width: `${progress}%` }}
                 transition={{ duration: 0.5, ease: "easeInOut" }}
@@ -198,11 +209,8 @@ const TippingModal = () => {
         </div>
 
         {/* Body */}
-        <div className="flex-1 overflow-y-auto p-6 custom-scrollbar flex flex-col relative">
-            {/* Background Ambient Glows */}
-            <div className="absolute top-[-20%] left-[-20%] w-[50%] h-[50%] bg-purple-900/20 blur-[80px] pointer-events-none rounded-full" />
-            <div className="absolute bottom-[-20%] right-[-20%] w-[50%] h-[50%] bg-yellow-600/10 blur-[80px] pointer-events-none rounded-full" />
-
+        <div className="flex-1 overflow-y-auto p-6 custom-scrollbar flex flex-col relative z-10">
+            
             <AnimatePresence mode="wait">
                 {currentStep === 0 && (
                     <motion.div
@@ -210,17 +218,15 @@ const TippingModal = () => {
                         initial={{ opacity: 0, x: 20 }}
                         animate={{ opacity: 1, x: 0 }}
                         exit={{ opacity: 0, x: -20 }}
-                        className="space-y-8 flex-1 relative z-10 pt-4"
+                        className="space-y-8 flex-1 pt-2"
                     >
                         <div className="text-left space-y-2">
-                             {/* Usunięto "Wspieraj Twórcę" */}
-                            
-                            {/* Left Aligned Subtitle with Trophy */}
                             <div className="flex items-center justify-start gap-3 pl-1">
-                                <div className="p-2 bg-yellow-500/10 rounded-full border border-yellow-500/20">
-                                   <Trophy className="w-5 h-5 text-yellow-400 drop-shadow-[0_0_8px_rgba(250,204,21,0.6)]" />
+                                <div className="p-2 bg-black/10 rounded-full border border-black/5 shadow-inner">
+                                   <Trophy className="w-5 h-5 text-black drop-shadow-sm" />
                                 </div>
-                                <p className="text-lg font-semibold text-white tracking-wide">Założyć konto Patrona?</p>
+                                {/* Text is white as requested, with shadow for readability on gold */}
+                                <p className="text-lg font-bold text-white drop-shadow-[0_1px_2px_rgba(0,0,0,0.3)] tracking-wide">Założyć konto Patrona?</p>
                             </div>
                         </div>
 
@@ -230,8 +236,8 @@ const TippingModal = () => {
                                     className={cn(
                                         "flex items-center justify-start p-5 gap-4 rounded-2xl border cursor-pointer transition-all duration-500 group relative overflow-hidden",
                                         formData.create_account 
-                                            ? "bg-black/60 border-yellow-500/50 shadow-[0_0_30px_rgba(234,179,8,0.1)]" 
-                                            : "bg-black/40 border-white/5 hover:border-white/20"
+                                            ? "bg-neutral-900 border-neutral-900 shadow-xl" 
+                                            : "bg-black/5 border-black/10 hover:bg-black/10 hover:border-black/20"
                                     )}
                                     onClick={() => setFormData(prev => ({ ...prev, create_account: !prev.create_account }))}
                                 >
@@ -239,36 +245,31 @@ const TippingModal = () => {
                                     <div className={cn(
                                         "w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all duration-300 shrink-0 z-10", 
                                         formData.create_account 
-                                            ? "bg-yellow-500 border-yellow-500 shadow-[0_0_15px_rgba(234,179,8,0.6)] scale-110" 
-                                            : "border-white/20 group-hover:border-white/50"
+                                            ? "bg-white border-white scale-110" 
+                                            : "border-black/40 group-hover:border-black/70"
                                     )}>
-                                        {formData.create_account && <div className="w-2.5 h-2.5 bg-black rounded-full" />}
+                                        {formData.create_account && <div className="w-2.5 h-2.5 bg-neutral-900 rounded-full" />}
                                     </div>
                                     
-                                    <span className={cn("text-base font-medium transition-colors z-10", formData.create_account ? "text-white" : "text-white/60")}>
+                                    <span className={cn("text-base font-bold transition-colors z-10", formData.create_account ? "text-white" : "text-black/70")}>
                                         No Jacha
                                     </span>
-
-                                    {/* Subtle bg gradient on active */}
-                                    {formData.create_account && (
-                                        <div className="absolute inset-0 bg-gradient-to-r from-yellow-500/10 to-transparent opacity-50" />
-                                    )}
                                 </div>
                             )}
 
                             <div className={cn("space-y-3 overflow-hidden transition-all duration-500", (formData.create_account) ? "max-h-[200px] opacity-100 translate-y-0" : "max-h-0 opacity-0 -translate-y-4")}>
                                 <div className="group relative">
-                                    <div className="absolute -inset-0.5 bg-gradient-to-r from-yellow-600 to-purple-600 rounded-xl blur opacity-0 group-focus-within:opacity-50 transition duration-700"></div>
+                                    {/* Input background darker for contrast on gold */}
                                     <input
                                         type="email"
                                         placeholder="Adres email"
                                         value={formData.email}
                                         onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                                        className="relative w-full bg-[#0e0e0e] border border-white/10 rounded-xl px-5 py-4 text-white placeholder:text-white/20 focus:outline-none focus:border-yellow-500/40 focus:bg-black/80 transition-all shadow-inner"
+                                        className="relative w-full bg-black/10 border border-black/5 rounded-xl px-5 py-4 text-black placeholder:text-black/40 focus:outline-none focus:bg-black/20 focus:border-black/30 transition-all shadow-inner font-medium"
                                     />
                                 </div>
-                                <p className="text-xs text-white/40 text-center px-4 leading-relaxed font-light">
-                                    Na ten email wyślemy Ci <span className="text-yellow-500/80">dane do logowania</span>, abyś mógł odebrać swoje benefity.
+                                <p className="text-xs text-black/60 text-center px-4 leading-relaxed font-semibold">
+                                    Na ten email wyślemy Ci <span className="text-black font-extrabold">dane do logowania</span>.
                                 </p>
                             </div>
                         </div>
@@ -284,8 +285,8 @@ const TippingModal = () => {
                         className="space-y-6 flex-1 relative z-10"
                     >
                         <div className="text-center space-y-2">
-                            <h3 className="text-lg font-medium text-white/90">Wybierz kwotę</h3>
-                            <p className="text-sm text-purple-200/50">Ile chcesz przekazać?</p>
+                            <h3 className="text-xl font-bold text-black/90">Wybierz kwotę</h3>
+                            <p className="text-sm text-black/50 font-medium">Ile chcesz przekazać?</p>
                         </div>
 
                         <div className="grid grid-cols-3 gap-3">
@@ -294,42 +295,36 @@ const TippingModal = () => {
                                     key={amount}
                                     onClick={() => setFormData({ ...formData, amount })}
                                     className={cn(
-                                        "py-4 rounded-xl font-bold transition-all border relative overflow-hidden group",
+                                        "py-4 rounded-xl font-bold transition-all border-2 relative overflow-hidden group shadow-sm",
                                         formData.amount === amount
-                                            ? "border-yellow-500/60 text-yellow-400 shadow-[0_0_25px_rgba(234,179,8,0.2)] transform scale-105 z-10"
-                                            : "bg-black/40 border-white/5 text-white/40 hover:bg-black/60 hover:border-white/20 hover:text-white/80"
+                                            ? "bg-neutral-900 border-neutral-900 text-white transform scale-105 z-10 shadow-xl"
+                                            : "bg-white/20 border-transparent text-black/60 hover:bg-white/40 hover:text-black"
                                     )}
                                 >
-                                    {/* Active background styling */}
-                                    {formData.amount === amount && (
-                                        <div className="absolute inset-0 bg-gradient-to-br from-purple-900/20 via-black to-black -z-10" />
-                                    )}
                                     {amount} {formData.currency}
                                 </button>
                             ))}
                         </div>
 
                         <div className="relative group mt-4">
-                            <div className="absolute -inset-0.5 bg-gradient-to-r from-purple-600 via-yellow-500 to-purple-600 rounded-xl blur opacity-20 group-focus-within:opacity-60 transition duration-500"></div>
-                            
-                            <div className="relative flex items-center bg-[#0e0e0e] border border-white/10 rounded-xl overflow-hidden group-focus-within:border-yellow-500/30 transition-colors">
+                            <div className="relative flex items-center bg-black/10 border border-black/5 rounded-xl overflow-hidden transition-colors shadow-inner focus-within:bg-black/15">
                                 <input
                                     type="number"
                                     value={formData.amount}
                                     onChange={(e) => setFormData({ ...formData, amount: Number(e.target.value) })}
-                                    className="flex-1 bg-transparent text-center text-3xl font-bold text-white py-6 focus:outline-none z-10 placeholder:text-white/10"
+                                    className="flex-1 bg-transparent text-center text-4xl font-black text-black py-6 focus:outline-none z-10 placeholder:text-black/20"
                                     placeholder="0"
                                 />
-                                <div className="pr-6 z-10 border-l border-white/5 pl-4">
+                                <div className="pr-6 z-10 border-l border-black/10 pl-4">
                                     <select
                                         value={formData.currency}
                                         onChange={(e) => setFormData({ ...formData, currency: e.target.value as any })}
-                                        className="bg-transparent text-yellow-500/80 font-medium text-lg focus:outline-none cursor-pointer hover:text-yellow-400 transition-colors"
+                                        className="bg-transparent text-black/80 font-bold text-lg focus:outline-none cursor-pointer hover:text-black transition-colors"
                                     >
-                                        <option value="PLN" className="bg-[#1c1c1e]">PLN</option>
-                                        <option value="EUR" className="bg-[#1c1c1e]">EUR</option>
-                                        <option value="USD" className="bg-[#1c1c1e]">USD</option>
-                                        <option value="GBP" className="bg-[#1c1c1e]">GBP</option>
+                                        <option value="PLN" className="text-black">PLN</option>
+                                        <option value="EUR" className="text-black">EUR</option>
+                                        <option value="USD" className="text-black">USD</option>
+                                        <option value="GBP" className="text-black">GBP</option>
                                     </select>
                                 </div>
                             </div>
@@ -346,28 +341,27 @@ const TippingModal = () => {
                         className="space-y-6 flex-1 relative z-10"
                     >
                         <div className="text-center space-y-1">
-                            <h3 className="text-lg font-medium text-white">Podsumowanie</h3>
-                            <div className="inline-block bg-purple-900/20 border border-yellow-500/20 px-6 py-3 rounded-full mt-4 shadow-[0_0_15px_rgba(234,179,8,0.1)]">
-                                <span className="text-2xl font-bold text-yellow-400 drop-shadow-md">{formData.amount.toFixed(2)} {formData.currency}</span>
+                            <h3 className="text-lg font-bold text-black/80">Podsumowanie</h3>
+                            <div className="inline-block bg-neutral-900 px-6 py-3 rounded-full mt-4 shadow-xl transform hover:scale-105 transition-transform">
+                                <span className="text-2xl font-black text-yellow-400">{formData.amount.toFixed(2)} {formData.currency}</span>
                             </div>
                         </div>
 
                         {clientSecret && (
-                            <div className="bg-black/40 p-4 rounded-2xl border border-white/5 mt-2">
+                            <div className="bg-white/10 backdrop-blur-md p-4 rounded-2xl border border-white/20 mt-2 shadow-inner">
                                 <Elements 
                                     stripe={stripePromise} 
                                     options={{ 
                                         clientSecret, 
                                         appearance: { 
-                                            theme: 'night', 
+                                            theme: 'stripe',
                                             variables: { 
-                                                colorPrimary: '#eab308', 
-                                                colorBackground: 'transparent', 
-                                                colorText: '#ffffff',
+                                                colorPrimary: '#171717', // Neutral 900
+                                                colorBackground: '#ffffff', 
+                                                colorText: '#000000',
                                                 colorDanger: '#ef4444',
                                                 fontFamily: 'inherit',
                                                 borderRadius: '12px',
-                                                colorIcon: '#eab308'
                                             } 
                                         } 
                                     }}
@@ -387,7 +381,7 @@ const TippingModal = () => {
                 {currentStep > 0 && (
                     <button
                         onClick={handleBack}
-                        className="px-5 py-4 rounded-xl font-semibold text-white/40 bg-black/40 border border-white/5 hover:bg-white/5 hover:text-white transition-all"
+                        className="px-5 py-4 rounded-xl font-bold text-black/50 bg-black/5 border border-black/5 hover:bg-black/10 hover:text-black transition-all"
                     >
                         Wstecz
                     </button>
@@ -395,11 +389,11 @@ const TippingModal = () => {
                 <button
                     onClick={handleNext}
                     disabled={isProcessing}
-                    // GOLD BAR BUTTON STYLE - MAIN
-                    className="group flex-1 flex items-center justify-center gap-2 py-4 rounded-xl font-black text-lg text-black bg-gradient-to-b from-yellow-200 via-yellow-500 to-yellow-600 border-2 border-white shadow-[0_0_25px_rgba(234,179,8,0.6)] hover:shadow-[0_0_40px_rgba(234,179,8,0.8)] hover:scale-[1.02] active:scale-95 transition-all disabled:opacity-50 disabled:hover:scale-100 relative overflow-hidden tracking-widest"
+                    // BLACK VIP BUTTON - The "Black Card" effect
+                    className="group flex-1 flex items-center justify-center gap-2 py-4 rounded-xl font-black text-lg text-white bg-neutral-900 border border-white/10 shadow-[0_10px_30px_-5px_rgba(0,0,0,0.4)] hover:shadow-[0_20px_40px_-5px_rgba(0,0,0,0.5)] hover:scale-[1.02] active:scale-95 transition-all disabled:opacity-50 disabled:hover:scale-100 relative overflow-hidden tracking-widest"
                 >
                      {/* Shine effect overlay */}
-                    <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/50 to-transparent -translate-x-full group-hover:animate-[shimmer_1.5s_infinite]" />
+                    <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:animate-[shimmer_1.5s_infinite]" />
                     
                     {isProcessing ? (
                         <span className="animate-pulse">PRZETWARZANIE...</span>
@@ -411,15 +405,16 @@ const TippingModal = () => {
         )}
 
         {/* Footer Stripe */}
-        <div className="pb-4 pt-2 flex items-center justify-center bg-[#0a0a0a]/80 backdrop-blur-sm z-10 border-t border-white/5">
-             <div className="flex items-center gap-2 opacity-20 grayscale hover:grayscale-0 hover:opacity-80 transition-all duration-300">
-                  <span className="text-[10px] text-white/60 font-medium">Powered by</span>
+        <div className="pb-4 pt-2 flex items-center justify-center bg-black/5 backdrop-blur-sm z-10 border-t border-black/5">
+             <div className="flex items-center gap-2 opacity-40 hover:opacity-80 transition-all duration-300 mix-blend-multiply">
+                  <span className="text-[10px] text-black font-bold">Powered by</span>
                   <div className="relative h-4 w-10">
                       <Image
                         src="/stripe.png"
                         alt="Stripe"
                         layout="fill"
                         objectFit="contain"
+                        className="invert" // Invert stripe logo to be black on gold
                       />
                   </div>
              </div>
