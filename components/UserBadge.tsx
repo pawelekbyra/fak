@@ -28,7 +28,7 @@ export const UserBadge: React.FC<UserBadgeProps> = ({ role, className = '' }) =>
       );
     case 'patron':
       return (
-        <div className={`inline-flex items-center gap-1.5 bg-gradient-to-r from-yellow-400 to-amber-500 text-black px-2 py-0.5 rounded-full text-[10px] font-bold shadow-sm ${className}`}>
+        <div className={`inline-flex items-center gap-1.5 bg-gradient-to-r from-purple-500 to-pink-500 text-white px-2 py-0.5 rounded-full text-[10px] font-bold shadow-sm ${className}`}>
           <Crown size={10} fill="currentColor" />
           <span>Patron</span>
         </div>

@@ -128,7 +128,12 @@ export function AuthorProfileModal({ authorId, onClose }: AuthorProfileModalProp
                                             whileHover={{ scale: 1.05 }}
                                             transition={{ type: 'spring', stiffness: 300 }}
                                         >
-                                            <Image src={slide.thumbnailUrl} alt={slide.title} layout="fill" objectFit="cover" />
+                                            <Image
+                                                src={slide.thumbnailUrl || 'https://placehold.co/600x400?text=No+Cover'}
+                                                alt={slide.title}
+                                                layout="fill"
+                                                objectFit="cover"
+                                            />
                                             <div className="absolute inset-0 bg-black/30 flex items-end p-2">
                                                 <p className="text-xs text-white font-semibold truncate">{slide.title}</p>
                                             </div>

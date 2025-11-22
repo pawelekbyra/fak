@@ -112,13 +112,13 @@ const ProfileTab: React.FC<ProfileTabProps> = ({ onClose }) => {
         {/* Avatar Section */}
         <div className="bg-white/5 border border-white/10 rounded-xl p-6 flex flex-col items-center text-center">
             <div className="relative w-24 h-24 mb-4 group cursor-pointer" onClick={handleAvatarEditClick}>
-                <div className={`w-full h-full rounded-full overflow-hidden shadow-lg bg-gray-800 flex items-center justify-center relative ${profile.role === 'patron' || profile.role === 'author' ? 'p-[3px] bg-gradient-to-tr from-purple-500 to-pink-500' : 'border-4 border-white/10'}`}>
+                <div className="w-full h-full rounded-full overflow-hidden shadow-lg bg-gray-800 flex items-center justify-center relative">
                     <Image
                       src={currentAvatar}
                       alt={t('avatarAlt')}
                       width={96}
                       height={96}
-                      className={`w-full h-full object-cover rounded-full ${profile.role === 'patron' || profile.role === 'author' ? 'border-4 border-black' : ''}`}
+                      className="w-full h-full object-cover rounded-full border-2 border-pink-500"
                       id="userAvatar"
                       unoptimized={!!previewUrl}
                     />
