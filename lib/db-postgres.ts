@@ -401,8 +401,7 @@ export async function addComment(
   slideId: string,
   userId: string,
   text: string,
-  parentId?: string | null,
-  imageUrl?: string | null
+  parentId?: string | null
 ): Promise<CommentWithRelations> {
   // Transaction ensures both actions happen or fail together
   const [comment] = await prisma.$transaction([
@@ -411,8 +410,7 @@ export async function addComment(
         slideId,
         authorId: userId,
         text,
-        parentId: parentId || null,
-        imageUrl: imageUrl || null
+        parentId: parentId || null
       },
       include: {
         author: true,

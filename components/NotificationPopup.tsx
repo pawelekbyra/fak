@@ -1,102 +1,166 @@
-import React, { useState, useEffect } from 'react';
+"use client";
+
+import React, { useState, useEffect, useCallback, useRef, memo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Bell, Mail, User, Tag, ChevronDown, Loader2, Heart, MessageSquare, UserPlus } from 'lucide-react';
-import { useTranslation } from '@/context/LanguageContext';
+import {
+  X, Bell, Mail, ChevronDown, Loader2,
+  Heart, MessageSquare, UserPlus, CheckCheck
+} from 'lucide-react';
+import { useTranslation } from '@/context/LanguageContext'; // Zakładamy, że używasz tego hooka
 import { formatDistanceToNow } from 'date-fns';
 import { pl } from 'date-fns/locale';
 import Image from 'next/image';
+import { cn } from '@/lib/utils'; // Do łączenia klas Tailwind
 
-type NotificationType = 'like' | 'comment' | 'follow' | 'message';
+type NotificationType = 'like' | 'comment' | 'follow' | 'message' | 'system';
 
-// This type is now aligned with the mock data
 interface Notification {
   id: string;
   type: NotificationType;
   preview: string;
-  time: string;
+  time: string; // Pre-formatted time string
+  rawDate: Date;
   full: string;
   unread: boolean;
-  expanded?: boolean;
   user: {
     displayName: string;
     avatar: string;
   };
 }
 
-const iconMap: Record<NotificationType, React.ReactNode> = {
-  like: <Heart size={20} className="text-red-500 fill-current" />,
-  comment: <MessageSquare size={20} className="text-white/80" />,
-  follow: <UserPlus size={20} className="text-white/80" />,
-  message: <Mail size={20} className="text-white/80" />
-};
+// --- Helper Components ---
 
-const NotificationItem: React.FC<{ notification: Notification; onToggle: (id: string) => void }> = ({ notification, onToggle }) => {
+const NotificationIcon = ({ type }: { type: NotificationType }) => {
+  const styles = {
+    like: "bg-red-500/20 text-red-500",
+    comment: "bg-blue-500/20 text-blue-400",
+    follow: "bg-green-500/20 text-green-400",
+    message: "bg-purple-500/20 text-purple-400",
+    system: "bg-gray-500/20 text-gray-400"
+  };
+
+  const icons = {
+    like: <Heart size={14} className="fill-current" />,
+    comment: <MessageSquare size={14} />,
+    follow: <UserPlus size={14} />,
+    message: <Mail size={14} />,
+    system: <Bell size={14} />
+  };
+
+  return (
+    <div className={cn("flex items-center justify-center w-8 h-8 rounded-full shrink-0", styles[type] || styles.system)}>
+      {icons[type] || icons.system}
+    </div>
+  );
+};
+NotificationIcon.displayName = 'NotificationIcon';
+
+// --- Single Notification Item ---
+
+const NotificationItem = memo<{
+  notification: Notification;
+  onMarkRead: (id: string) => void
+}>(({ notification, onMarkRead }) => {
   const { t, lang } = useTranslation();
   const [isExpanded, setIsExpanded] = useState(false);
+  const readTimer = useRef<NodeJS.Timeout | null>(null);
 
   const handleToggle = () => {
-    const newIsExpanded = !isExpanded;
-    setIsExpanded(newIsExpanded);
+    const nextState = !isExpanded;
+    setIsExpanded(nextState);
 
-    // If expanding and it's unread, update state and call API
-    if (newIsExpanded && notification.unread) {
-      onToggle(notification.id); // Update parent state (removes dot)
-
-      fetch('/api/notifications/mark-as-read', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ notificationId: notification.id }),
-      })
-      .catch(error => {
-        console.error('Error marking notification as read:', error);
-        // Here you could potentially revert the UI change
-      });
+    // Logika opóźnionego oznaczania jako przeczytane (dla lepszego UX)
+    if (nextState && notification.unread) {
+      if (readTimer.current) clearTimeout(readTimer.current);
+      readTimer.current = setTimeout(() => {
+        onMarkRead(notification.id);
+      }, 2000); // 2 sekundy = oznaczenie jako przeczytane
+    } else {
+      if (readTimer.current) clearTimeout(readTimer.current);
     }
   };
 
-  const getFullText = (key: string, user: string) => {
-    let text = t(key, { name: user })
-    return text;
-  }
+  useEffect(() => {
+    return () => {
+      if (readTimer.current) clearTimeout(readTimer.current);
+    };
+  }, []);
+
+  const formattedTime = formatDistanceToNow(new Date(notification.rawDate), { addSuffix: true, locale: lang === 'pl' ? pl : undefined });
 
   return (
     <motion.li
       layout
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      exit={{ opacity: 0 }}
-      className={`rounded-lg cursor-pointer transition-colors hover:bg-white/10 mb-1 ${isExpanded ? 'expanded' : ''}`}
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, scale: 0.95 }}
+      onClick={handleToggle}
+      className={cn(
+        "group relative mb-2 rounded-xl overflow-hidden cursor-pointer transition-all duration-300",
+        notification.unread
+          ? "bg-white/10 border-pink-500/30 hover:bg-white/15"
+          : "bg-transparent border-transparent hover:bg-white/5"
+      )}
     >
-      <div className="flex items-start gap-3 p-3" onClick={handleToggle}>
-        <Image src={notification.user.avatar} alt={t('userAvatar', { user: notification.user.displayName })} width={40} height={40} className="w-10 h-10 rounded-full mt-1" />
-        <div className="flex-1 flex flex-col">
-          <p className="text-sm">
-            <span className="font-bold">{notification.user.displayName}</span> {notification.preview}
-          </p>
-          <span className="text-xs text-white/60 mt-1">{notification.time}</span>
+      {/* Pasek akcentujący dla nieprzeczytanych */}
+      {notification.unread && (
+        <div className="absolute left-0 top-0 bottom-0 w-1 bg-pink-500 shadow-[0_0_10px_rgba(236,72,153,0.5)]" />
+      )}
+
+      <div className="flex items-start gap-3 p-3 pl-4">
+        {/* Awatar + Ikona typu (overlay) */}
+        <div className="relative shrink-0">
+          <Image
+            src={notification.user.avatar}
+            alt={notification.user.displayName}
+            width={40}
+            height={40}
+            className="w-10 h-10 rounded-full object-cover border border-white/10"
+          />
+          <div className="absolute -bottom-1 -right-1 bg-black rounded-full p-[2px]">
+            <NotificationIcon type={notification.type} />
+          </div>
         </div>
-        <div className="flex items-center gap-2 pt-1">
-          {notification.unread && <div className="w-2 h-2 bg-pink-500 rounded-full" />}
-          <ChevronDown size={14} className={`transition-transform ${isExpanded ? 'rotate-180' : ''}`} />
+
+        {/* Treść */}
+        <div className="flex-1 min-w-0 pt-0.5">
+          <div className="flex justify-between items-start gap-2">
+            <p className="text-sm text-gray-200 leading-snug">
+              <span className="font-semibold text-white">{notification.user.displayName}</span>{' '}
+              <span className="opacity-90">{notification.preview}</span>
+            </p>
+          </div>
+          <p className="text-xs text-gray-500 mt-1 font-medium">{formattedTime}</p>
+        </div>
+
+        {/* Strzałka rozwijania */}
+        <div className="pt-1 pr-1 text-gray-500 group-hover:text-white transition-colors">
+           <ChevronDown size={16} className={cn("transition-transform duration-300", isExpanded && "rotate-180")} />
         </div>
       </div>
+
+      {/* Rozwijana treść */}
       <AnimatePresence>
         {isExpanded && (
           <motion.div
-            initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: 'auto' }}
-            exit={{ opacity: 0, height: 0 }}
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: 'auto', opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
             className="overflow-hidden"
           >
-            <p className="text-sm text-white/80 p-3 pt-0">
-              {getFullText(notification.full, notification.user.displayName)}
-            </p>
+            <div className="p-3 pl-14 pt-0 pb-4 text-sm text-gray-300/90 leading-relaxed border-t border-white/5 mx-4 mt-1">
+               {notification.full || notification.preview}
+            </div>
           </motion.div>
         )}
       </AnimatePresence>
     </motion.li>
   );
-};
+});
+
+NotificationItem.displayName = 'NotificationItem';
+
+// --- Main Modal Component ---
 
 interface NotificationPopupProps {
   isOpen: boolean;
@@ -109,78 +173,102 @@ const NotificationPopup: React.FC<NotificationPopupProps> = ({ isOpen, onClose }
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // Fetch data (Symulacja + API call)
   useEffect(() => {
     if (isOpen) {
       setIsLoading(true);
       setError(null);
+
+      // Tutaj powinna być Twoja funkcja fetch, użyjmy mocka danych z istniejącego kodu
       fetch('/api/notifications')
-        .then(res => {
-            if (!res.ok) {
-                throw new Error('Failed to fetch notifications');
-            }
-            return res.json();
-        })
+        .then(res => res.ok ? res.json() : Promise.reject('Failed'))
         .then(data => {
             if (data.success) {
-                const transformedNotifications = data.notifications.map((n: any) => ({
+                const mapped = data.notifications.map((n: any) => ({
                     id: n.id,
-                    type: n.type as NotificationType,
-                    preview: t(n.previewKey),
+                    type: (n.type || 'system') as NotificationType,
+                    preview: t(n.previewKey) || n.previewKey,
+                    full: n.fullKey ? t(n.fullKey, { name: n.fromUser?.displayName }) : '',
                     time: formatDistanceToNow(new Date(n.createdAt), { addSuffix: true, locale: lang === 'pl' ? pl : undefined }),
-                    full: n.fullKey,
+                    rawDate: new Date(n.createdAt),
                     unread: !n.read,
                     user: n.fromUser || { displayName: 'System', avatar: '/icons/icon-192x192.png' },
                 }));
-                setNotifications(transformedNotifications);
+                setNotifications(mapped);
             } else {
-                throw new Error(data.message || 'Failed to fetch notifications');
+               setNotifications([]);
             }
         })
-        .catch(err => {
-            setError(err.message);
-        })
-        .finally(() => {
-            setIsLoading(false);
-        });
+        .catch(() => setError(t('notificationsError') || 'Błąd pobierania powiadomień'))
+        .finally(() => setIsLoading(false));
     }
   }, [isOpen, lang, t]);
 
-  const handleToggle = (id: string) => {
-    setNotifications(
-      notifications.map(n =>
-        n.id === id ? { ...n, unread: false } : n
-      )
-    );
+  // API Actions
+  const markAsRead = useCallback((id: string) => {
+    setNotifications(prev => prev.map(n => n.id === id ? { ...n, unread: false } : n));
+
+    // Silent API call
+    fetch('/api/notifications/mark-as-read', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ notificationId: id }),
+    }).catch(console.error);
+  }, []);
+
+  const markAllRead = () => {
+    const unreadIds = notifications.filter(n => n.unread).map(n => n.id);
+    if (unreadIds.length === 0) return;
+
+    setNotifications(prev => prev.map(n => ({ ...n, unread: false })));
+
+    // Symulacja API call do oznaczenia wszystkich
+    unreadIds.forEach(id => {
+        fetch('/api/notifications/mark-as-read', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ notificationId: id }),
+        }).catch(console.error);
+    });
   };
 
+  const unreadCount = notifications.filter(n => n.unread).length;
+
+  // Render Content Logic
   const renderContent = () => {
     if (isLoading) {
       return (
-        <div className="flex-grow flex items-center justify-center p-4">
-          <Loader2 className="h-8 w-8 animate-spin text-white/40" />
+        <div className="flex-grow flex flex-col items-center justify-center p-10 text-white/40 gap-3">
+          <Loader2 className="h-8 w-8 animate-spin text-pink-500" />
+          <span className="text-xs uppercase tracking-widest">Ładowanie...</span>
         </div>
       );
     }
+
     if (error) {
-      return (
-        <div className="text-center py-10 text-red-400 p-4">
-          <p>{t('notificationsError')}</p>
-        </div>
-      );
+      return <div className="p-8 text-center text-red-400 text-sm">{t('notificationsError') || error}</div>;
     }
+
     if (notifications.length === 0) {
       return (
-        <div className="text-center py-10 text-white/60 flex flex-col items-center gap-4 p-4">
-          <Bell size={48} className="opacity-50" />
-          <p>{t('notificationsEmpty')}</p>
+        <div className="flex-grow flex flex-col items-center justify-center p-10 text-white/30 gap-4">
+          <div className="w-16 h-16 rounded-full bg-white/5 flex items-center justify-center">
+            <Bell size={32} />
+          </div>
+          <p className="text-sm">{t('notificationsEmpty') || "Brak nowych powiadomień"}</p>
         </div>
       );
     }
+
     return (
-      <ul className="flex-grow p-2 max-h-[45vh] overflow-y-auto">
-        <AnimatePresence>
+      <ul className="flex-grow px-2 py-2 overflow-y-auto custom-scrollbar max-h-[50vh]">
+        <AnimatePresence mode='popLayout'>
           {notifications.map((notif) => (
-            <NotificationItem key={notif.id} notification={notif} onToggle={handleToggle} />
+            <NotificationItem
+              key={notif.id}
+              notification={notif}
+              onMarkRead={markAsRead}
+            />
           ))}
         </AnimatePresence>
       </ul>
@@ -190,34 +278,79 @@ const NotificationPopup: React.FC<NotificationPopupProps> = ({ isOpen, onClose }
   return (
     <AnimatePresence>
       {isOpen && (
-        <motion.div
-          className="fixed inset-0 z-50 flex items-end justify-center bg-black/50 pb-[calc(var(--bottombar-height)_+_20px)] md:pb-5"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          onClick={onClose}
-        >
+        <>
+          {/* Backdrop z obsługą zamknięcia (niższy z-index, aby modal był na wierzchu) */}
           <motion.div
-            className="w-[350px] max-w-[calc(100vw-20px)] bg-[rgba(30,30,30,0.9)] border border-white/15 rounded-xl shadow-lg text-white flex flex-col"
-            style={{
-              backdropFilter: 'blur(12px)',
-              WebkitBackdropFilter: 'blur(12px)',
-            }}
-            initial={{ opacity: 0, y: 10, scale: 0.95 }}
+            className="fixed inset-0 z-40 bg-black/30 backdrop-blur-sm"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={onClose}
+          />
+
+          {/* Modal Container */}
+          <motion.div
+            // Pozycja: na dole, po prawej, lekko uniesiona (zgodnie z UX "apki")
+            className="fixed bottom-[calc(var(--bottombar-height)_+_16px)] right-4 z-50 w-full max-w-[380px] md:right-8 md:bottom-8"
+            // Animacja (Spring Physics - szybsza i bardziej natywna)
+            initial={{ opacity: 0, y: 20, scale: 0.95 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: 10, scale: 0.95 }}
-            transition={{ duration: 0.2, ease: 'easeOut' }}
-            onClick={(e) => e.stopPropagation()}
+            exit={{ opacity: 0, y: 20, scale: 0.95 }}
+            transition={{ type: "spring", stiffness: 300, damping: 30 }}
           >
-            <div className="flex-shrink-0 flex justify-between items-center p-4 border-b border-white/10">
-              <h3 className="font-semibold text-base">{t('notificationsTitle')}</h3>
-              <button onClick={onClose} className="text-white/70 hover:text-white transition-colors">
-                <X size={20} />
-              </button>
+            <div
+              className="
+                relative flex flex-col w-full
+                bg-gray-900/80 backdrop-blur-xl // Glassmorphism!
+                border border-white/10
+                rounded-2xl shadow-2xl shadow-black/50
+                overflow-hidden
+              "
+              onClick={(e) => e.stopPropagation()}
+            >
+              {/* Header */}
+              <div className="flex items-center justify-between p-4 border-b border-white/5 bg-white/5">
+                <div className="flex items-center gap-2">
+                  <h3 className="font-bold text-white text-base tracking-tight">
+                    {t('notificationsTitle') || "Powiadomienia"}
+                  </h3>
+                  {unreadCount > 0 && (
+                    // Różowy badge z liczbą nieprzeczytanych
+                    <span className="px-2 py-0.5 rounded-full bg-pink-600 text-[10px] font-bold text-white">
+                      {unreadCount}
+                    </span>
+                  )}
+                </div>
+
+                <div className="flex items-center gap-1">
+                  {unreadCount > 0 && (
+                    <button
+                      onClick={markAllRead}
+                      className="p-2 text-xs text-gray-400 hover:text-pink-400 transition-colors flex items-center gap-1 mr-1"
+                      title="Oznacz wszystkie jako przeczytane"
+                    >
+                      <CheckCheck size={14} />
+                    </button>
+                  )}
+                  <button
+                    onClick={onClose}
+                    className="p-1.5 text-gray-400 hover:text-white hover:bg-white/10 rounded-full transition-all"
+                  >
+                    <X size={18} />
+                  </button>
+                </div>
+              </div>
+
+              {/* Content */}
+              <div className="min-h-[200px] flex flex-col">
+                {renderContent()}
+              </div>
+
+              {/* Opacity gradient (dla lepszego wizualnego zaniku przewijanej listy) */}
+              <div className="h-4 bg-gradient-to-t from-black/40 to-transparent pointer-events-none absolute bottom-0 left-0 right-0" />
             </div>
-            {renderContent()}
           </motion.div>
-        </motion.div>
+        </>
       )}
     </AnimatePresence>
   );

@@ -84,7 +84,9 @@ const Sidebar: React.FC<SidebarProps> = ({
   };
 
   const handleOpenAuthorProfile = () => {
-    openAuthorProfileModal(authorId);
+      if (authorId) {
+        openAuthorProfileModal(authorId);
+      }
   };
 
   return (

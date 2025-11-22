@@ -42,7 +42,7 @@ export async function POST(request: NextRequest) {
   }
 
   try {
-    const { slideId, text, parentId, imageUrl } = await request.json();
+    const { slideId, text, parentId } = await request.json();
 
     if (!slideId || !text) {
       return NextResponse.json({ success: false, message: 'slideId and text are required' }, { status: 400 });
@@ -62,8 +62,8 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ success: false, message: 'Comment text cannot be empty after sanitization.' }, { status: 400 });
     }
 
-    // Pass parentId and imageUrl to db.addComment
-    const newComment = await db.addComment(slideId, currentUser.id!, sanitizedText, parentId || null, imageUrl || null);
+    // Pass parentId to db.addComment
+    const newComment = await db.addComment(slideId, currentUser.id!, sanitizedText, parentId || null);
 
     const channel = ably.channels.get(`comments:${slideId}`);
     await channel.publish('new-comment', newComment);

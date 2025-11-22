@@ -17,17 +17,17 @@ interface AuthorProfile {
 }
 
 export function AuthorProfileModal() {
-    const { isAuthorProfileModalOpen, authorProfileId, closeAuthorProfileModal, jumpToSlide } = useStore();
+    const { isAuthorProfileModalOpen, activeAuthorId, closeAuthorProfileModal, jumpToSlide } = useStore();
     const [profile, setProfile] = useState<AuthorProfile | null>(null);
     const [isLoading, setIsLoading] = useState(false);
 
     useEffect(() => {
         async function fetchAuthorProfile() {
-            if (isAuthorProfileModalOpen && authorProfileId) {
+            if (isAuthorProfileModalOpen && activeAuthorId) {
                 setIsLoading(true);
                 setProfile(null);
                 try {
-                    const res = await fetch(`/api/author/${authorProfileId}`);
+                    const res = await fetch(`/api/author/${activeAuthorId}`);
                     if (res.ok) {
                         const data = await res.json();
                         setProfile(data);
@@ -42,7 +42,7 @@ export function AuthorProfileModal() {
             }
         }
         fetchAuthorProfile();
-    }, [isAuthorProfileModalOpen, authorProfileId]);
+    }, [isAuthorProfileModalOpen, activeAuthorId]);
 
     const handleSlideClick = (slideId: string) => {
         jumpToSlide(slideId);

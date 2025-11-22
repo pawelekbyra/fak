@@ -15,11 +15,15 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   const {
     activeModal,
     setActiveModal,
-    activeSlide
+    activeSlide,
+    isTippingModalOpen,
+    closeTippingModal
   } = useStore(state => ({
     activeModal: state.activeModal,
     setActiveModal: state.setActiveModal,
-    activeSlide: state.activeSlide
+    activeSlide: state.activeSlide,
+    isTippingModalOpen: state.isTippingModalOpen,
+    closeTippingModal: state.closeTippingModal
   }), shallow);
 
   useEffect(() => {
@@ -39,7 +43,12 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         {children}
       </div>
       <AuthorProfileModal />
-      <TippingModal />
+      {isTippingModalOpen && (
+        <TippingModal
+          isOpen={isTippingModalOpen}
+          handleClose={closeTippingModal}
+        />
+      )}
       <CommentsModal
         isOpen={activeModal === 'comments'}
         onClose={() => setActiveModal(null)}

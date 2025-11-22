@@ -8,7 +8,7 @@ export interface UISlice {
   isAnyModalOpen: () => boolean;
 
   isAuthorProfileModalOpen: boolean;
-  authorProfileId: string | null;
+  activeAuthorId: string | null;
   openAuthorProfileModal: (authorId: string) => void;
   closeAuthorProfileModal: () => void;
 
@@ -20,14 +20,14 @@ export interface UISlice {
 export const createUISlice: StateCreator<UISlice> = (set, get) => ({
   activeModal: null,
   isAuthorProfileModalOpen: false,
-  authorProfileId: null,
+  activeAuthorId: null,
   isTippingModalOpen: false,
 
   setActiveModal: (modal) => set({ activeModal: modal }),
   isAnyModalOpen: () => get().activeModal !== null,
 
-  openAuthorProfileModal: (authorId) => set({ isAuthorProfileModalOpen: true, authorProfileId: authorId }),
-  closeAuthorProfileModal: () => set({ isAuthorProfileModalOpen: false, authorProfileId: null }),
+  openAuthorProfileModal: (authorId) => set({ isAuthorProfileModalOpen: true, activeAuthorId: authorId }),
+  closeAuthorProfileModal: () => set({ isAuthorProfileModalOpen: false, activeAuthorId: null }),
 
   openTippingModal: () => set({ isTippingModalOpen: true }),
   closeTippingModal: () => set({ isTippingModalOpen: false }),

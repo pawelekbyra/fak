@@ -1,8 +1,7 @@
 "use client";
 
-import React, { memo, useState, useEffect, useRef, useMemo } from 'react';
+import React, { memo, useState, useEffect, useRef } from 'react';
 import Image from 'next/image';
-import DOMPurify from 'dompurify'; // Importujemy tutaj, tak jak w działającej wersji
 import { SlideDTO, HtmlSlideDTO, VideoSlideDTO, CommentWithRelations } from '@/lib/dto';
 import { useStore } from '@/store/useStore';
 import VideoControls from './VideoControls';
@@ -20,35 +19,11 @@ import { useQueryClient } from '@tanstack/react-query';
 import { CommentSchema } from '@/lib/validators';
 import { z } from 'zod';
 
-// --- Prop Types for Sub-components ---
-interface HtmlContentProps {
-  slide: HtmlSlideDTO;
-}
+import HtmlContent from './HtmlContent';
+
 interface SlideUIProps {
-  slide: SlideDTO;
+    slide: SlideDTO;
 }
-
-// --- Sub-components (Zdefiniowane lokalnie, zgodnie z działającą wersją) ---
-
-const HtmlContent = ({ slide }: HtmlContentProps) => {
-  // Używamy useMemo tak jak w działającej wersji, aby Swiper od razu widział treść
-  const sanitizedHtml = useMemo(() => {
-    if (!slide.data?.htmlContent) return '';
-    // Zabezpieczenie SSR: na serwerze zwracamy surowy HTML (lub pusty), na kliencie oczyszczony
-    return typeof window !== 'undefined'
-      ? DOMPurify.sanitize(slide.data.htmlContent)
-      : slide.data.htmlContent;
-  }, [slide.data?.htmlContent]);
-
-  if (!slide.data?.htmlContent) return null;
-
-  return (
-    <div
-      className="w-full h-full overflow-y-auto bg-white text-black"
-      dangerouslySetInnerHTML={{ __html: sanitizedHtml }}
-    />
-  );
-};
 
 const SlideUI = ({ slide }: SlideUIProps) => {
     const {
@@ -143,7 +118,7 @@ const SlideUI = ({ slide }: SlideUIProps) => {
             initialLikes={slide.initialLikes}
             initialIsLiked={slide.isLiked}
             commentsCount={slide.initialComments}
-            authorId={slide.userId} 
+            authorId={slide.userId}
         />
 
         {isVideoSlide && (
@@ -175,7 +150,7 @@ const Slide = memo<SlideProps>(({ slide, priorityLoad = false }) => {
     const showSecretOverlay = slide.access === 'secret' && !isLoggedIn;
     const queryClient = useQueryClient();
 
-    // Zachowujemy ulepszoną logikę prefetchowania (z try/catch)
+    // Prefetch comments logic (Safe implementation)
     useEffect(() => {
         if (isActive && slide?.id) {
             try {
@@ -213,8 +188,12 @@ const Slide = memo<SlideProps>(({ slide, priorityLoad = false }) => {
             case 'video':
                 return <LocalVideoPlayer slide={slide as VideoSlideDTO} isActive={isActive} shouldLoad={priorityLoad} />;
             case 'html':
-                // Używamy lokalnego komponentu HtmlContent, który akceptuje props 'slide'
-                return <HtmlContent slide={slide as HtmlSlideDTO} />;
+                return (
+                    <HtmlContent
+                        data={(slide as HtmlSlideDTO).data}
+                        isActive={isActive}
+                    />
+                );
             default:
                 return <div className="w-full h-full bg-gray-800 flex items-center justify-center"><p>Unsupported slide type</p></div>;
         }
