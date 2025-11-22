@@ -11,6 +11,7 @@ import { X, ChevronRight, ChevronLeft, CreditCard, Sparkles } from 'lucide-react
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import Image from 'next/image';
+import { Trophy } from 'lucide-react';
 
 const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PK!);
 
@@ -158,14 +159,14 @@ const TippingModal = () => {
         animate={{ scale: 1, opacity: 1 }}
         exit={{ scale: 0.9, opacity: 0 }}
         transition={{ type: "spring", damping: 25, stiffness: 300 }}
-        className="relative w-[90%] max-w-[420px] max-h-[85vh] flex flex-col rounded-[24px] border border-purple-500/30 shadow-[0_0_80px_-20px_rgba(124,58,237,0.6)] overflow-hidden bg-gradient-to-b from-[#13111c] via-[#0a0a0f] to-black"
+        className="relative w-[90%] max-w-[420px] max-h-[85vh] flex flex-col rounded-[24px] border border-purple-500/30 shadow-[0_0_80px_-20px_rgba(124,58,237,0.6)] overflow-hidden bg-gradient-to-br from-yellow-900/20 via-gray-900 to-black"
       >
         {/* Header */}
-        <div className="relative p-6 text-center border-b border-white/5 shrink-0 bg-white/5 backdrop-blur-sm">
+        <div className="relative p-6 text-center border-b border-white/5 shrink-0 bg-black/20 backdrop-blur-sm">
             <div className="flex items-center justify-center gap-2 mb-1">
-                <Sparkles className="text-purple-400 w-5 h-5 animate-pulse" />
-                <h2 className="text-xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-indigo-300 via-purple-300 to-pink-300 tracking-wide">
-                    Wsparcie Twórcy
+                <Trophy className="text-yellow-400 w-5 h-5" />
+                <h2 className="text-xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-yellow-300 via-amber-300 to-orange-300 tracking-wide">
+                    Bramka Napiwkowa
                 </h2>
             </div>
             <button
@@ -189,7 +190,7 @@ const TippingModal = () => {
         {/* Body */}
         <div className="flex-1 overflow-y-auto p-6 custom-scrollbar flex flex-col relative">
             {/* Glow Effect Background */}
-            <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full h-[200px] bg-purple-900/20 blur-[60px] pointer-events-none rounded-full mix-blend-screen" />
+            <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full h-[200px] bg-yellow-900/20 blur-[60px] pointer-events-none rounded-full mix-blend-screen" />
 
             <AnimatePresence mode="wait">
                 {currentStep === 0 && (
@@ -201,8 +202,8 @@ const TippingModal = () => {
                         className="space-y-6 flex-1 relative z-10"
                     >
                         <div className="text-center space-y-2">
-                            <h3 className="text-lg font-medium text-white">Twoje dane</h3>
-                            <p className="text-sm text-purple-200/60">Zostaw namiar na siebie, aby otrzymać dostęp.</p>
+                            <h3 className="text-lg font-medium text-white">Dziękuję za wsparcie!</h3>
+                            <p className="text-sm text-yellow-200/60">Zostaw namiar na siebie, aby otrzymać dostęp.</p>
                         </div>
 
                         <div className="space-y-4">
@@ -216,7 +217,10 @@ const TippingModal = () => {
                                     )}
                                     onClick={() => setFormData(prev => ({ ...prev, create_account: !prev.create_account }))}
                                 >
-                                    <span className="text-sm font-medium text-white">Załóż konto (opcjonalne)</span>
+                                    <div className="flex items-center gap-2">
+                                        <Trophy className="w-4 h-4 text-yellow-400" />
+                                        <span className="text-sm font-medium text-white">Założyć konto Patrona?</span>
+                                    </div>
                                     <div className={cn(
                                         "w-6 h-6 rounded-full border flex items-center justify-center transition-all duration-300", 
                                         formData.create_account ? "bg-purple-600 border-purple-600 shadow-[0_0_10px_rgba(147,51,234,0.5)]" : "border-white/30"
@@ -226,19 +230,19 @@ const TippingModal = () => {
                                 </div>
                             )}
 
-                            <div className={cn("space-y-2 overflow-hidden transition-all duration-300", (formData.create_account || !isLoggedIn) ? "max-h-[200px] opacity-100" : "max-h-0 opacity-0")}>
+                            <div className={cn("space-y-2 overflow-hidden transition-all duration-300", formData.create_account ? "max-h-[200px] opacity-100" : "max-h-0 opacity-0")}>
                                 <div className="group relative">
                                     <div className="absolute -inset-0.5 bg-gradient-to-r from-indigo-500 to-fuchsia-500 rounded-xl blur opacity-0 group-focus-within:opacity-50 transition duration-500"></div>
                                     <input
                                         type="email"
-                                        placeholder="Adres email"
+                                        placeholder="Twój adres email"
                                         value={formData.email}
                                         onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                                         className="relative w-full bg-[#0f0f13] border border-white/10 rounded-xl px-4 py-3.5 text-white placeholder:text-white/30 focus:outline-none focus:border-transparent focus:ring-0 transition-all"
                                     />
                                 </div>
                                 <p className="text-xs text-purple-200/40 text-center">
-                                    {formData.create_account ? "Wyślemy Ci hasło na ten adres." : "Potrzebny do potwierdzenia płatności."}
+                                    Na ten adres wyślemy dane dostępowe do Twojego konta Patrona.
                                 </p>
                             </div>
                         </div>
@@ -255,7 +259,7 @@ const TippingModal = () => {
                     >
                         <div className="text-center space-y-2">
                             <h3 className="text-lg font-medium text-white">Wybierz kwotę</h3>
-                            <p className="text-sm text-purple-200/60">Ile chcesz przekazać twórcy?</p>
+                            <p className="text-sm text-yellow-200/60">Ile chcesz przekazać twórcy?</p>
                         </div>
 
                         <div className="grid grid-cols-3 gap-3">
@@ -293,7 +297,7 @@ const TippingModal = () => {
                                     <select
                                         value={formData.currency}
                                         onChange={(e) => setFormData({ ...formData, currency: e.target.value as any })}
-                                        className="bg-transparent text-purple-300 font-medium text-lg focus:outline-none cursor-pointer hover:text-white transition-colors"
+                                        className="bg-transparent text-yellow-300 font-medium text-lg focus:outline-none cursor-pointer hover:text-white transition-colors"
                                     >
                                         <option value="PLN" className="bg-[#1c1c1e]">PLN</option>
                                         <option value="EUR" className="bg-[#1c1c1e]">EUR</option>
@@ -367,7 +371,7 @@ const TippingModal = () => {
                         <span className="animate-pulse">Przetwarzanie...</span>
                     ) : (
                         <>
-                            Dalej <ChevronRight size={18} className="group-hover:translate-x-1 transition-transform" />
+                            No jacha! <ChevronRight size={18} className="group-hover:translate-x-1 transition-transform" />
                         </>
                     )}
                 </button>
