@@ -15,11 +15,17 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   const {
     activeModal,
     setActiveModal,
-    activeSlide
+    activeSlide,
+    isAuthorProfileModalOpen,
+    activeAuthorId,
+    closeAuthorProfileModal
   } = useStore(state => ({
     activeModal: state.activeModal,
     setActiveModal: state.setActiveModal,
-    activeSlide: state.activeSlide
+    activeSlide: state.activeSlide,
+    isAuthorProfileModalOpen: state.isAuthorProfileModalOpen,
+    activeAuthorId: state.activeAuthorId,
+    closeAuthorProfileModal: state.closeAuthorProfileModal
   }), shallow);
 
   useEffect(() => {
@@ -38,7 +44,12 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
       <div className="flex-1 overflow-auto z-10">
         {children}
       </div>
-      <AuthorProfileModal />
+      {isAuthorProfileModalOpen && activeAuthorId && (
+        <AuthorProfileModal
+          authorId={activeAuthorId}
+          onClose={closeAuthorProfileModal}
+        />
+      )}
       <TippingModal />
       <CommentsModal
         isOpen={activeModal === 'comments'}
