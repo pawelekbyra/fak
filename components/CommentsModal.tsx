@@ -17,6 +17,7 @@ import { formatDistanceToNow } from 'date-fns';
 import { pl, enUS } from 'date-fns/locale';
 import { Skeleton } from "@/components/ui/skeleton";
 import { DEFAULT_AVATAR_URL } from '@/lib/constants';
+import { UserBadge } from './UserBadge';
 
 import * as DropdownMenu from '@radix-ui/react-dropdown-menu';
 import * as Tooltip from '@radix-ui/react-tooltip';
@@ -82,21 +83,24 @@ const CommentItem: React.FC<CommentItemProps> = ({ comment, onLike, onReplySubmi
     >
       <div
         onClick={() => onAvatarClick(author.id)}
-        className="cursor-pointer"
+        className="cursor-pointer flex-shrink-0"
       >
-          <div className="w-8 h-8 rounded-full mt-1">
+          <div className="relative w-8 h-8 mt-1">
             <Image
               src={author.avatar || DEFAULT_AVATAR_URL}
               alt={t('userAvatar', { user: author.displayName || 'User' })}
               width={32}
               height={32}
-              className={`w-full h-full rounded-full object-cover hover:opacity-80 transition-opacity ${author.role === 'patron' || author.role === 'author' ? 'border-2 border-pink-500' : ''}`}
+              className={`w-full h-full rounded-full object-cover hover:opacity-80 transition-opacity`}
             />
+             <div className="absolute -bottom-1.5 w-full flex justify-center">
+                <UserBadge role={author.role} className="scale-[0.6] transform" />
+            </div>
           </div>
       </div>
       <div className="flex-1 min-w-0">
         <div className="flex justify-between items-start">
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 pt-1">
                 <p
                     className="text-xs font-bold text-white/80 cursor-pointer hover:underline"
                     onClick={() => onAvatarClick(author.id)}
@@ -674,7 +678,7 @@ const CommentsModal: React.FC<CommentsModalProps> = ({ isOpen, onClose, slideId,
                         alt={t('yourAvatar')}
                         width={32}
                         height={32}
-                        className={`w-full h-full rounded-full object-cover ${user.role === 'patron' || user.role === 'author' ? 'border-2 border-pink-500' : ''}`}
+                        className={`w-full h-full rounded-full object-cover`}
                       />
                   </div>
                   <div className="flex-1 relative">
