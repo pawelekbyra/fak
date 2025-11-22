@@ -12,6 +12,7 @@ import AdminModal from './AdminModal';
 import TippingModal from './TippingModal';
 import CommentsModal from './CommentsModal';
 import AccountPanel from './AccountPanel';
+import NotificationPopup from './NotificationPopup';
 import { AnimatePresence } from 'framer-motion';
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
@@ -84,6 +85,10 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         onClose={() => setActiveModal(null)}
         slideId={activeSlide?.id}
         initialCommentsCount={activeSlide?.initialComments || 0}
+      />
+      <NotificationPopup
+        isOpen={activeModal === 'notifications'}
+        onClose={() => setActiveModal(null)}
       />
       <AnimatePresence>
         {activeModal === 'account' && <AccountPanel key="account-panel" onClose={() => setActiveModal(null)} />}

@@ -13,6 +13,7 @@ import { useToast } from '@/context/ToastContext';
 import { updateUserProfile } from '@/lib/actions';
 import { DEFAULT_AVATAR_URL } from '@/lib/constants';
 import CropModal from './CropModal';
+import { UserBadge } from './UserBadge';
 
 interface ProfileTabProps {
     onClose: () => void;
@@ -111,13 +112,13 @@ const ProfileTab: React.FC<ProfileTabProps> = ({ onClose }) => {
         {/* Avatar Section */}
         <div className="bg-white/5 border border-white/10 rounded-xl p-6 flex flex-col items-center text-center">
             <div className="relative w-24 h-24 mb-4 group cursor-pointer" onClick={handleAvatarEditClick}>
-                <div className="w-full h-full rounded-full overflow-hidden border-4 border-white/10 shadow-lg bg-gray-800 flex items-center justify-center relative">
+                <div className={`w-full h-full rounded-full overflow-hidden shadow-lg bg-gray-800 flex items-center justify-center relative ${profile.role === 'patron' || profile.role === 'author' ? 'p-[3px] bg-gradient-to-tr from-purple-500 to-pink-500' : 'border-4 border-white/10'}`}>
                     <Image
                       src={currentAvatar}
                       alt={t('avatarAlt')}
                       width={96}
                       height={96}
-                      className="w-full h-full object-cover"
+                      className={`w-full h-full object-cover rounded-full ${profile.role === 'patron' || profile.role === 'author' ? 'border-4 border-black' : ''}`}
                       id="userAvatar"
                       unoptimized={!!previewUrl}
                     />
@@ -147,14 +148,9 @@ const ProfileTab: React.FC<ProfileTabProps> = ({ onClose }) => {
 
             <div className="flex flex-col items-center gap-1">
                 <h3 className="text-xl font-bold text-white" id="displayName">{profile.displayName}</h3>
+                <UserBadge role={profile.role} className="mb-1" />
                 {(profile as any).bio && <p className="text-xs text-white/70 max-w-[240px] text-center">{(profile as any).bio}</p>}
                 <p className="text-sm text-white/50" id="userEmail">{profile.email}</p>
-                {profile.role === 'patron' && (
-                  <div className="flex items-center gap-1.5 bg-gradient-to-r from-yellow-400 to-orange-400 text-black px-3 py-1 rounded-full text-xs font-bold shadow-md mt-2">
-                      <Crown size={14} />
-                      <span>{t('patronTier')}</span>
-                  </div>
-                )}
             </div>
         </div>
 

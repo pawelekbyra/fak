@@ -20,6 +20,7 @@ export async function GET(
         username: true,
         displayName: true,
         avatarUrl: true,
+        avatar: true,
         image: true,
         bio: true,
         role: true,
@@ -71,7 +72,7 @@ export async function GET(
     const responseData = {
       id: user.id,
       username: user.displayName || user.username || 'Użytkownik',
-      avatarUrl: user.avatarUrl || user.image || 'https://i.pravatar.cc/150?u=' + user.id,
+      avatarUrl: user.avatar || user.avatarUrl || user.image || 'https://i.pravatar.cc/150?u=' + user.id,
       bio: user.bio || "",
       role: user.role || "user",
       slides: formattedSlides,
