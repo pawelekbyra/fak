@@ -52,9 +52,13 @@ const CheckoutForm = ({ clientSecret, onClose }: { clientSecret: string, onClose
             </div>
             <button
                 disabled={isProcessing || !stripe || !elements}
-                className="w-full py-4 rounded-xl font-bold text-white bg-gradient-to-r from-[#ff0055] via-[#ff4081] to-[#d946ef] shadow-[0_0_20px_rgba(255,0,85,0.4)] hover:shadow-[0_0_35px_rgba(255,0,85,0.6)] hover:scale-[1.02] active:scale-95 transition-all disabled:opacity-50 disabled:hover:scale-100 border border-white/10 tracking-widest"
+                // GOLD BAR BUTTON STYLE
+                className="w-full py-4 rounded-xl font-black text-black text-lg bg-gradient-to-b from-yellow-200 via-yellow-500 to-yellow-600 border-2 border-white shadow-[0_0_25px_rgba(234,179,8,0.6)] hover:shadow-[0_0_40px_rgba(234,179,8,0.8)] hover:scale-[1.02] active:scale-95 transition-all disabled:opacity-50 disabled:hover:scale-100 tracking-widest relative overflow-hidden group"
             >
-                {isProcessing ? (t('processing') || "Przetwarzanie...") : "ENTER"}
+                {/* Shine effect overlay */}
+                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/40 to-transparent -translate-x-full group-hover:animate-[shimmer_1.5s_infinite]" />
+                
+                {isProcessing ? (t('processing') || "PRZETWARZANIE...") : "ENTER"}
             </button>
         </form>
     );
@@ -84,7 +88,7 @@ const TippingModal = () => {
     } else {
         if (!isTippingModalOpen) {
             setCurrentStep(0);
-            setFormData(prev => ({ ...prev, create_account: false })); // Reset checkbox
+            setFormData(prev => ({ ...prev, create_account: false }));
         }
     }
   }, [isLoggedIn, user, isTippingModalOpen]);
@@ -206,58 +210,65 @@ const TippingModal = () => {
                         initial={{ opacity: 0, x: 20 }}
                         animate={{ opacity: 1, x: 0 }}
                         exit={{ opacity: 0, x: -20 }}
-                        className="space-y-6 flex-1 relative z-10"
+                        className="space-y-8 flex-1 relative z-10 pt-4"
                     >
-                        <div className="text-center space-y-2">
-                            <h3 className="text-lg font-medium text-white/90">Wspieraj Twórcę</h3>
+                        <div className="text-left space-y-2">
+                             {/* Usunięto "Wspieraj Twórcę" */}
                             
                             {/* Left Aligned Subtitle with Trophy */}
-                            <div className="flex items-center justify-start gap-2 text-yellow-400/90 mt-1">
-                                <Trophy className="w-4 h-4 drop-shadow-[0_0_5px_rgba(250,204,21,0.5)]" />
-                                <p className="text-sm font-medium">Założyć konto Patrona?</p>
+                            <div className="flex items-center justify-start gap-3 pl-1">
+                                <div className="p-2 bg-yellow-500/10 rounded-full border border-yellow-500/20">
+                                   <Trophy className="w-5 h-5 text-yellow-400 drop-shadow-[0_0_8px_rgba(250,204,21,0.6)]" />
+                                </div>
+                                <p className="text-lg font-semibold text-white tracking-wide">Założyć konto Patrona?</p>
                             </div>
                         </div>
 
-                        <div className="space-y-4">
+                        <div className="space-y-5">
                             {!isLoggedIn && (
                                 <div 
                                     className={cn(
-                                        "flex items-center justify-start p-4 gap-3 rounded-xl border cursor-pointer transition-all duration-300 group",
+                                        "flex items-center justify-start p-5 gap-4 rounded-2xl border cursor-pointer transition-all duration-500 group relative overflow-hidden",
                                         formData.create_account 
-                                            ? "bg-purple-900/20 border-yellow-500/40 shadow-[0_0_15px_rgba(147,51,234,0.15)]" 
-                                            : "bg-white/5 border-white/10 hover:border-yellow-500/30"
+                                            ? "bg-black/60 border-yellow-500/50 shadow-[0_0_30px_rgba(234,179,8,0.1)]" 
+                                            : "bg-black/40 border-white/5 hover:border-white/20"
                                     )}
                                     onClick={() => setFormData(prev => ({ ...prev, create_account: !prev.create_account }))}
                                 >
                                     {/* Checkbox Indicator on LEFT */}
                                     <div className={cn(
-                                        "w-6 h-6 rounded-full border flex items-center justify-center transition-all duration-300 shrink-0", 
+                                        "w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all duration-300 shrink-0 z-10", 
                                         formData.create_account 
-                                            ? "bg-gradient-to-r from-[#ff0055] to-[#d946ef] border-transparent shadow-[0_0_10px_rgba(255,0,85,0.4)]" 
-                                            : "border-white/20 group-hover:border-white/40"
+                                            ? "bg-yellow-500 border-yellow-500 shadow-[0_0_15px_rgba(234,179,8,0.6)] scale-110" 
+                                            : "border-white/20 group-hover:border-white/50"
                                     )}>
-                                        {formData.create_account && <div className="w-2.5 h-2.5 bg-white rounded-full" />}
+                                        {formData.create_account && <div className="w-2.5 h-2.5 bg-black rounded-full" />}
                                     </div>
                                     
-                                    <span className={cn("text-sm font-medium transition-colors", formData.create_account ? "text-white" : "text-white/80")}>
+                                    <span className={cn("text-base font-medium transition-colors z-10", formData.create_account ? "text-white" : "text-white/60")}>
                                         No Jacha
                                     </span>
+
+                                    {/* Subtle bg gradient on active */}
+                                    {formData.create_account && (
+                                        <div className="absolute inset-0 bg-gradient-to-r from-yellow-500/10 to-transparent opacity-50" />
+                                    )}
                                 </div>
                             )}
 
-                            <div className={cn("space-y-2 overflow-hidden transition-all duration-300", (formData.create_account) ? "max-h-[200px] opacity-100" : "max-h-0 opacity-0")}>
+                            <div className={cn("space-y-3 overflow-hidden transition-all duration-500", (formData.create_account) ? "max-h-[200px] opacity-100 translate-y-0" : "max-h-0 opacity-0 -translate-y-4")}>
                                 <div className="group relative">
-                                    <div className="absolute -inset-0.5 bg-gradient-to-r from-[#ff0055] to-[#d946ef] rounded-xl blur opacity-0 group-focus-within:opacity-40 transition duration-500"></div>
+                                    <div className="absolute -inset-0.5 bg-gradient-to-r from-yellow-600 to-purple-600 rounded-xl blur opacity-0 group-focus-within:opacity-50 transition duration-700"></div>
                                     <input
                                         type="email"
                                         placeholder="Adres email"
                                         value={formData.email}
                                         onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                                        className="relative w-full bg-[#0a0a0a] border border-white/10 rounded-xl px-4 py-3.5 text-white placeholder:text-white/30 focus:outline-none focus:border-[#ff0055]/50 focus:text-white transition-all"
+                                        className="relative w-full bg-[#0e0e0e] border border-white/10 rounded-xl px-5 py-4 text-white placeholder:text-white/20 focus:outline-none focus:border-yellow-500/40 focus:bg-black/80 transition-all shadow-inner"
                                     />
                                 </div>
-                                <p className="text-xs text-white/40 text-center px-2 leading-relaxed">
-                                    Na ten email wyślemy Ci dane do logowania, abyś mógł odebrać swoje benefity.
+                                <p className="text-xs text-white/40 text-center px-4 leading-relaxed font-light">
+                                    Na ten email wyślemy Ci <span className="text-yellow-500/80">dane do logowania</span>, abyś mógł odebrać swoje benefity.
                                 </p>
                             </div>
                         </div>
@@ -283,33 +294,33 @@ const TippingModal = () => {
                                     key={amount}
                                     onClick={() => setFormData({ ...formData, amount })}
                                     className={cn(
-                                        "py-3 rounded-xl font-semibold transition-all border relative overflow-hidden group",
+                                        "py-4 rounded-xl font-bold transition-all border relative overflow-hidden group",
                                         formData.amount === amount
-                                            ? "border-yellow-500/60 text-yellow-400 shadow-[0_0_20px_rgba(234,179,8,0.2)] transform scale-105 z-10"
-                                            : "bg-white/5 border-white/10 text-white/60 hover:bg-white/10 hover:border-yellow-500/30 hover:text-white"
+                                            ? "border-yellow-500/60 text-yellow-400 shadow-[0_0_25px_rgba(234,179,8,0.2)] transform scale-105 z-10"
+                                            : "bg-black/40 border-white/5 text-white/40 hover:bg-black/60 hover:border-white/20 hover:text-white/80"
                                     )}
                                 >
                                     {/* Active background styling */}
                                     {formData.amount === amount && (
-                                        <div className="absolute inset-0 bg-gradient-to-br from-purple-900/40 via-black to-black -z-10" />
+                                        <div className="absolute inset-0 bg-gradient-to-br from-purple-900/20 via-black to-black -z-10" />
                                     )}
                                     {amount} {formData.currency}
                                 </button>
                             ))}
                         </div>
 
-                        <div className="relative group">
+                        <div className="relative group mt-4">
                             <div className="absolute -inset-0.5 bg-gradient-to-r from-purple-600 via-yellow-500 to-purple-600 rounded-xl blur opacity-20 group-focus-within:opacity-60 transition duration-500"></div>
                             
-                            <div className="relative flex items-center bg-[#0a0a0a] border border-white/10 rounded-xl overflow-hidden group-focus-within:border-yellow-500/30">
+                            <div className="relative flex items-center bg-[#0e0e0e] border border-white/10 rounded-xl overflow-hidden group-focus-within:border-yellow-500/30 transition-colors">
                                 <input
                                     type="number"
                                     value={formData.amount}
                                     onChange={(e) => setFormData({ ...formData, amount: Number(e.target.value) })}
-                                    className="flex-1 bg-transparent text-center text-3xl font-bold text-white py-6 focus:outline-none z-10"
+                                    className="flex-1 bg-transparent text-center text-3xl font-bold text-white py-6 focus:outline-none z-10 placeholder:text-white/10"
                                     placeholder="0"
                                 />
-                                <div className="pr-4 z-10">
+                                <div className="pr-6 z-10 border-l border-white/5 pl-4">
                                     <select
                                         value={formData.currency}
                                         onChange={(e) => setFormData({ ...formData, currency: e.target.value as any })}
@@ -336,32 +347,34 @@ const TippingModal = () => {
                     >
                         <div className="text-center space-y-1">
                             <h3 className="text-lg font-medium text-white">Podsumowanie</h3>
-                            <div className="inline-block bg-purple-900/20 border border-yellow-500/20 px-5 py-2 rounded-full mt-2">
-                                <span className="text-xl font-bold text-yellow-400 drop-shadow-sm">{formData.amount.toFixed(2)} {formData.currency}</span>
+                            <div className="inline-block bg-purple-900/20 border border-yellow-500/20 px-6 py-3 rounded-full mt-4 shadow-[0_0_15px_rgba(234,179,8,0.1)]">
+                                <span className="text-2xl font-bold text-yellow-400 drop-shadow-md">{formData.amount.toFixed(2)} {formData.currency}</span>
                             </div>
                         </div>
 
                         {clientSecret && (
-                            <Elements 
-                                stripe={stripePromise} 
-                                options={{ 
-                                    clientSecret, 
-                                    appearance: { 
-                                        theme: 'night', 
-                                        variables: { 
-                                            colorPrimary: '#eab308', // Yellow-500
-                                            colorBackground: '#0a0a0a', 
-                                            colorText: '#ffffff',
-                                            colorDanger: '#ef4444',
-                                            fontFamily: 'inherit',
-                                            borderRadius: '12px',
-                                            colorIcon: '#eab308'
+                            <div className="bg-black/40 p-4 rounded-2xl border border-white/5 mt-2">
+                                <Elements 
+                                    stripe={stripePromise} 
+                                    options={{ 
+                                        clientSecret, 
+                                        appearance: { 
+                                            theme: 'night', 
+                                            variables: { 
+                                                colorPrimary: '#eab308', 
+                                                colorBackground: 'transparent', 
+                                                colorText: '#ffffff',
+                                                colorDanger: '#ef4444',
+                                                fontFamily: 'inherit',
+                                                borderRadius: '12px',
+                                                colorIcon: '#eab308'
+                                            } 
                                         } 
-                                    } 
-                                }}
-                            >
-                                <CheckoutForm clientSecret={clientSecret} onClose={closeTippingModal} />
-                            </Elements>
+                                    }}
+                                >
+                                    <CheckoutForm clientSecret={clientSecret} onClose={closeTippingModal} />
+                                </Elements>
+                            </div>
                         )}
                     </motion.div>
                 )}
@@ -374,7 +387,7 @@ const TippingModal = () => {
                 {currentStep > 0 && (
                     <button
                         onClick={handleBack}
-                        className="px-5 py-3.5 rounded-xl font-semibold text-white/60 bg-white/5 border border-white/10 hover:bg-white/10 hover:text-white transition-all"
+                        className="px-5 py-4 rounded-xl font-semibold text-white/40 bg-black/40 border border-white/5 hover:bg-white/5 hover:text-white transition-all"
                     >
                         Wstecz
                     </button>
@@ -382,14 +395,16 @@ const TippingModal = () => {
                 <button
                     onClick={handleNext}
                     disabled={isProcessing}
-                    className="group flex-1 flex items-center justify-center gap-2 py-3.5 rounded-xl font-bold text-white bg-gradient-to-r from-[#ff0055] via-[#ff4081] to-[#d946ef] shadow-[0_4px_20px_rgba(255,0,85,0.4)] hover:shadow-[0_6px_30px_rgba(255,0,85,0.6)] hover:scale-[1.02] active:scale-95 transition-all border border-white/10 tracking-widest"
+                    // GOLD BAR BUTTON STYLE - MAIN
+                    className="group flex-1 flex items-center justify-center gap-2 py-4 rounded-xl font-black text-lg text-black bg-gradient-to-b from-yellow-200 via-yellow-500 to-yellow-600 border-2 border-white shadow-[0_0_25px_rgba(234,179,8,0.6)] hover:shadow-[0_0_40px_rgba(234,179,8,0.8)] hover:scale-[1.02] active:scale-95 transition-all disabled:opacity-50 disabled:hover:scale-100 relative overflow-hidden tracking-widest"
                 >
+                     {/* Shine effect overlay */}
+                    <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/50 to-transparent -translate-x-full group-hover:animate-[shimmer_1.5s_infinite]" />
+                    
                     {isProcessing ? (
-                        <span className="animate-pulse">Przetwarzanie...</span>
+                        <span className="animate-pulse">PRZETWARZANIE...</span>
                     ) : (
-                        <>
-                            ENTER <ChevronRight size={18} className="group-hover:translate-x-1 transition-transform" />
-                        </>
+                        "ENTER"
                     )}
                 </button>
             </div>
@@ -397,7 +412,7 @@ const TippingModal = () => {
 
         {/* Footer Stripe */}
         <div className="pb-4 pt-2 flex items-center justify-center bg-[#0a0a0a]/80 backdrop-blur-sm z-10 border-t border-white/5">
-             <div className="flex items-center gap-2 opacity-30 grayscale hover:grayscale-0 hover:opacity-80 transition-all duration-300">
+             <div className="flex items-center gap-2 opacity-20 grayscale hover:grayscale-0 hover:opacity-80 transition-all duration-300">
                   <span className="text-[10px] text-white/60 font-medium">Powered by</span>
                   <div className="relative h-4 w-10">
                       <Image
