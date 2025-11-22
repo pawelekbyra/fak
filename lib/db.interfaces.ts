@@ -39,12 +39,13 @@ export interface Notification {
   userId: string;
   type: 'like' | 'comment' | 'follow' | 'system';
   text: string;
-  link: string; // e.g., /slide/slide_id?comment=comment_id
-  createdAt: number;
+  link: string | null; // e.g., /slide/slide_id?comment=comment_id
+  createdAt: number | Date;
   read: boolean;
+  fromUserId?: string | null;
   fromUser?: {
     id: string;
     displayName: string;
     avatar: string;
-  };
+  } | null;
 }

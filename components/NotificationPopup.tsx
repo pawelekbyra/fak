@@ -54,9 +54,13 @@ const NotificationItem: React.FC<{ notification: Notification; onToggle: (id: st
     }
   };
 
-  const getFullText = (key: string, user: string) => {
-    let text = t(key, { name: user })
-    return text;
+  // Helper to safely display text even if translation key is missing
+  const getFullText = () => {
+      // If it looks like a translation key (no spaces, camelCase), try translate, else return as is
+      if (notification.full && !notification.full.includes(' ')) {
+          return t(notification.full, { name: notification.user.displayName });
+      }
+      return notification.full || notification.preview;
   }
 
   return (
@@ -89,7 +93,7 @@ const NotificationItem: React.FC<{ notification: Notification; onToggle: (id: st
             className="overflow-hidden"
           >
             <p className="text-sm text-white/80 p-3 pt-0">
-              {getFullText(notification.full, notification.user.displayName)}
+              {getFullText()}
             </p>
           </motion.div>
         )}
@@ -122,15 +126,19 @@ const NotificationPopup: React.FC<NotificationPopupProps> = ({ isOpen, onClose }
         })
         .then(data => {
             if (data.success) {
-                const transformedNotifications = data.notifications.map((n: any) => ({
-                    id: n.id,
-                    type: n.type as NotificationType,
-                    preview: t(n.previewKey),
-                    time: formatDistanceToNow(new Date(n.createdAt), { addSuffix: true, locale: lang === 'pl' ? pl : undefined }),
-                    full: n.fullKey,
-                    unread: !n.read,
-                    user: n.fromUser || { displayName: 'System', avatar: '/icons/icon-192x192.png' },
-                }));
+                const transformedNotifications = data.notifications.map((n: any) => {
+                    // Robustly handle direct text vs translation keys
+                    const previewText = n.text || t(n.previewKey) || '';
+                    return {
+                        id: n.id,
+                        type: (n.type as NotificationType) || 'system',
+                        preview: previewText,
+                        time: formatDistanceToNow(new Date(n.createdAt), { addSuffix: true, locale: lang === 'pl' ? pl : undefined }),
+                        full: n.text || n.fullKey, // Use text as fallback for full content
+                        unread: !n.read,
+                        user: n.fromUser || { displayName: 'System', avatar: '/icons/icon-192x192.png' },
+                    };
+                });
                 setNotifications(transformedNotifications);
             } else {
                 throw new Error(data.message || 'Failed to fetch notifications');
@@ -177,7 +185,7 @@ const NotificationPopup: React.FC<NotificationPopupProps> = ({ isOpen, onClose }
       );
     }
     return (
-      <ul className="flex-grow p-2 max-h-[45vh] overflow-y-auto">
+      <ul className="flex-grow p-2 max-h-[45vh] overflow-y-auto custom-scrollbar">
         <AnimatePresence>
           {notifications.map((notif) => (
             <NotificationItem key={notif.id} notification={notif} onToggle={handleToggle} />

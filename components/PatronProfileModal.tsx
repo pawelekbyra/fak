@@ -6,12 +6,14 @@ import { X } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import Image from 'next/image';
 import { DEFAULT_AVATAR_URL } from '@/lib/constants';
+import { UserBadge } from './UserBadge';
 
 interface PatronProfile {
     id: string;
     username: string;
     avatarUrl: string;
     bio: string;
+    role?: string;
 }
 
 interface PatronProfileModalProps {
@@ -45,7 +47,8 @@ export function PatronProfileModal({ patronId, onClose }: PatronProfileModalProp
                             id: data.id,
                             username: data.username,
                             avatarUrl: data.avatarUrl,
-                            bio: data.bio
+                            bio: data.bio,
+                            role: data.role
                         });
                     } else {
                         console.warn("Failed to fetch patron profile, using mock data.");
@@ -101,9 +104,10 @@ export function PatronProfileModal({ patronId, onClose }: PatronProfileModalProp
                                       className="rounded-full border-2 border-pink-500"
                                     />
                                 </div>
-                                <h3 className="text-2xl font-bold mb-2">{profile.username}</h3>
+                                <h3 className="text-2xl font-bold">{profile.username}</h3>
+                                <UserBadge role={profile.role} className="mb-2" />
                                 {profile.bio ? (
-                                    <p className="text-neutral-400 text-sm leading-relaxed">{profile.bio}</p>
+                                    <p className="text-neutral-400 text-sm leading-relaxed mt-2">{profile.bio}</p>
                                 ) : (
                                     <p className="text-neutral-600 text-sm italic">Brak opisu.</p>
                                 )}

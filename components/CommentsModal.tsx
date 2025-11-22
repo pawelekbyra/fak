@@ -661,7 +661,7 @@ const CommentsModal: React.FC<CommentsModalProps> = ({ isOpen, onClose, slideId,
             </div>
 
             {/* Footer - Sticky at bottom */}
-            <div className="flex-shrink-0 p-2 border-t border-white/10 bg-black/50 pb-6 z-10">
+            <div className="flex-shrink-0 p-2 border-t border-white/10 bg-black/50 pb-[env(safe-area-inset-bottom)] md:pb-2 z-10">
             {user ? (
                 <form onSubmit={handleSubmit} className="flex items-end gap-2">
                   {user.avatar && <Image src={user.avatar} alt={t('yourAvatar')} width={32} height={32} className="w-8 h-8 rounded-full mb-1" />}
