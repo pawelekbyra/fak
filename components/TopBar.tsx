@@ -14,11 +14,11 @@ import MenuIcon from './icons/MenuIcon';
 import BellIcon from './icons/BellIcon';
 import PwaDesktopModal from './PwaDesktopModal';
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { User, LogOut, ChevronDown } from 'lucide-react';
+import { User, LogOut, ChevronDown, Settings } from 'lucide-react';
 
 const TopBar = () => {
   const { user, logout } = useUser();
-  const setActiveModal = useStore((state) => state.setActiveModal);
+  const { setActiveModal, openAdminModal } = useStore();
   const { t, lang } = useTranslation();
   const { addToast } = useToast();
   const [isLoginPanelOpen, setIsLoginPanelOpen] = useState(false);
@@ -63,6 +63,11 @@ const TopBar = () => {
 
   const handleOpenAccount = () => {
       setActiveModal('account');
+      setIsMenuOpen(false);
+  };
+
+  const handleOpenAdmin = () => {
+      openAdminModal();
       setIsMenuOpen(false);
   };
 
@@ -137,6 +142,16 @@ const TopBar = () => {
                     className="w-auto min-w-[150px] p-2 bg-zinc-900 border-zinc-800 text-white shadow-xl rounded-xl data-[state=closed]:slide-out-to-top-5 data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95"
                   >
                       <div className="flex flex-col gap-2">
+                          {/* Admin Button */}
+                          {user.role === 'admin' && (
+                              <button
+                                  onClick={handleOpenAdmin}
+                                  className="flex flex-row items-center gap-3 p-3 bg-zinc-800 hover:bg-zinc-700 rounded-lg transition-colors w-full mb-1 border border-pink-500/30"
+                              >
+                                  <Settings size={20} className="text-pink-500" />
+                                  <span className="text-sm font-medium whitespace-nowrap text-pink-100">Zarządzaj</span>
+                              </button>
+                          )}
                           <button
                             onClick={handleOpenAccount}
                             className="flex flex-row items-center gap-3 p-3 bg-zinc-800 hover:bg-zinc-700 rounded-lg transition-colors w-full"

@@ -10,6 +10,7 @@ import { useStore } from '@/store/useStore';
 import { X, ChevronRight, ChevronLeft, CreditCard } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
+import Image from 'next/image';
 
 const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PK!);
 
@@ -191,7 +192,7 @@ const TippingModal = () => {
         </div>
 
         {/* Body */}
-        <div className="flex-1 overflow-y-auto p-6 custom-scrollbar">
+        <div className="flex-1 overflow-y-auto p-6 custom-scrollbar flex flex-col">
             <AnimatePresence mode="wait">
                 {currentStep === 0 && (
                     <motion.div
@@ -199,7 +200,7 @@ const TippingModal = () => {
                         initial={{ opacity: 0, x: 20 }}
                         animate={{ opacity: 1, x: 0 }}
                         exit={{ opacity: 0, x: -20 }}
-                        className="space-y-6"
+                        className="space-y-6 flex-1"
                     >
                         <div className="text-center space-y-2">
                             <h3 className="text-lg font-medium text-white">Twoje dane</h3>
@@ -238,7 +239,7 @@ const TippingModal = () => {
                         initial={{ opacity: 0, x: 20 }}
                         animate={{ opacity: 1, x: 0 }}
                         exit={{ opacity: 0, x: -20 }}
-                        className="space-y-6"
+                        className="space-y-6 flex-1"
                     >
                         <div className="text-center space-y-2">
                             <h3 className="text-lg font-medium text-white">Wybierz kwotę</h3>
@@ -294,7 +295,7 @@ const TippingModal = () => {
                         initial={{ opacity: 0, x: 20 }}
                         animate={{ opacity: 1, x: 0 }}
                         exit={{ opacity: 0, x: -20 }}
-                        className="space-y-6"
+                        className="space-y-6 flex-1"
                     >
                         <div className="text-center space-y-1">
                             <h3 className="text-lg font-medium text-white">Płatność</h3>
@@ -313,9 +314,9 @@ const TippingModal = () => {
             </AnimatePresence>
         </div>
 
-        {/* Footer */}
+        {/* Footer Buttons */}
         {currentStep < 2 && (
-            <div className="p-5 border-t border-white/10 bg-[#1c1c1e]/50 flex gap-3">
+            <div className="px-5 pt-0 pb-5 flex gap-3 bg-[#1c1c1e] z-10">
                 {currentStep > 0 && (
                     <button
                         onClick={handleBack}
@@ -339,6 +340,21 @@ const TippingModal = () => {
                 </button>
             </div>
         )}
+
+        {/* Stripe Logo Footer - Always visible at bottom */}
+        <div className="pb-4 pt-2 flex items-center justify-center bg-[#1c1c1e] z-10 border-t border-white/5">
+             <div className="flex items-center gap-2 opacity-50 grayscale hover:grayscale-0 transition-all duration-300">
+                  <span className="text-[10px] text-white/60 font-medium">Powered by</span>
+                  <div className="relative h-4 w-10">
+                      <Image
+                        src="/stripe.png"
+                        alt="Stripe"
+                        layout="fill"
+                        objectFit="contain"
+                      />
+                  </div>
+             </div>
+        </div>
       </motion.div>
     </div>
   );

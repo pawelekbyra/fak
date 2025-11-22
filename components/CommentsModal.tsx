@@ -27,12 +27,13 @@ interface CommentItemProps {
   onReplySubmit: (parentId: string, text: string) => Promise<void>;
   onDelete: (id: string) => Promise<void>;
   onReport: (id: string) => void;
+  onAvatarClick: (userId: string) => void;
   currentUserId?: string;
   isReply?: boolean;
   lang: string;
 }
 
-const CommentItem: React.FC<CommentItemProps> = ({ comment, onLike, onReplySubmit, onDelete, onReport, currentUserId, isReply = false, lang }) => {
+const CommentItem: React.FC<CommentItemProps> = ({ comment, onLike, onReplySubmit, onDelete, onReport, onAvatarClick, currentUserId, isReply = false, lang }) => {
   const { t } = useTranslation();
   const [isReplying, setIsReplying] = useState(false);
   const [replyText, setReplyText] = useState('');
@@ -79,11 +80,27 @@ const CommentItem: React.FC<CommentItemProps> = ({ comment, onLike, onReplySubmi
       exit={{ opacity: 0, y: -20 }}
       className={`flex items-start gap-3 ${isReply ? 'ml-8' : ''} group`}
     >
-      <Image src={author.avatar || DEFAULT_AVATAR_URL} alt={t('userAvatar', { user: author.displayName || 'User' })} width={32} height={32} className="w-8 h-8 rounded-full mt-1" />
+      <div
+        onClick={() => onAvatarClick(author.id)}
+        className="cursor-pointer"
+      >
+          <Image
+            src={author.avatar || DEFAULT_AVATAR_URL}
+            alt={t('userAvatar', { user: author.displayName || 'User' })}
+            width={32}
+            height={32}
+            className="w-8 h-8 rounded-full mt-1 hover:opacity-80 transition-opacity"
+          />
+      </div>
       <div className="flex-1 min-w-0">
         <div className="flex justify-between items-start">
             <div className="flex items-center gap-2">
-                <p className="text-xs font-bold text-white/80">{author.displayName || author.username || 'User'}</p>
+                <p
+                    className="text-xs font-bold text-white/80 cursor-pointer hover:underline"
+                    onClick={() => onAvatarClick(author.id)}
+                >
+                    {author.displayName || author.username || 'User'}
+                </p>
                 <Tooltip.Provider delayDuration={300}>
                   <Tooltip.Root>
                     <Tooltip.Trigger asChild>
@@ -167,6 +184,7 @@ const CommentItem: React.FC<CommentItemProps> = ({ comment, onLike, onReplySubmi
               onReplySubmit={onReplySubmit}
               onDelete={onDelete}
               onReport={onReport}
+              onAvatarClick={onAvatarClick}
               currentUserId={currentUserId}
               isReply={true}
               lang={lang}
@@ -188,7 +206,7 @@ interface CommentsModalProps {
 const CommentsModal: React.FC<CommentsModalProps> = ({ isOpen, onClose, slideId, initialCommentsCount }) => {
   const { t, lang } = useTranslation();
   const { user } = useUser();
-  const { setActiveModal } = useStore();
+  const { setActiveModal, openPatronProfileModal } = useStore();
   const { addToast } = useToast();
   const [comments, setComments] = useState<CommentWithRelations[]>([]);
   const [newComment, setNewComment] = useState('');
@@ -586,6 +604,7 @@ const CommentsModal: React.FC<CommentsModalProps> = ({ isOpen, onClose, slideId,
                 onReplySubmit={handleReplySubmit}
                 onDelete={handleDelete}
                 onReport={handleReport}
+                onAvatarClick={openPatronProfileModal}
                 currentUserId={user?.id}
                 lang={lang}
               />

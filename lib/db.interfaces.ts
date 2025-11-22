@@ -9,6 +9,10 @@ export interface User {
   displayName?: string;
   avatar?: string;
   sessionVersion?: number;
+  // Standardizing role to lowercase as per Prisma schema default
+  // But application logic might have been using Uppercase in some places.
+  // We will allow both temporarily or stick to lowercase.
+  // Prisma schema says @default("user").
   role?: 'user' | 'admin' | 'patron' | 'author';
   emailConsent?: boolean;
   emailLanguage?: string | null;
