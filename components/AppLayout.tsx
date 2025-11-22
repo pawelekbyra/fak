@@ -7,6 +7,8 @@ import TopBar from './TopBar';
 import { useStore } from '@/store/useStore';
 import { shallow } from 'zustand/shallow';
 import { AuthorProfileModal } from './AuthorProfileModal';
+import { PatronProfileModal } from './PatronProfileModal';
+import AdminModal from './AdminModal';
 import TippingModal from './TippingModal';
 import CommentsModal from './CommentsModal';
 import AccountPanel from './AccountPanel';
@@ -19,14 +21,24 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     activeSlide,
     isAuthorProfileModalOpen,
     activeAuthorId,
-    closeAuthorProfileModal
+    closeAuthorProfileModal,
+    isPatronProfileModalOpen,
+    activePatronId,
+    closePatronProfileModal,
+    isAdminModalOpen,
+    closeAdminModal
   } = useStore(state => ({
     activeModal: state.activeModal,
     setActiveModal: state.setActiveModal,
     activeSlide: state.activeSlide,
     isAuthorProfileModalOpen: state.isAuthorProfileModalOpen,
     activeAuthorId: state.activeAuthorId,
-    closeAuthorProfileModal: state.closeAuthorProfileModal
+    closeAuthorProfileModal: state.closeAuthorProfileModal,
+    isPatronProfileModalOpen: state.isPatronProfileModalOpen,
+    activePatronId: state.activePatronId,
+    closePatronProfileModal: state.closePatronProfileModal,
+    isAdminModalOpen: state.isAdminModalOpen,
+    closeAdminModal: state.closeAdminModal
   }), shallow);
 
   useEffect(() => {
@@ -52,6 +64,19 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
             onClose={closeAuthorProfileModal}
           />
         )}
+      </AnimatePresence>
+      <AnimatePresence mode="wait">
+        {isPatronProfileModalOpen && activePatronId && (
+            <PatronProfileModal
+                patronId={activePatronId}
+                onClose={closePatronProfileModal}
+            />
+        )}
+      </AnimatePresence>
+      <AnimatePresence mode="wait">
+          {isAdminModalOpen && (
+              <AdminModal />
+          )}
       </AnimatePresence>
       <TippingModal />
       <CommentsModal

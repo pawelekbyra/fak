@@ -1,3 +1,4 @@
+
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { auth } from '@/auth';
@@ -12,8 +13,76 @@ export async function GET(request: NextRequest) {
   const userId = session.user.id!;
 
   try {
-    const notifications = await db.getNotifications(userId);
-    const unreadCount = await db.getUnreadNotificationCount(userId);
+    let notifications = await db.getNotifications(userId);
+    let unreadCount = await db.getUnreadNotificationCount(userId);
+
+    // Mock notifications if empty (for UI testing as per user request)
+    // Only in development or if explicitly enabled
+    if ((!notifications || notifications.length === 0) && process.env.NODE_ENV !== 'production') {
+        notifications = [
+            {
+                id: 'mock-1',
+                userId: userId,
+                type: 'system',
+                text: 'Witaj w Ting Tong! To jest przykładowe powiadomienie systemowe.',
+                link: null,
+                fromUserId: null,
+                read: false,
+                createdAt: new Date(),
+                fromUser: null
+            },
+            {
+                id: 'mock-2',
+                userId: userId,
+                type: 'like',
+                text: 'Użytkownik Patron polubił Twój film.',
+                link: null,
+                fromUserId: 'mock-patron',
+                read: false,
+                createdAt: new Date(Date.now() - 3600000), // 1 hour ago
+                fromUser: {
+                    id: 'mock-patron',
+                    username: 'Patron',
+                    avatarUrl: 'https://i.pravatar.cc/150?u=mock-patron',
+                    displayName: 'Patron'
+                } as any
+            },
+            {
+                id: 'mock-3',
+                userId: userId,
+                type: 'comment',
+                text: 'Użytkownik Twórca skomentował Twój film: "Super robota!"',
+                link: null,
+                fromUserId: 'mock-creator',
+                read: true,
+                createdAt: new Date(Date.now() - 7200000), // 2 hours ago
+                fromUser: {
+                    id: 'mock-creator',
+                    username: 'Twórca',
+                    avatarUrl: 'https://i.pravatar.cc/150?u=mock-creator',
+                    displayName: 'Twórca'
+                } as any
+            },
+            {
+                id: 'mock-4',
+                userId: userId,
+                type: 'follow',
+                text: 'Użytkownik Admin zaczął Cię obserwować.',
+                link: null,
+                fromUserId: 'mock-admin',
+                read: true,
+                createdAt: new Date(Date.now() - 86400000), // 1 day ago
+                fromUser: {
+                    id: 'mock-admin',
+                    username: 'Admin',
+                    avatarUrl: 'https://i.pravatar.cc/150?u=mock-admin',
+                    displayName: 'Admin'
+                } as any
+            }
+        ];
+        unreadCount = 2; // Matches the two 'read: false' mocks above
+    }
+
     return NextResponse.json({ success: true, notifications, unreadCount }, {
       headers: {
         'Cache-Control': 'no-cache, no-store, must-revalidate',
