@@ -17,8 +17,9 @@ export async function GET(request: NextRequest) {
     let unreadCount = await db.getUnreadNotificationCount(userId);
 
     // Force Mock notifications if empty (as per user request for testing UI)
-    // Removed NODE_ENV check to satisfy "chce zobaczyc mockowe powiadomienia"
-    if (!notifications || notifications.length === 0) {
+    // Only use mocks if the database result is empty AND we are not in production
+    // to preserve real functionality for real users while allowing dev visibility.
+    if ((!notifications || notifications.length === 0) && process.env.NODE_ENV !== 'production') {
         notifications = [
             {
                 id: 'mock-1',
