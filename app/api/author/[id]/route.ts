@@ -22,6 +22,7 @@ export async function GET(
         avatarUrl: true,
         image: true,
         bio: true,
+        role: true,
       },
     });
 
@@ -72,6 +73,7 @@ export async function GET(
       username: user.displayName || user.username || 'Użytkownik',
       avatarUrl: user.avatarUrl || user.image || 'https://i.pravatar.cc/150?u=' + user.id,
       bio: user.bio || "",
+      role: user.role || "user",
       slides: formattedSlides,
     };
 

@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
-import { X } from 'lucide-react';
+import { X, Crown, Shield, Zap } from 'lucide-react';
 import { useStore } from '@/store/useStore';
 import { Skeleton } from '@/components/ui/skeleton';
 import Image from 'next/image';
@@ -13,6 +13,7 @@ interface AuthorProfile {
     username: string;
     avatarUrl: string;
     bio: string;
+    role?: string;
     slides: { id: string; thumbnailUrl: string; title: string; }[];
 }
 
@@ -26,6 +27,7 @@ const MOCK_PROFILE: AuthorProfile = {
     username: 'Mock Author',
     avatarUrl: DEFAULT_AVATAR_URL,
     bio: 'This is a mock profile because the API is missing.',
+    role: 'author',
     slides: [
         { id: '1', thumbnailUrl: 'https://placehold.co/600x400?text=Video+1', title: 'Mock Video 1' },
         { id: '2', thumbnailUrl: 'https://placehold.co/600x400?text=Video+2', title: 'Mock Video 2' },
@@ -71,6 +73,36 @@ export function AuthorProfileModal({ authorId, onClose }: AuthorProfileModalProp
         onClose();
     };
 
+    const renderBadge = (role?: string) => {
+        switch (role) {
+            case 'admin':
+                return (
+                    <div className="inline-flex items-center gap-1.5 bg-red-600 text-white px-2 py-0.5 rounded-full text-[10px] font-bold shadow-sm mb-1">
+                        <Shield size={10} fill="currentColor" />
+                        <span>Admin</span>
+                    </div>
+                );
+            case 'author':
+            case 'creator':
+            case 'tworca':
+                return (
+                    <div className="inline-flex items-center gap-1.5 bg-gradient-to-r from-purple-500 to-pink-500 text-white px-2 py-0.5 rounded-full text-[10px] font-bold shadow-sm mb-1">
+                        <Zap size={10} fill="currentColor" />
+                        <span>Twórca</span>
+                    </div>
+                );
+            case 'patron':
+                return (
+                    <div className="inline-flex items-center gap-1.5 bg-gradient-to-r from-yellow-400 to-amber-500 text-black px-2 py-0.5 rounded-full text-[10px] font-bold shadow-sm mb-1">
+                        <Crown size={10} fill="currentColor" />
+                        <span>Patron</span>
+                    </div>
+                );
+            default:
+                return null;
+        }
+    };
+
     return (
         <motion.div
             initial={{ opacity: 0 }}
@@ -108,6 +140,7 @@ export function AuthorProfileModal({ authorId, onClose }: AuthorProfileModalProp
                                       className="rounded-full border-2 border-pink-500 object-cover"
                                     />
                                     <div>
+                                        {renderBadge(profile.role)}
                                         <h3 className="text-2xl font-bold">{profile.username}</h3>
                                     </div>
                                 </div>

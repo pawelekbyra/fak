@@ -47,6 +47,7 @@ const AccountPanel: React.FC<AccountPanelProps> = ({ onClose }) => {
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
       onClick={onClose} // Close on overlay click
+      style={{ cursor: 'pointer' }}
     >
       <motion.div
         className="absolute top-0 left-0 h-full w-full max-w-md bg-gradient-to-br from-[#121212] to-[#1e1e1e] flex flex-col"
@@ -55,6 +56,7 @@ const AccountPanel: React.FC<AccountPanelProps> = ({ onClose }) => {
         exit={{ x: '-100%' }}
         transition={{ type: 'spring', stiffness: 300, damping: 30 }}
         onClick={(e) => e.stopPropagation()} // Prevent closing when clicking inside the panel
+        style={{ cursor: 'default' }}
       >
         {/* Top Bar - styled to be distinct but integrated */}
         <div
