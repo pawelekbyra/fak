@@ -14,7 +14,7 @@ import MenuIcon from './icons/MenuIcon';
 import BellIcon from './icons/BellIcon';
 import PwaDesktopModal from './PwaDesktopModal';
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { User, LogOut } from 'lucide-react';
+import { User, LogOut, ChevronDown } from 'lucide-react';
 
 const TopBar = () => {
   const { user, logout } = useUser();
@@ -82,27 +82,41 @@ const TopBar = () => {
           // --- WIDOK DLA UŻYTKOWNIKÓW NIEZALOGOWANYCH ---
           <>
             <div className="flex justify-start">
-              <Button variant="ghost" size="icon" onClick={handleLoggedOutMenuClick} aria-label={t('menuAriaLabel')}>
+              <motion.button
+                whileTap={{ scale: 0.9 }}
+                className="p-2 text-white/80 hover:text-white transition-colors active:bg-white/10 rounded-md outline-none"
+                onClick={handleLoggedOutMenuClick}
+                aria-label={t('menuAriaLabel')}
+              >
                 <MenuIcon className="w-6 h-6" />
-              </Button>
+              </motion.button>
             </div>
             <div className="flex justify-center flex-1 text-center">
               <button
                 onClick={() => setIsLoginPanelOpen(panel => !panel)}
-                className="font-semibold text-sm text-white transition-all duration-300 focus:outline-none whitespace-nowrap"
+                className="flex items-center justify-center gap-2 font-semibold text-sm text-white transition-all duration-300 focus:outline-none whitespace-nowrap outline-none"
               >
                 <span>{loggedOutTitle}</span>
+                <ChevronDown
+                  size={16}
+                  className={`transition-transform duration-200 ${isLoginPanelOpen ? 'rotate-180' : ''}`}
+                />
               </button>
             </div>
-            <div className="flex justify-end">
+            <div className="flex justify-end items-center gap-1">
               {isDesktop && (
                 <Button variant="ghost" size="icon" onClick={handleShowPwaModal} aria-label={t('installPwaAriaLabel')}>
                   <span className="text-sm font-semibold">{t('installAppText')}</span>
                 </Button>
               )}
-              <Button variant="ghost" size="icon" onClick={handleLoggedOutNotificationClick} aria-label={t('notificationAriaLabel')}>
+              <motion.button
+                 whileTap={{ scale: 0.9 }}
+                 className="p-2 text-white/80 hover:text-white transition-colors active:bg-white/10 rounded-md outline-none"
+                 onClick={handleLoggedOutNotificationClick}
+                 aria-label={t('notificationAriaLabel')}
+              >
                 <BellIcon className="w-6 h-6" />
-              </Button>
+              </motion.button>
             </div>
           </>
         ) : (
