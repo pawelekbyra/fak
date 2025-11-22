@@ -72,22 +72,21 @@ export function AuthorProfileModal({ authorId, onClose }: AuthorProfileModalProp
     };
 
     return (
-        <AnimatePresence>
+        <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[70] flex items-center justify-center bg-black/60 backdrop-blur-sm"
+            onClick={onClose}
+        >
             <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                className="fixed inset-0 z-[70] flex items-center justify-center bg-black/60 backdrop-blur-sm"
-                onClick={onClose}
+                initial={{ scale: 0.9, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                exit={{ scale: 0.9, opacity: 0 }}
+                transition={{ type: 'spring', damping: 20, stiffness: 250 }}
+                className="relative flex flex-col w-full max-w-md bg-neutral-900 text-white rounded-2xl shadow-lg border border-neutral-700 mx-4 max-h-[80vh] overflow-hidden"
+                onClick={(e) => e.stopPropagation()}
             >
-                <motion.div
-                    initial={{ scale: 0.9, opacity: 0 }}
-                    animate={{ scale: 1, opacity: 1 }}
-                    exit={{ scale: 0.9, opacity: 0 }}
-                    transition={{ type: 'spring', damping: 20, stiffness: 250 }}
-                    className="relative flex flex-col w-full max-w-md bg-neutral-900 text-white rounded-2xl shadow-lg border border-neutral-700 mx-4 max-h-[80vh] overflow-hidden"
-                    onClick={(e) => e.stopPropagation()}
-                >
                     <header className="relative flex items-center justify-center p-4 border-b border-neutral-800 shrink-0">
                         <h2 className="text-lg font-semibold">Author Profile</h2>
                         <button onClick={onClose} className="absolute p-1 right-3 top-3 rounded-full hover:bg-neutral-700">
@@ -138,8 +137,7 @@ export function AuthorProfileModal({ authorId, onClose }: AuthorProfileModalProp
                         )}
                     </main>
                 </motion.div>
-            </motion.div>
-        </AnimatePresence>
+        </motion.div>
     );
 }
 

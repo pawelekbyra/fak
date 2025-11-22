@@ -10,6 +10,7 @@ import { AuthorProfileModal } from './AuthorProfileModal';
 import TippingModal from './TippingModal';
 import CommentsModal from './CommentsModal';
 import AccountPanel from './AccountPanel';
+import { AnimatePresence } from 'framer-motion';
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   const {
@@ -44,12 +45,14 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
       <div className="flex-1 overflow-auto z-10">
         {children}
       </div>
-      {isAuthorProfileModalOpen && activeAuthorId && (
-        <AuthorProfileModal
-          authorId={activeAuthorId}
-          onClose={closeAuthorProfileModal}
-        />
-      )}
+      <AnimatePresence mode="wait">
+        {isAuthorProfileModalOpen && activeAuthorId && (
+          <AuthorProfileModal
+            authorId={activeAuthorId}
+            onClose={closeAuthorProfileModal}
+          />
+        )}
+      </AnimatePresence>
       <TippingModal />
       <CommentsModal
         isOpen={activeModal === 'comments'}
