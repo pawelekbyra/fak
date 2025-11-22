@@ -1,6 +1,6 @@
 import { StateCreator } from 'zustand';
 
-export type ModalType = 'account' | 'comments' | 'info' | 'login' | 'tipping' | 'author' | 'patron' | 'admin' | null;
+export type ModalType = 'account' | 'comments' | 'info' | 'login' | 'tipping' | 'author' | 'patron' | 'admin' | 'notifications' | null;
 
 export interface UISlice {
   activeModal: ModalType;

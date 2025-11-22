@@ -95,13 +95,13 @@ export function PatronProfileModal({ patronId, onClose }: PatronProfileModalProp
                             <PatronProfileSkeleton />
                         ) : profile ? (
                             <div className="flex flex-col items-center text-center">
-                                <div className="relative w-24 h-24 mb-4">
+                                <div className={`relative w-24 h-24 mb-4 rounded-full ${profile.role === 'patron' || profile.role === 'author' ? 'p-[3px] bg-gradient-to-tr from-purple-500 to-pink-500' : ''}`}>
                                     <Image
                                       src={profile.avatarUrl || DEFAULT_AVATAR_URL}
                                       alt={profile.username}
                                       layout="fill"
                                       objectFit="cover"
-                                      className="rounded-full border-2 border-pink-500"
+                                      className={`rounded-full ${profile.role === 'patron' || profile.role === 'author' ? 'border-4 border-black' : 'border-2 border-pink-500'}`}
                                     />
                                 </div>
                                 <h3 className="text-2xl font-bold">{profile.username}</h3>

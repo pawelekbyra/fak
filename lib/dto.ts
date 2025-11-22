@@ -15,6 +15,7 @@ export type CommentWithRelations = Prisma.CommentGetPayload<{
         username: true;
         displayName: true;
         avatar: true;
+        role: true; // Added role for badge/border logic
       };
     };
   };

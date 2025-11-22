@@ -84,13 +84,15 @@ const CommentItem: React.FC<CommentItemProps> = ({ comment, onLike, onReplySubmi
         onClick={() => onAvatarClick(author.id)}
         className="cursor-pointer"
       >
-          <Image
-            src={author.avatar || DEFAULT_AVATAR_URL}
-            alt={t('userAvatar', { user: author.displayName || 'User' })}
-            width={32}
-            height={32}
-            className="w-8 h-8 rounded-full mt-1 hover:opacity-80 transition-opacity"
-          />
+          <div className={`w-8 h-8 rounded-full mt-1 ${author.role === 'patron' || author.role === 'author' ? 'p-[2px] bg-gradient-to-tr from-purple-500 to-pink-500' : ''}`}>
+            <Image
+              src={author.avatar || DEFAULT_AVATAR_URL}
+              alt={t('userAvatar', { user: author.displayName || 'User' })}
+              width={32}
+              height={32}
+              className={`w-full h-full rounded-full object-cover hover:opacity-80 transition-opacity ${author.role === 'patron' || author.role === 'author' ? 'border-2 border-black' : ''}`}
+            />
+          </div>
       </div>
       <div className="flex-1 min-w-0">
         <div className="flex justify-between items-start">
@@ -428,7 +430,8 @@ const CommentsModal: React.FC<CommentsModalProps> = ({ isOpen, onClose, slideId,
           id: user.id,
           displayName: user.displayName || user.username || 'User',
           avatar: user.avatar || '',
-          username: user.username || null
+          username: user.username || null,
+          role: user.role || 'user'
       },
       replies: [],
       // @ts-ignore
@@ -500,7 +503,8 @@ const CommentsModal: React.FC<CommentsModalProps> = ({ isOpen, onClose, slideId,
           id: user.id,
           displayName: user.displayName || user.username || 'User',
           avatar: user.avatar || '',
-          username: user.username || null
+          username: user.username || null,
+          role: user.role || 'user'
       },
       replies: [],
       // @ts-ignore
@@ -664,7 +668,15 @@ const CommentsModal: React.FC<CommentsModalProps> = ({ isOpen, onClose, slideId,
             <div className="flex-shrink-0 p-2 border-t border-white/10 bg-black/50 pb-[env(safe-area-inset-bottom)] md:pb-2 z-10">
             {user ? (
                 <form onSubmit={handleSubmit} className="flex items-end gap-2">
-                  {user.avatar && <Image src={user.avatar} alt={t('yourAvatar')} width={32} height={32} className="w-8 h-8 rounded-full mb-1" />}
+                  <div className={`w-8 h-8 rounded-full mb-1 ${user.role === 'patron' || user.role === 'author' ? 'p-[2px] bg-gradient-to-tr from-purple-500 to-pink-500' : ''}`}>
+                      <Image
+                        src={user.avatar || DEFAULT_AVATAR_URL}
+                        alt={t('yourAvatar')}
+                        width={32}
+                        height={32}
+                        className={`w-full h-full rounded-full object-cover ${user.role === 'patron' || user.role === 'author' ? 'border-2 border-black' : ''}`}
+                      />
+                  </div>
                   <div className="flex-1 relative">
                       <textarea
                         ref={textareaRef}
@@ -691,8 +703,11 @@ const CommentsModal: React.FC<CommentsModalProps> = ({ isOpen, onClose, slideId,
             ) : (
                 <div className="flex justify-center p-2">
                     <button
-                        onClick={() => setActiveModal('login')}
-                        className="w-full py-3 bg-white/10 text-white/80 rounded-xl text-sm font-semibold hover:bg-white/20 hover:text-white transition-colors border border-white/5"
+                        onClick={() => {
+                            setActiveModal('login');
+                            onClose(); // Ensure smooth transition if needed, though setActiveModal handles state
+                        }}
+                        className="w-full py-3 bg-white/10 text-white/80 rounded-xl text-sm font-semibold hover:bg-white/20 hover:text-white transition-colors border border-white/5 active:scale-[0.98] transition-transform"
                     >
                         Zaloguj się, aby skomentować
                     </button>

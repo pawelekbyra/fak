@@ -4,7 +4,6 @@ import { useEffect, useState } from 'react';
 import Image from 'next/image';
 import { useUser } from '@/context/UserContext';
 import { Button } from '@/components/ui/button';
-import NotificationPopup from './NotificationPopup';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useTranslation } from '@/context/LanguageContext';
 import { useStore } from '@/store/useStore';
@@ -22,7 +21,6 @@ const TopBar = () => {
   const { t, lang } = useTranslation();
   const { addToast } = useToast();
   const [isLoginPanelOpen, setIsLoginPanelOpen] = useState(false);
-  const [showNotifPanel, setShowNotifPanel] = useState(false);
   const [showPwaModal, setShowPwaModal] = useState(false);
   const [isDesktop, setIsDesktop] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -46,7 +44,7 @@ const TopBar = () => {
   };
 
   const handleLoggedInNotificationClick = () => {
-    setShowNotifPanel(p => !p);
+    setActiveModal('notifications');
   };
 
   const handleShowPwaModal = () => {
@@ -187,10 +185,6 @@ const TopBar = () => {
                     <span className="absolute top-1 right-1 block h-2 w-2 rounded-full ring-2 ring-black bg-pink-500" />
                   )}
                 </Button>
-                <NotificationPopup
-                  isOpen={showNotifPanel}
-                  onClose={() => setShowNotifPanel(false)}
-                />
               </div>
             </div>
           </>
