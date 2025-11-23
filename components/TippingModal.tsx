@@ -7,7 +7,7 @@ import { useUser } from '@/context/UserContext';
 import { useTranslation } from '@/context/LanguageContext';
 import { useToast } from '@/context/ToastContext';
 import { useStore } from '@/store/useStore';
-import { X, Sparkles, Heart, Star } from 'lucide-react';
+import { X } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
 
@@ -18,214 +18,6 @@ const StripeLogo = () => (
         <path d="M101.547 30.94c0-5.885-2.85-10.53-8.3-10.53-5.47 0-8.782 4.644-8.782 10.483 0 6.92 3.908 10.414 9.517 10.414 2.736 0 4.805-.62 6.368-1.494v-4.598c-1.563.782-3.356 1.264-5.632 1.264-2.23 0-4.207-.782-4.46-3.494h11.24c0-.3.046-1.494.046-2.046zM90.2 28.757c0-2.598 1.586-3.678 3.035-3.678 1.402 0 2.897 1.08 2.897 3.678zm-14.597-8.345c-2.253 0-3.7 1.057-4.506 1.793l-.3-1.425H65.73v26.805l5.747-1.218.023-6.506c.828.598 2.046 1.448 4.07 1.448 4.115 0 7.862-3.3 7.862-10.598-.023-6.667-3.816-10.3-7.84-10.3zm-1.38 15.84c-1.356 0-2.16-.483-2.713-1.08l-.023-8.53c.598-.667 1.425-1.126 2.736-1.126 2.092 0 3.54 2.345 3.54 5.356 0 3.08-1.425 5.38-3.54 5.38zm-16.4-17.196l5.77-1.24V13.15l-5.77 1.218zm0 1.747h5.77v20.115h-5.77zm-6.185 1.7l-.368-1.7h-4.966V40.92h5.747V27.286c1.356-1.77 3.655-1.448 4.368-1.195v-5.287c-.736-.276-3.425-.782-4.782 1.7zm-11.494-6.7L34.535 17l-.023 18.414c0 3.402 2.552 5.908 5.954 5.908 1.885 0 3.264-.345 4.023-.76v-4.667c-.736.3-4.368 1.356-4.368-2.046V25.7h4.368v-4.897h-4.37zm-15.54 10.828c0-.897.736-1.24 1.954-1.24a12.85 12.85 0 0 1 5.7 1.47V21.47c-1.908-.76-3.793-1.057-5.7-1.057-4.667 0-7.77 2.437-7.77 6.506 0 6.345 8.736 5.333 8.736 8.07 0 1.057-.92 1.402-2.207 1.402-1.908 0-4.345-.782-6.276-1.84v5.47c2.138.92 4.3 1.3 6.276 1.3 4.782 0 8.07-2.368 8.07-6.483-.023-6.85-8.782-5.632-8.782-8.207z"/>
     </svg>
 );
-
-// --- DYNAMIC BACKGROUND ICONS ---
-interface FloatingIconData {
-    id: number;
-    type: 'sparkle' | 'heart' | 'star';
-    top: string;
-    left: string;
-    scale: number;
-    duration: number;
-}
-
-const DynamicBackground = () => {
-    const [icons, setIcons] = useState<FloatingIconData[]>([]);
-
-    useEffect(() => {
-        const addIcon = () => {
-            const id = Date.now() + Math.random();
-            const types: ('sparkle' | 'heart' | 'star')[] = ['sparkle', 'heart', 'star'];
-            const type = types[Math.floor(Math.random() * types.length)];
-            
-            const icon: FloatingIconData = {
-                id,
-                type,
-                top: `${Math.random() * 100}%`,
-                left: `${Math.random() * 100}%`,
-                scale: 0.5 + Math.random() * 0.8,
-                duration: 2 + Math.random() * 3,
-            };
-
-            setIcons(prev => [...prev, icon]);
-
-            setTimeout(() => {
-                setIcons(prev => prev.filter(i => i.id !== id));
-            }, icon.duration * 1000);
-        };
-
-        // ZWIĘKSZONA GĘSTOŚĆ: co 30ms (ok. 3x częściej niż wcześniej)
-        const interval = setInterval(addIcon, 30);
-        
-        // ZWIĘKSZONA PULA STARTOWA: 60 elementów
-        for(let i=0; i<60; i++) addIcon();
-
-        return () => clearInterval(interval);
-    }, []);
-
-    return (
-        <div className="absolute inset-0 z-0 pointer-events-none overflow-hidden">
-            <AnimatePresence>
-                {icons.map((icon) => (
-                    <motion.div
-                        key={icon.id}
-                        className="absolute text-white/40"
-                        style={{ top: icon.top, left: icon.left }}
-                        initial={{ opacity: 0, scale: 0 }}
-                        animate={{ 
-                            opacity: [0, 0.9, 0], 
-                            scale: [0, icon.scale, 0],
-                            y: [0, -10 + Math.random() * 20, 0]
-                        }}
-                        exit={{ opacity: 0 }}
-                        transition={{ duration: icon.duration, ease: "easeInOut" }}
-                    >
-                        {icon.type === 'sparkle' && <Sparkles size={12} />}
-                        {icon.type === 'heart' && <Heart size={14} fill="currentColor" />}
-                        {icon.type === 'star' && <Star size={10} fill="currentColor" />}
-                    </motion.div>
-                ))}
-            </AnimatePresence>
-        </div>
-    );
-};
-
-// --- FIREWORKS SYSTEM ---
-
-const SingleFirework = ({ top, left, scale }: { top: string, left: string, scale: number }) => {
-    const particleCount = 20; 
-    const particles = Array.from({ length: particleCount });
-
-    return (
-        <div className="absolute pointer-events-none z-0" style={{ top, left }}>
-            {particles.map((_, i) => {
-                const angle = (i / particleCount) * 360;
-                const radians = (angle * Math.PI) / 180;
-                const distance = (Math.random() * 80 + 30) * scale; 
-                const targetX = Math.cos(radians) * distance;
-                const targetY = Math.sin(radians) * distance + (Math.random() * 20);
-
-                return (
-                    <motion.div
-                        key={i}
-                        className="absolute bg-white rounded-full shadow-[0_0_6px_3px_rgba(255,255,255,0.6)]"
-                        style={{ 
-                            width: 3 * scale, 
-                            height: 3 * scale 
-                        }}
-                        initial={{ x: 0, y: 0, opacity: 1, scale: 1.5 }}
-                        animate={{
-                            x: targetX,
-                            y: targetY,
-                            opacity: [1, 0.8, 0],
-                            scale: [1.5, 0.5, 0],
-                        }}
-                        transition={{
-                            duration: 1.2 + Math.random(),
-                            ease: [0.25, 0.1, 0.25, 1],
-                        }}
-                    />
-                );
-            })}
-        </div>
-    );
-};
-
-const FireworksBackground = () => {
-    const [fireworks, setFireworks] = useState<{ id: number; top: string; left: string; scale: number }[]>([]);
-
-    useEffect(() => {
-        // ZWIĘKSZONA CZĘSTOTLIWOŚĆ FAJERWERKÓW (co 130ms - 400ms)
-        const spawnFirework = () => {
-            const newId = Date.now() + Math.random();
-            const top = `${Math.random() * 80 + 10}%`;
-            const left = `${Math.random() * 80 + 10}%`;
-            const scale = 0.5 + Math.random() * 1.0; 
-
-            setFireworks(prev => [...prev, { id: newId, top, left, scale }]);
-
-            setTimeout(() => {
-                setFireworks(prev => prev.filter(fw => fw.id !== newId));
-            }, 2500);
-            
-            // Kolejny wybuch bardzo szybko
-            setTimeout(spawnFirework, 130 + Math.random() * 270);
-        };
-
-        const timeout = setTimeout(spawnFirework, 200);
-
-        return () => clearTimeout(timeout);
-    }, []);
-
-    return (
-        <div className="absolute inset-0 pointer-events-none overflow-hidden rounded-[24px]">
-            <AnimatePresence>
-                {fireworks.map(fw => (
-                    <SingleFirework key={fw.id} top={fw.top} left={fw.left} scale={fw.scale} />
-                ))}
-            </AnimatePresence>
-        </div>
-    );
-};
-
-// --- NEW: COMETS ANIMATION ---
-
-const CometsBackground = () => {
-    const [comets, setComets] = useState<{ id: number; top: string; left: string; scale: number }[]>([]);
-
-    useEffect(() => {
-        const spawnComet = () => {
-            const newId = Date.now() + Math.random();
-            // Startują głównie z prawej strony lub góry
-            const startRight = Math.random() > 0.5;
-            
-            setComets(prev => [...prev, { 
-                id: newId, 
-                // Jeśli start z prawej: left > 100%, top losowy. Jeśli z góry: top < 0%, left losowy.
-                top: startRight ? `${Math.random() * 60}%` : `-10%`, 
-                left: startRight ? `110%` : `${50 + Math.random() * 50}%`,
-                scale: 0.5 + Math.random() * 0.8
-            }]);
-
-            setTimeout(() => {
-                setComets(prev => prev.filter(c => c.id !== newId));
-            }, 2000); 
-
-            // SPORO KOMET: co ok. 200-500ms
-            setTimeout(spawnComet, 200 + Math.random() * 300);
-        };
-
-        const timeout = setTimeout(spawnComet, 500);
-        return () => clearTimeout(timeout);
-    }, []);
-
-    return (
-        <div className="absolute inset-0 z-0 pointer-events-none overflow-hidden rounded-[24px]">
-            <AnimatePresence>
-                {comets.map(comet => (
-                    <motion.div
-                        key={comet.id}
-                        className="absolute"
-                        style={{ top: comet.top, left: comet.left, scale: comet.scale }}
-                        initial={{ opacity: 0, x: 0, y: 0 }}
-                        animate={{ 
-                            opacity: [0, 1, 1, 0], 
-                            x: -600, // Lot w lewo
-                            y: 600   // Lot w dół
-                        }}
-                        transition={{ duration: 1.2 + Math.random() * 0.5, ease: "easeIn" }}
-                    >
-                        {/* Głowa komety */}
-                        <div className="w-1.5 h-1.5 bg-white rounded-full shadow-[0_0_10px_2px_rgba(255,255,255,0.8)]" />
-                        {/* Ogon komety */}
-                        <div className="absolute top-0 right-0 w-[80px] h-[2px] bg-gradient-to-r from-transparent via-white/50 to-white origin-right transform -rotate-45 -translate-x-[78px] translate-y-[2px]" />
-                    </motion.div>
-                ))}
-            </AnimatePresence>
-        </div>
-    );
-};
-
 
 const CheckoutForm = ({ clientSecret, onClose }: { clientSecret: string, onClose: () => void }) => {
     const stripe = useStripe();
@@ -382,33 +174,29 @@ const TippingModal = () => {
         animate={{ scale: 1, opacity: 1 }}
         exit={{ scale: 0.9, opacity: 0 }}
         transition={{ type: "spring", damping: 25, stiffness: 300 }}
-        className="relative w-[90%] max-w-[420px] max-h-[85vh] flex flex-col rounded-[24px] shadow-[0_0_100px_-20px_rgba(234,179,8,0.6)] overflow-hidden bg-gradient-to-br from-yellow-300 via-amber-400 to-yellow-600 border-[3px] border-black pointer-events-auto"
+        // NEW METALLIC BACKGROUND: Gray/Silver Gradient with Black Border
+        className="relative w-[90%] max-w-[420px] max-h-[85vh] flex flex-col rounded-[24px] shadow-[0_0_100px_-20px_rgba(255,255,255,0.4)] overflow-hidden bg-gradient-to-br from-gray-100 via-gray-300 to-gray-500 border-[3px] border-black pointer-events-auto"
       >
+        {/* Animated Glossy Shine on Border */}
         <div className="absolute inset-0 border-[6px] border-transparent rounded-[21px] pointer-events-none overflow-hidden z-[50]">
-            <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/40 to-transparent opacity-0 animate-[shine-border_4s_infinite]" />
+            <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/50 to-transparent opacity-0 animate-[shine-border_4s_infinite]" />
         </div>
 
-        <div className="absolute inset-0 opacity-20 pointer-events-none bg-[url('https://www.transparenttextures.com/patterns/noise.png')] mix-blend-overlay z-0"></div>
-
-        {/* Dynamiczny background (gwiazdki, serca, iskry) */}
-        <DynamicBackground />
+        {/* Shine Overlay (Texture) */}
+        <div className="absolute inset-0 opacity-15 pointer-events-none bg-[url('https://www.transparenttextures.com/patterns/noise.png')] mix-blend-overlay z-0"></div>
         
-        {/* Komety (WARSTWA KOMET) */}
-        <CometsBackground />
+        {/* Top Highlight Line */}
+        <div className="absolute top-0 left-0 right-0 h-[1px] bg-white/70 z-20"></div>
 
-        {/* Fajerwerki */}
-        <FireworksBackground />
-        
-        <div className="absolute top-0 left-0 right-0 h-[1px] bg-white/60 z-20"></div>
-
+        {/* Header */}
         <div className="relative p-6 text-center shrink-0 border-b border-black/5 bg-white/10 backdrop-blur-sm z-10">
             <div className="flex items-center justify-center gap-2 mb-1">
                 <h2 className="text-xl font-black text-black tracking-wide drop-shadow-sm opacity-90 whitespace-nowrap">
                     Bramka Napiwkowa
                 </h2>
-                <Sparkles className="text-white w-4 h-4 animate-pulse" />
+                {/* Flashing Sparkles removed */}
             </div>
-            {/* Przycisk X: top-2 right-2 */}
+            {/* Close Button X: top-2 right-2 */}
             <button
                 onClick={closeTippingModal}
                 className="absolute right-2 top-2 p-2 text-black hover:text-black/70 hover:bg-black/5 rounded-full transition-colors z-50"
@@ -553,7 +341,7 @@ const TippingModal = () => {
                         <div className="text-center space-y-1">
                             <h3 className="text-lg font-bold text-black/80">Podsumowanie</h3>
                             <div className="inline-block bg-neutral-900 px-6 py-3 rounded-full mt-4 shadow-xl transform hover:scale-105 transition-transform">
-                                <span className="text-2xl font-black text-yellow-400">{formData.amount.toFixed(2)} {formData.currency}</span>
+                                <span className="text-2xl font-black text-white">{formData.amount.toFixed(2)} {formData.currency}</span>
                             </div>
                         </div>
 
@@ -613,7 +401,8 @@ const TippingModal = () => {
         <div className="pb-4 pt-2 flex items-center justify-center bg-black/5 backdrop-blur-sm z-10 border-t border-black/5">
              <div className="flex items-center gap-0 opacity-60 hover:opacity-100 transition-all duration-300">
                   <span className="text-[10px] text-black font-bold">Powered by</span>
-                  <div className="relative flex items-center">
+                  {/* Negative left margin to compensate for SVG padding and bring logos closer */}
+                  <div className="relative flex items-center -ml-3">
                       <StripeLogo />
                   </div>
              </div>
