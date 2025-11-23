@@ -253,7 +253,7 @@ const TippingModal = () => {
             />
         </div>
 
-        <div className="flex-1 overflow-y-auto px-5 pt-5 pb-0 custom-scrollbar flex flex-col relative z-10">
+        <div className="flex-1 overflow-visible px-5 pt-5 pb-0 flex flex-col relative z-10">
             <AnimatePresence mode="wait">
                 {currentStep === 0 && (
                     <motion.div
@@ -381,11 +381,8 @@ const TippingModal = () => {
                         exit={{ opacity: 0, x: -20 }}
                         className="space-y-3 flex-1 relative z-10"
                     >
-                        <div className="text-center space-y-1">
-                            <h3 className="text-lg font-bold text-black">Wybierz kwotę</h3>
-                            <p className="text-xs text-black/50 font-medium uppercase tracking-wider">
-                                Wybierz lub wpisz kwotę napiwku
-                            </p>
+                        <div className="text-center">
+                            <h3 className="text-lg font-bold text-black">Wybierz lub wpisz kwotę napiwku</h3>
                         </div>
 
                         <div className="grid grid-cols-3 gap-2">
@@ -405,7 +402,6 @@ const TippingModal = () => {
                             ))}
                         </div>
 
-                        {/* ZMIANA: Usunięto overflow-hidden z głównego kontenera i dodano relative */}
                         <div className="flex items-center bg-black/5 border border-black/10 rounded-xl shadow-inner z-20 relative" ref={dropdownRef}>
                             <input
                                 type="number"
@@ -432,7 +428,7 @@ const TippingModal = () => {
                                     </motion.div>
                                 </div>
 
-                                {/* NOWA LISTA ROZWIJANA (JASNY STYL) */}
+                                {/* NOWA LISTA ROZWIJANA (SOLIDNY SZARY STYL, ZAKRYWA TRIGGER) */}
                                 <AnimatePresence>
                                     {isCurrencyDropdownOpen && (
                                         <motion.div
@@ -442,8 +438,8 @@ const TippingModal = () => {
                                             exit={{ opacity: 0, scale: 0.95 }}
                                             transition={{ duration: 0.2, ease: "easeInOut" }}
                                             style={{ originY: 0, originX: 1 }} // Rozwijanie z prawego górnego rogu
-                                            // ZMIANA STYLU: Jasne tło, szkło, wysoki z-index
-                                            className="absolute top-0 right-0 min-w-[120px] bg-white/95 backdrop-blur-xl border border-black/10 rounded-xl shadow-[0_10px_30px_-10px_rgba(0,0,0,0.15)] overflow-hidden z-[70]"
+                                            // ZMIANA STYLU: Solidny szary kolor (bg-[#eeeeee]), brak rozmycia, wysoki z-index
+                                            className="absolute top-0 right-0 min-w-[120px] bg-[#eeeeee] border border-black/10 rounded-xl shadow-[0_10px_30px_-10px_rgba(0,0,0,0.25)] overflow-hidden z-[70]"
                                         >
                                             <div className="py-1">
                                                 {currencies.map((currency) => (
@@ -453,7 +449,7 @@ const TippingModal = () => {
                                                             setFormData({ ...formData, currency: currency as any });
                                                             setIsCurrencyDropdownOpen(false);
                                                         }}
-                                                        // ZMIANA STYLU ELEMENTÓW LISTY: Ciemny tekst, jasne tło po najechaniu
+                                                        // ZMIANA STYLU ELEMENTÓW LISTY: Ciemny tekst, ciemniejsze tło po najechaniu
                                                         className={cn(
                                                             "w-full flex items-center justify-between px-4 py-3 text-left font-bold transition-colors relative group text-black",
                                                             formData.currency === currency 
