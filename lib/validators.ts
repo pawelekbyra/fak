@@ -15,7 +15,9 @@ export const PublicUserSchema = z.object({
 export interface CommentSchemaType {
   id: string;
   text: string;
+  imageUrl?: string | null;
   createdAt: string;
+  updatedAt?: string;
   authorId: string;
   slideId: string;
   author?: {
@@ -23,6 +25,7 @@ export interface CommentSchemaType {
     username: string | null;
     displayName: string | null;
     avatar: string | null;
+    role?: string;
   };
   likedBy: string[];
   _count?: {
@@ -41,10 +44,15 @@ export const CommentSchema: z.ZodType<CommentSchemaType> = z.lazy(() =>
   z.object({
     id: z.string(),
     text: z.string(),
+    imageUrl: z.string().nullable().optional(),
     createdAt: z.union([z.string(), z.date()]).transform((val) => {
         if (val instanceof Date) return val.toISOString();
         return val;
     }),
+    updatedAt: z.union([z.string(), z.date()]).transform((val) => {
+        if (val instanceof Date) return val.toISOString();
+        return val;
+    }).optional(),
     authorId: z.string(),
     slideId: z.string(),
     author: z.object({
@@ -52,6 +60,7 @@ export const CommentSchema: z.ZodType<CommentSchemaType> = z.lazy(() =>
       username: z.string().nullable(),
       displayName: z.string().nullable(),
       avatar: z.string().nullable(),
+      role: z.string().default('user'),
     }).optional(),
     likedBy: z.array(z.string()).default([]),
     _count: z.object({

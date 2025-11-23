@@ -164,7 +164,11 @@ const TippingModal = () => {
   const suggestedAmounts = [10, 20, 50];
 
   return (
-    <div className="fixed inset-0 z-[10200] flex items-center justify-center bg-black/80 backdrop-blur-md">
+    <div className="fixed inset-0 z-[10200] flex items-center justify-center pointer-events-none">
+      <motion.div
+        className="fixed inset-0 z-[-1] pointer-events-auto"
+        onClick={closeTippingModal}
+      />
       <motion.div
         initial={{ scale: 0.9, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
@@ -173,7 +177,7 @@ const TippingModal = () => {
         // GOLDEN MODAL STYLING
         // Gradient: Rich Gold to Deep Amber
         // Text: Black for contrast
-        className="relative w-[90%] max-w-[420px] max-h-[85vh] flex flex-col rounded-[24px] shadow-[0_0_100px_-20px_rgba(234,179,8,0.6)] overflow-hidden bg-gradient-to-br from-yellow-300 via-amber-400 to-yellow-600 border border-white/20"
+        className="relative w-[90%] max-w-[420px] max-h-[85vh] flex flex-col rounded-[24px] shadow-[0_0_100px_-20px_rgba(234,179,8,0.6)] overflow-hidden bg-gradient-to-br from-yellow-300 via-amber-400 to-yellow-600 border border-white/20 pointer-events-auto"
       >
         {/* Shine Overlay (Texture) */}
         <div className="absolute inset-0 opacity-20 pointer-events-none bg-[url('https://www.transparenttextures.com/patterns/noise.png')] mix-blend-overlay"></div>
@@ -185,8 +189,8 @@ const TippingModal = () => {
         <div className="relative p-6 text-center shrink-0 border-b border-black/5 bg-white/10 backdrop-blur-sm z-10">
             <div className="flex items-center justify-center gap-2 mb-1">
                 <Crown className="text-black w-5 h-5" />
-                <h2 className="text-xl font-black text-black tracking-wide uppercase drop-shadow-sm opacity-90">
-                    Bramka napiwkowa
+                <h2 className="text-xl font-black text-black tracking-wide drop-shadow-sm opacity-90 whitespace-nowrap">
+                    Bramka Napiwkowa
                 </h2>
                 <Sparkles className="text-white w-4 h-4 animate-pulse" />
             </div>
@@ -226,7 +230,7 @@ const TippingModal = () => {
                                    <Trophy className="w-5 h-5 text-black drop-shadow-sm" />
                                 </div>
                                 {/* Text is white as requested, with shadow for readability on gold */}
-                                <p className="text-lg font-bold text-white drop-shadow-[0_1px_2px_rgba(0,0,0,0.3)] tracking-wide">Założyć konto Patrona?</p>
+                                <p className="text-lg font-bold text-black drop-shadow-[0_1px_2px_rgba(0,0,0,0.3)] tracking-wide">Założyć konto Patrona?</p>
                             </div>
                         </div>
 

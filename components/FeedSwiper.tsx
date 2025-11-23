@@ -109,10 +109,10 @@ const FeedSwiper = () => {
                       initialPageParam: '',
                     });
                   }
-                  if (currentSlide.authorId) {
+                  if (currentSlide.userId) {
                     queryClient.prefetchQuery({
-                      queryKey: ['author', currentSlide.authorId],
-                      queryFn: () => fetchAuthorProfile(currentSlide.authorId),
+                      queryKey: ['author', currentSlide.userId],
+                      queryFn: () => fetchAuthorProfile(currentSlide.userId),
                     });
                   }
 

@@ -84,7 +84,7 @@ const CommentItem: React.FC<CommentItemProps> = ({ comment, onLike, onReplySubmi
     >
       <div
         onClick={() => onAvatarClick(author.id)}
-        className="cursor-pointer flex-shrink-0"
+        className="cursor-pointer flex-shrink-0 flex flex-col items-center"
       >
           <div className="relative w-8 h-8 mt-1">
             <Image
@@ -94,9 +94,9 @@ const CommentItem: React.FC<CommentItemProps> = ({ comment, onLike, onReplySubmi
               height={32}
               className={`w-full h-full rounded-full object-cover hover:opacity-80 transition-opacity`}
             />
-             <div className="absolute -bottom-2 w-full flex justify-center">
-                <UserBadge role={author.role} className="scale-[0.5] transform" />
-            </div>
+          </div>
+          <div className="mt-1 flex justify-center">
+             <UserBadge role={author.role} className="scale-[0.7] transform origin-top" />
           </div>
       </div>
       <div className="flex-1 min-w-0">
@@ -403,19 +403,23 @@ const CommentsModal: React.FC<CommentsModalProps> = ({ isOpen, onClose, slideId,
       <div className="p-4 custom-scrollbar">
         <AnimatePresence>
           <motion.div layout className="space-y-4">
-            {comments.map((comment: CommentWithRelations) => (
-              <CommentItem
-                key={comment.id}
-                comment={comment}
-                onLike={handleLike}
-                onReplySubmit={handleReplySubmit}
-                onDelete={handleDelete}
-                onReport={handleReport}
-                onAvatarClick={openPatronProfileModal}
-                currentUserId={user?.id}
-                lang={lang}
-              />
-            ))}
+            {comments.map((c) => {
+              const comment = c as unknown as CommentWithRelations;
+              if (!comment.author) return null;
+              return (
+                <CommentItem
+                  key={comment.id}
+                  comment={comment}
+                  onLike={handleLike}
+                  onReplySubmit={handleReplySubmit}
+                  onDelete={handleDelete}
+                  onReport={handleReport}
+                  onAvatarClick={openPatronProfileModal}
+                  currentUserId={user?.id}
+                  lang={lang}
+                />
+              );
+            })}
             {hasNextPage && (
                  <div className="flex justify-center pt-2 pb-4">
                     <button
