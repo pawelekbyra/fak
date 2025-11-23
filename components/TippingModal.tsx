@@ -8,6 +8,7 @@ import { useTranslation } from '@/context/LanguageContext';
 import { useToast } from '@/context/ToastContext';
 import { useStore } from '@/store/useStore';
 import { X, ChevronDown, Check } from 'lucide-react';
+// Upewnij się, że AnimatePresence jest zaimportowane
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
 
@@ -99,7 +100,8 @@ const TippingModal = () => {
     }
   }, [isLoggedIn, user, isTippingModalOpen]);
 
-  if (!isTippingModalOpen) return null;
+  // USUNIĘTO: Wczesny return, który blokował animacje wyjścia
+  // if (!isTippingModalOpen) return null;
 
   const handleNext = async () => {
     if (currentStep === 0) {
@@ -108,6 +110,14 @@ const TippingModal = () => {
             addToast('Wybierz odbiorcę, aby kontynuować.', 'error');
             return;
         }
+
+        // --- NOWA LOGIKA: Jeśli wybrano "Nikomu", zamknij modal ---
+        if (formData.recipient === 'Nikt') {
+            closeTippingModal();
+            return;
+        }
+        // ----------------------------------------------------------
+
         if (isLoggedIn) {
             setCurrentStep(2);
         } else {
@@ -191,18 +201,26 @@ const TippingModal = () => {
   const suggestedAmounts = [10, 20, 50];
 
   return (
-    <div className="fixed inset-0 z-[10200] flex items-center justify-center pointer-events-none">
-      <motion.div
-        className="fixed inset-0 z-[-1] pointer-events-auto"
-        onClick={closeTippingModal}
-      />
-      <motion.div
-        initial={{ scale: 0.9, opacity: 0 }}
-        animate={{ scale: 1, opacity: 1 }}
-        exit={{ scale: 0.9, opacity: 0 }}
-        transition={{ type: "spring", damping: 25, stiffness: 300 }}
-        className="relative w-[90%] max-w-[420px] max-h-[85vh] flex flex-col rounded-[20px] shadow-[0_0_100px_-20px_rgba(255,255,255,0.4)] overflow-hidden bg-gradient-to-br from-gray-200 via-gray-400 to-gray-600 border-[3px] border-black pointer-events-auto"
-      >
+    // DODANO: AnimatePresence owija wszystko, aby obsłużyć animacje wyjścia
+    <AnimatePresence>
+      {isTippingModalOpen && (
+        <div className="fixed inset-0 z-[10200] flex items-center justify-center pointer-events-none">
+          {/* DODANO: Animacja dla tła (backdrop) */}
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[-1] pointer-events-auto"
+            onClick={closeTippingModal}
+          />
+          {/* Główny kontener modala - animacje wejścia/wyjścia już tu były */}
+          <motion.div
+            initial={{ scale: 0.9, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            exit={{ scale: 0.9, opacity: 0 }} // To teraz zadziała dzięki AnimatePresence
+            transition={{ type: "spring", damping: 25, stiffness: 300 }}
+            className="relative w-[90%] max-w-[420px] max-h-[85vh] flex flex-col rounded-[20px] shadow-[0_0_100px_-20px_rgba(255,255,255,0.4)] overflow-hidden bg-gradient-to-br from-gray-200 via-gray-400 to-gray-600 border-[3px] border-black pointer-events-auto"
+          >
         <div className="absolute inset-0 border-[6px] border-transparent rounded-[21px] pointer-events-none overflow-hidden z-[50]">
             <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/50 to-transparent opacity-0 animate-[shine-border_4s_infinite]" />
         </div>
@@ -512,7 +530,9 @@ const TippingModal = () => {
              </div>
         </div>
       </motion.div>
-    </div>
+        </div>
+      )}
+    </AnimatePresence>
   );
 };
 
