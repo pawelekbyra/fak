@@ -103,7 +103,7 @@ const SlideUI = ({ slide }: SlideUIProps) => {
                     alt={slide.username || 'User'} 
                     width={40} 
                     height={40} 
-                    className="rounded-full border-2 border-white" 
+                    className="rounded-full border-2 border-yellow-400 shadow-[0_0_10px_rgba(250,204,21,0.5)]"
                 />
                 <p className="font-bold text-lg">{slide.username}</p>
             </div>

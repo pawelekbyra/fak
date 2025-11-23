@@ -24,6 +24,8 @@ import { fetchComments } from '@/lib/queries';
 import * as DropdownMenu from '@radix-ui/react-dropdown-menu';
 import * as Tooltip from '@radix-ui/react-tooltip';
 
+import { fetchAuthorProfile } from '@/lib/queries';
+
 interface CommentItemProps {
   comment: CommentWithRelations;
   onLike: (id: string) => void;
@@ -31,12 +33,13 @@ interface CommentItemProps {
   onDelete: (id: string) => Promise<void>;
   onReport: (id: string) => void;
   onAvatarClick: (userId: string) => void;
+  onPrefetchUser: (userId: string) => void;
   currentUserId?: string;
   isReply?: boolean;
   lang: string;
 }
 
-const CommentItem: React.FC<CommentItemProps> = ({ comment, onLike, onReplySubmit, onDelete, onReport, onAvatarClick, currentUserId, isReply = false, lang }) => {
+const CommentItem: React.FC<CommentItemProps> = ({ comment, onLike, onReplySubmit, onDelete, onReport, onAvatarClick, onPrefetchUser, currentUserId, isReply = false, lang }) => {
   const { t } = useTranslation();
   const [isReplying, setIsReplying] = useState(false);
   const [replyText, setReplyText] = useState('');
@@ -92,7 +95,7 @@ const CommentItem: React.FC<CommentItemProps> = ({ comment, onLike, onReplySubmi
               alt={t('userAvatar', { user: author.displayName || 'User' })}
               width={32}
               height={32}
-              className={`w-full h-full rounded-full object-cover hover:opacity-80 transition-opacity`}
+              className={`w-full h-full rounded-full object-cover hover:opacity-80 transition-opacity border border-yellow-400 shadow-[0_0_8px_rgba(250,204,21,0.4)]`}
             />
           </div>
           <div className="mt-1 flex justify-center">
@@ -192,6 +195,7 @@ const CommentItem: React.FC<CommentItemProps> = ({ comment, onLike, onReplySubmi
               onDelete={onDelete}
               onReport={onReport}
               onAvatarClick={onAvatarClick}
+                onPrefetchUser={onPrefetchUser}
               currentUserId={currentUserId}
               isReply={true}
               lang={lang}
@@ -356,6 +360,14 @@ const CommentsModal: React.FC<CommentsModalProps> = ({ isOpen, onClose, slideId,
   const handleReport = (commentId: string) => {
     console.log('Reporting comment:', commentId);
     addToast(t('reportSubmitted') || 'Report submitted', 'success');
+  };
+
+  const handlePrefetchUser = (userId: string) => {
+      queryClient.prefetchQuery({
+          queryKey: ['author', userId],
+          queryFn: () => fetchAuthorProfile(userId),
+          staleTime: 1000 * 60 * 5, // 5 minutes
+      });
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
