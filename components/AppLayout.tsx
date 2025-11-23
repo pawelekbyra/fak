@@ -2,7 +2,6 @@
 
 import React, { useEffect } from 'react';
 import Preloader from './Preloader';
-import { useTranslation } from '@/context/LanguageContext';
 import TopBar from './TopBar';
 import { useStore } from '@/store/useStore';
 import { shallow } from 'zustand/shallow';
@@ -53,9 +52,20 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   }, []);
 
   return (
-    <div className="flex h-full flex-col relative md:w-[calc(100vh*9/16)] md:mx-auto md:border md:border-zinc-800">
+    <div
+        id="app-layout"
+        className="
+            relative flex flex-col
+            w-full h-[100dvh]
+            md:w-[400px] md:h-[85vh] md:max-h-[900px]
+            md:rounded-[30px] md:border-[8px] md:border-gray-900 md:shadow-2xl
+            md:overflow-hidden md:bg-black
+            bg-black
+        "
+    >
+      <Preloader />
       <TopBar />
-      <div className="flex-1 overflow-auto z-10 custom-scrollbar">
+      <div className="flex-1 overflow-auto z-10 custom-scrollbar relative">
         {children}
       </div>
       <AnimatePresence mode="wait">

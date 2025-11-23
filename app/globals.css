@@ -65,15 +65,30 @@
     width: 100%;
     overflow: hidden;
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-    @apply bg-background text-foreground;
+    @apply text-foreground;
     overscroll-behavior-y: contain; /* Prevent bounce scroll */
     user-select: none;
     -webkit-user-select: none;
   }
-body {
-    @apply bg-[#000000] text-foreground;
-    /* Solid background for desktop emulator feel */
-}
+
+  /*
+    Logic for Body Background:
+    - Default (Mobile): Black (#000000)
+    - Desktop (md:): Light Gray (#f3f4f6) to contrast with the emulator frame
+  */
+  body {
+    background-color: #000000;
+  }
+
+  @media (min-width: 768px) {
+    body {
+      background-color: #f3f4f6;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+  }
+
   *::-webkit-scrollbar {
     display: none;
   }
@@ -122,6 +137,7 @@ body {
   }
 }
 
+/* Optional: Additional safeguard for landscape on mobile phones */
 @media (orientation: landscape) and (max-height: 500px) {
   body {
     max-width: 800px;

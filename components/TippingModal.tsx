@@ -209,12 +209,12 @@ const TippingModal = () => {
   return (
     <AnimatePresence>
       {isTippingModalOpen && (
-        <div className="fixed inset-0 z-[10200] flex items-center justify-center pointer-events-none md:w-[calc(100vh*9/16)] md:left-1/2 md:-translate-x-1/2">
+        <div className="absolute inset-0 z-[10200] flex items-center justify-center pointer-events-none">
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[-1] pointer-events-auto"
+            className="absolute inset-0 z-[-1] pointer-events-auto"
             onClick={closeTippingModal}
           />
           <motion.div

@@ -23,11 +23,12 @@ import HtmlContent from './HtmlContent';
 
 interface SlideUIProps {
     slide: SlideDTO;
+    isLocked?: boolean;
 }
 
 import { usePWAStatus } from '@/hooks/usePWAStatus';
 
-const SlideUI = ({ slide }: SlideUIProps) => {
+const SlideUI = ({ slide, isLocked = false }: SlideUIProps) => {
     const {
         togglePlay,
         isPlaying,
@@ -46,6 +47,11 @@ const SlideUI = ({ slide }: SlideUIProps) => {
     const iconTimer = useRef<NodeJS.Timeout | null>(null);
 
     const handleContainerClick = (e: React.MouseEvent<HTMLDivElement>) => {
+        // If locked, we do NOT want to toggle play. We want clicks to go through to overlay (or just be ignored here)
+        // But since this container has pointer-events-none when locked (see return), this might not be reachable.
+        // Keeping logic just in case.
+        if (isLocked) return;
+
         if (e.target === e.currentTarget) {
             togglePlay();
             setShowPlaybackIcon(true);
@@ -70,7 +76,10 @@ const SlideUI = ({ slide }: SlideUIProps) => {
 
     return (
       <div
-        className="absolute inset-0 z-10 p-4 flex flex-col justify-end text-white"
+        className={cn(
+            "absolute inset-0 z-20 p-4 flex flex-col justify-end text-white",
+            isLocked && "pointer-events-none"
+        )}
         onClick={handleContainerClick}
       >
         {/* Top gradient */}
@@ -79,7 +88,7 @@ const SlideUI = ({ slide }: SlideUIProps) => {
         <div className="absolute inset-x-0 bottom-0 h-48 bg-gradient-to-t from-black/50 to-transparent pointer-events-none" />
 
         <AnimatePresence>
-            {showPlaybackIcon && (
+            {!isLocked && showPlaybackIcon && (
                 <motion.div
                     className="absolute inset-0 flex items-center justify-center pointer-events-none"
                     initial={{ opacity: 0, scale: 1.5 }}
@@ -124,7 +133,8 @@ const SlideUI = ({ slide }: SlideUIProps) => {
             authorAvatar={slide.avatar || DEFAULT_AVATAR_URL}
         />
 
-        {isVideoSlide && (
+        {/* Hide video controls if locked? Usually yes. */}
+        {isVideoSlide && !isLocked && (
             <div className="pointer-events-auto">
                 <VideoControls
                     isPlaying={isPlaying}
@@ -217,12 +227,12 @@ const Slide = memo<SlideProps>(({ slide, priorityLoad = false }) => {
                 {renderContent()}
             </div>
 
-            {/* Overlays (Rendered on top without blur) */}
+            {/* Overlays (Rendered on top without blur) - z-10 */}
             {isLockedSecret && <SecretOverlay />}
             {isLockedPWA && <PwaOverlay />}
 
-            {/* UI (Only if not locked) */}
-            {!isLocked && <SlideUI slide={slide} />}
+            {/* UI (Always rendered, but pointer-events managed) - z-20 */}
+            <SlideUI slide={slide} isLocked={isLocked} />
         </div>
     );
 });

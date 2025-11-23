@@ -28,7 +28,7 @@ export function PatronProfileModal({ patronId, onClose }: PatronProfileModalProp
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[10100] flex items-center justify-center bg-black/60 backdrop-blur-sm md:w-[calc(100vh*9/16)] md:left-1/2 md:-translate-x-1/2"
+            className="absolute inset-0 z-[10100] flex items-center justify-center bg-black/60 backdrop-blur-sm"
             onClick={onClose}
         >
             <motion.div
