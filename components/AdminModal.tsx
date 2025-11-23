@@ -8,6 +8,7 @@ import { useToast } from '@/context/ToastContext';
 import { useStore } from '@/store/useStore';
 import { createUserByAdmin } from '@/lib/admin-actions';
 import { cn } from '@/lib/utils';
+import UserManagementTable from './UserManagementTable';
 
 export default function AdminModal() {
     const { isAdminModalOpen, closeAdminModal } = useStore();
@@ -128,9 +129,10 @@ export default function AdminModal() {
                                 </form>
                             </div>
 
-                            {/* Placeholder for list of users */}
-                            <div className="text-center py-10 text-white/30 border border-dashed border-white/10 rounded-xl">
-                                Lista użytkowników (Wkrótce)
+                            {/* User Management List */}
+                            <div className="pt-4 border-t border-white/10">
+                                <h3 className="text-lg font-semibold text-white mb-4">Zarządzaj Użytkownikami</h3>
+                                <UserManagementTable />
                             </div>
                         </div>
                     )}
