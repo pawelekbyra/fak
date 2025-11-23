@@ -222,13 +222,13 @@ const TippingModal = () => {
             animate={{ scale: 1, opacity: 1 }}
             exit={{ scale: 0.9, opacity: 0 }}
             transition={{ type: "spring", damping: 25, stiffness: 300 }}
-            className="relative w-[90%] max-w-[420px] max-h-[85vh] flex flex-col rounded-[20px] shadow-[0_0_100px_-20px_rgba(255,255,255,0.4)] overflow-hidden bg-gradient-to-br from-gray-200 via-gray-400 to-gray-600 border-[3px] border-black pointer-events-auto"
+            className="relative w-[90%] max-w-[420px] max-h-[85vh] flex flex-col rounded-[20px] shadow-[0_0_100px_-20px_rgba(255,255,255,0.4)] overflow-hidden bg-neutral-900 border-[3px] border-black pointer-events-auto"
           >
-        <div className="absolute inset-0 border-[6px] border-transparent rounded-[21px] pointer-events-none overflow-hidden z-[50]">
-            <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/50 to-transparent opacity-0 animate-[shine-border_4s_infinite]" />
-        </div>
-
-        <div className="absolute inset-0 opacity-15 pointer-events-none bg-[url('https://www.transparenttextures.com/patterns/noise.png')] mix-blend-overlay z-0"></div>
+        {/* Metaliczne tło górne - metal1 */}
+        <div
+            className="absolute inset-0 z-0 bg-cover bg-center bg-no-repeat"
+            style={{ backgroundImage: "url('/metal1.png')" }}
+        />
         
         <div className="absolute top-0 left-0 right-0 h-[1px] bg-white/70 z-20"></div>
 
@@ -537,7 +537,7 @@ const TippingModal = () => {
                 {currentStep > 0 && (
                     <button
                         onClick={handleBack}
-                        className="px-4 py-3 rounded-lg font-bold text-black/50 bg-black/5 border border-black/5 hover:bg-black/10 hover:text-black transition-all text-sm"
+                        className="px-4 py-3 rounded-lg font-bold text-black/50 bg-black/5 border border-black/5 hover:bg-black/10 hover:text-black transition-all text-sm backdrop-blur-sm"
                     >
                         Wstecz
                     </button>
@@ -557,8 +557,12 @@ const TippingModal = () => {
             </div>
         )}
 
-        <div className="pb-3 pt-2 flex items-center justify-center bg-black/5 backdrop-blur-sm z-10 border-t border-black/5">
-             <div className="flex items-center gap-[3px] opacity-40 hover:opacity-80 transition-all duration-300">
+        {/* Dolna część z metal2 */}
+        <div
+            className="pb-3 pt-2 flex items-center justify-center z-10 border-t border-black/10 bg-cover bg-center bg-no-repeat relative"
+            style={{ backgroundImage: "url('/metal2.png')" }}
+        >
+             <div className="flex items-center gap-[3px] opacity-60 hover:opacity-90 transition-all duration-300 mix-blend-multiply">
                   <span className="text-[9px] text-black font-bold uppercase tracking-widest">Powered by</span>
                   <div className="relative flex items-center -ml-3 -mt-px -left-px">
                       <StripeLogo />
