@@ -212,8 +212,10 @@ const TippingModal = () => {
         animate={{ scale: 1, opacity: 1 }}
         exit={{ scale: 0.9, opacity: 0 }}
         transition={{ type: "spring", damping: 25, stiffness: 300 }}
-        // GOLDEN MODAL STYLING with Black Border Effect
-        className="relative w-[90%] max-w-[420px] max-h-[85vh] flex flex-col rounded-[24px] shadow-[0_0_40px_rgba(0,0,0,0.5)] overflow-hidden bg-gradient-to-br from-yellow-300 via-amber-400 to-yellow-600 border-[6px] border-black pointer-events-auto ring-1 ring-white/20"
+        // GOLDEN MODAL STYLING
+        // Gradient: Rich Gold to Deep Amber
+        // Text: Black for contrast
+        className="relative w-[90%] max-w-[420px] max-h-[85vh] flex flex-col rounded-[24px] shadow-[0_0_100px_-20px_rgba(234,179,8,0.6)] overflow-hidden bg-gradient-to-br from-yellow-300 via-amber-400 to-yellow-600 border border-white/20 pointer-events-auto"
       >
         {/* Animated Glossy Shine on Border (Pseudo-element simulation) */}
         <div className="absolute inset-0 border-[6px] border-transparent rounded-[24px] pointer-events-none overflow-hidden z-[50]">
@@ -231,7 +233,8 @@ const TippingModal = () => {
         {/* Header */}
         <div className="relative p-6 text-center shrink-0 border-b border-black/5 bg-white/10 backdrop-blur-sm z-10">
             <div className="flex items-center justify-center gap-2 mb-1">
-                <h2 className="text-2xl font-serif italic font-bold text-black tracking-wide drop-shadow-sm opacity-90 whitespace-nowrap">
+                <Crown className="text-black w-5 h-5" />
+                <h2 className="text-xl font-black text-black tracking-wide drop-shadow-sm opacity-90 whitespace-nowrap">
                     Bramka Napiwkowa
                 </h2>
                 <Sparkles className="text-white w-4 h-4 animate-pulse" />
@@ -267,13 +270,12 @@ const TippingModal = () => {
                         className="space-y-8 flex-1 pt-2"
                     >
                         <div className="text-left space-y-2">
-                            <div className="flex items-center justify-start gap-2 pl-1">
-                                {/* Text is black */}
-                                <p className="text-lg font-bold text-black drop-shadow-[0_1px_2px_rgba(0,0,0,0.3)] tracking-wide">
-                                    Założyć konto Patrona?
-                                </p>
-                                {/* Trophy on the right, no circle */}
-                                <Trophy className="w-5 h-5 text-black drop-shadow-sm" />
+                            <div className="flex items-center justify-start gap-3 pl-1">
+                                <div className="p-2 bg-black/10 rounded-full border border-black/5 shadow-inner">
+                                   <Trophy className="w-5 h-5 text-black drop-shadow-sm" />
+                                </div>
+                                {/* Text is white as requested, with shadow for readability on gold */}
+                                <p className="text-lg font-bold text-black drop-shadow-[0_1px_2px_rgba(0,0,0,0.3)] tracking-wide">Założyć konto Patrona?</p>
                             </div>
                         </div>
 

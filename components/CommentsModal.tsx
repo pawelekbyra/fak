@@ -87,7 +87,6 @@ const CommentItem: React.FC<CommentItemProps> = ({ comment, onLike, onReplySubmi
     >
       <div
         onClick={() => onAvatarClick(author.id)}
-        onMouseEnter={() => onPrefetchUser(author.id)}
         className="cursor-pointer flex-shrink-0 flex flex-col items-center"
       >
           <div className="relative w-8 h-8 mt-1">
@@ -428,7 +427,6 @@ const CommentsModal: React.FC<CommentsModalProps> = ({ isOpen, onClose, slideId,
                   onDelete={handleDelete}
                   onReport={handleReport}
                   onAvatarClick={openPatronProfileModal}
-                  onPrefetchUser={handlePrefetchUser}
                   currentUserId={user?.id}
                   lang={lang}
                 />
