@@ -68,7 +68,7 @@ export function AuthorProfileModal({ authorId, onClose }: AuthorProfileModalProp
                                       alt={profile.username}
                                       width={80}
                                       height={80}
-                                      className="rounded-full border-2 border-pink-500 object-cover"
+                                      className="rounded-full border-2 border-yellow-400 shadow-[0_0_15px_rgba(250,204,21,0.5)] object-cover"
                                     />
                                     <div>
                                         <h3 className="text-2xl font-bold">{profile.username}</h3>

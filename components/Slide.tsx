@@ -16,8 +16,7 @@ import SecretOverlay from './SecretOverlay';
 import { DEFAULT_AVATAR_URL } from '@/lib/constants';
 import LocalVideoPlayer from './LocalVideoPlayer';
 import { useQueryClient } from '@tanstack/react-query';
-import { CommentSchema } from '@/lib/validators';
-import { z } from 'zod';
+import { fetchComments, fetchAuthorProfile } from '@/lib/queries';
 
 import HtmlContent from './HtmlContent';
 
@@ -104,7 +103,7 @@ const SlideUI = ({ slide }: SlideUIProps) => {
                     alt={slide.username || 'User'} 
                     width={40} 
                     height={40} 
-                    className="rounded-full border-2 border-white" 
+                    className="rounded-full border-2 border-yellow-400 shadow-[0_0_10px_rgba(250,204,21,0.5)]"
                 />
                 <p className="font-bold text-lg">{slide.username}</p>
             </div>
@@ -151,38 +150,35 @@ const Slide = memo<SlideProps>(({ slide, priorityLoad = false }) => {
     const showSecretOverlay = slide.access === 'secret' && !isLoggedIn;
     const queryClient = useQueryClient();
 
-    // Prefetch comments logic (Safe implementation)
+    // Prefetch comments and author profile logic
     useEffect(() => {
         if (isActive && slide?.id) {
+            // Prefetch Comments (Infinite Query to match CommentsModal)
             try {
-                queryClient.prefetchQuery({
+                queryClient.prefetchInfiniteQuery({
                     queryKey: ['comments', slide.id],
-                    queryFn: async () => {
-                          try {
-                             const res = await fetch(`/api/comments?slideId=${slide.id}&limit=50`);
-                             if (!res.ok) return []; 
-                             const data = await res.json();
-                             if (!data.success || !data.comments) return [];
-
-                             const parsedComments = z.array(CommentSchema).parse(data.comments);
-                             return parsedComments.map((c: any) => ({
-                               ...c,
-                               author: c.author || c.user,
-                               replies: c.replies || [],
-                               likedBy: c.likedBy || []
-                             })) as CommentWithRelations[];
-                          } catch (e) {
-                             console.error("Prefetch error:", e);
-                             return [];
-                          }
-                    },
+                    queryFn: ({ pageParam }) => fetchComments({ pageParam, slideId: slide.id }),
+                    initialPageParam: '',
                     staleTime: 1000 * 60 * 5,
                 });
             } catch (err) {
-                console.error("Prefetch setup error:", err);
+                console.error("Prefetch comments error:", err);
+            }
+
+            // Prefetch Author Profile
+            if (slide.userId) {
+                try {
+                    queryClient.prefetchQuery({
+                        queryKey: ['author', slide.userId],
+                        queryFn: () => fetchAuthorProfile(slide.userId),
+                        staleTime: 1000 * 60 * 5,
+                    });
+                } catch (err) {
+                    console.error("Prefetch author error:", err);
+                }
             }
         }
-    }, [isActive, slide?.id, queryClient]);
+    }, [isActive, slide?.id, slide?.userId, queryClient]);
 
     const renderContent = () => {
         switch (slide.type) {

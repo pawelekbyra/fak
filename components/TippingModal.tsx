@@ -7,12 +7,50 @@ import { useUser } from '@/context/UserContext';
 import { useTranslation } from '@/context/LanguageContext';
 import { useToast } from '@/context/ToastContext';
 import { useStore } from '@/store/useStore';
-import { X, ChevronRight, Crown, Sparkles, Trophy } from 'lucide-react';
+import { X, ChevronRight, Sparkles, Trophy } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
-import Image from 'next/image';
 
 const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PK!);
+
+const StripeLogo = () => (
+    <svg xmlns="http://www.w3.org/2000/svg" width="60" height="25" viewBox="0 0 120 60" fillRule="evenodd" fill="#000000">
+        <path d="M101.547 30.94c0-5.885-2.85-10.53-8.3-10.53-5.47 0-8.782 4.644-8.782 10.483 0 6.92 3.908 10.414 9.517 10.414 2.736 0 4.805-.62 6.368-1.494v-4.598c-1.563.782-3.356 1.264-5.632 1.264-2.23 0-4.207-.782-4.46-3.494h11.24c0-.3.046-1.494.046-2.046zM90.2 28.757c0-2.598 1.586-3.678 3.035-3.678 1.402 0 2.897 1.08 2.897 3.678zm-14.597-8.345c-2.253 0-3.7 1.057-4.506 1.793l-.3-1.425H65.73v26.805l5.747-1.218.023-6.506c.828.598 2.046 1.448 4.07 1.448 4.115 0 7.862-3.3 7.862-10.598-.023-6.667-3.816-10.3-7.84-10.3zm-1.38 15.84c-1.356 0-2.16-.483-2.713-1.08l-.023-8.53c.598-.667 1.425-1.126 2.736-1.126 2.092 0 3.54 2.345 3.54 5.356 0 3.08-1.425 5.38-3.54 5.38zm-16.4-17.196l5.77-1.24V13.15l-5.77 1.218zm0 1.747h5.77v20.115h-5.77zm-6.185 1.7l-.368-1.7h-4.966V40.92h5.747V27.286c1.356-1.77 3.655-1.448 4.368-1.195v-5.287c-.736-.276-3.425-.782-4.782 1.7zm-11.494-6.7L34.535 17l-.023 18.414c0 3.402 2.552 5.908 5.954 5.908 1.885 0 3.264-.345 4.023-.76v-4.667c-.736.3-4.368 1.356-4.368-2.046V25.7h4.368v-4.897h-4.37zm-15.54 10.828c0-.897.736-1.24 1.954-1.24a12.85 12.85 0 0 1 5.7 1.47V21.47c-1.908-.76-3.793-1.057-5.7-1.057-4.667 0-7.77 2.437-7.77 6.506 0 6.345 8.736 5.333 8.736 8.07 0 1.057-.92 1.402-2.207 1.402-1.908 0-4.345-.782-6.276-1.84v5.47c2.138.92 4.3 1.3 6.276 1.3 4.782 0 8.07-2.368 8.07-6.483-.023-6.85-8.782-5.632-8.782-8.207z"/>
+    </svg>
+);
+
+// Starry Background Component
+const StarryBackground = () => {
+    // Generate static positions for stars to avoid hydration mismatch
+    // Using a deterministic way or simple CSS animations would be safer,
+    // but for "random" look we can use a fixed set of positions.
+    const stars = [
+        { top: '10%', left: '20%', delay: 0 },
+        { top: '30%', left: '80%', delay: 1 },
+        { top: '60%', left: '10%', delay: 2 },
+        { top: '80%', left: '70%', delay: 0.5 },
+        { top: '15%', left: '60%', delay: 1.5 },
+        { top: '40%', left: '30%', delay: 2.5 },
+        { top: '75%', left: '40%', delay: 3 },
+        { top: '20%', left: '90%', delay: 1.2 },
+    ];
+
+    return (
+        <div className="absolute inset-0 z-0 pointer-events-none overflow-hidden">
+            {stars.map((star, i) => (
+                <motion.div
+                    key={i}
+                    className="absolute text-white/40"
+                    style={{ top: star.top, left: star.left }}
+                    animate={{ opacity: [0.2, 1, 0.2], scale: [0.8, 1.2, 0.8] }}
+                    transition={{ duration: 3, repeat: Infinity, delay: star.delay, ease: "easeInOut" }}
+                >
+                    <Sparkles size={12} />
+                </motion.div>
+            ))}
+        </div>
+    );
+};
 
 const CheckoutForm = ({ clientSecret, onClose }: { clientSecret: string, onClose: () => void }) => {
     const stripe = useStripe();
@@ -164,19 +202,28 @@ const TippingModal = () => {
   const suggestedAmounts = [10, 20, 50];
 
   return (
-    <div className="fixed inset-0 z-[10200] flex items-center justify-center bg-black/80 backdrop-blur-md">
+    <div className="fixed inset-0 z-[10200] flex items-center justify-center pointer-events-none">
+      <motion.div
+        className="fixed inset-0 z-[-1] pointer-events-auto"
+        onClick={closeTippingModal}
+      />
       <motion.div
         initial={{ scale: 0.9, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
         exit={{ scale: 0.9, opacity: 0 }}
         transition={{ type: "spring", damping: 25, stiffness: 300 }}
-        // GOLDEN MODAL STYLING
-        // Gradient: Rich Gold to Deep Amber
-        // Text: Black for contrast
-        className="relative w-[90%] max-w-[420px] max-h-[85vh] flex flex-col rounded-[24px] shadow-[0_0_100px_-20px_rgba(234,179,8,0.6)] overflow-hidden bg-gradient-to-br from-yellow-300 via-amber-400 to-yellow-600 border border-white/20"
+        // GOLDEN MODAL STYLING with Black Border Effect
+        className="relative w-[90%] max-w-[420px] max-h-[85vh] flex flex-col rounded-[24px] shadow-[0_0_40px_rgba(0,0,0,0.5)] overflow-hidden bg-gradient-to-br from-yellow-300 via-amber-400 to-yellow-600 border-[6px] border-black pointer-events-auto ring-1 ring-white/20"
       >
+        {/* Animated Glossy Shine on Border (Pseudo-element simulation) */}
+        <div className="absolute inset-0 border-[6px] border-transparent rounded-[24px] pointer-events-none overflow-hidden z-[50]">
+            <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/20 to-transparent opacity-0 animate-[shine-border_4s_infinite]" />
+        </div>
+
         {/* Shine Overlay (Texture) */}
-        <div className="absolute inset-0 opacity-20 pointer-events-none bg-[url('https://www.transparenttextures.com/patterns/noise.png')] mix-blend-overlay"></div>
+        <div className="absolute inset-0 opacity-20 pointer-events-none bg-[url('https://www.transparenttextures.com/patterns/noise.png')] mix-blend-overlay z-0"></div>
+
+        <StarryBackground />
         
         {/* Top Highlight Line */}
         <div className="absolute top-0 left-0 right-0 h-[1px] bg-white/60 z-20"></div>
@@ -184,9 +231,8 @@ const TippingModal = () => {
         {/* Header */}
         <div className="relative p-6 text-center shrink-0 border-b border-black/5 bg-white/10 backdrop-blur-sm z-10">
             <div className="flex items-center justify-center gap-2 mb-1">
-                <Crown className="text-black w-5 h-5" />
-                <h2 className="text-xl font-black text-black tracking-wide uppercase drop-shadow-sm opacity-90">
-                    Bramka napiwkowa
+                <h2 className="text-2xl font-serif italic font-bold text-black tracking-wide drop-shadow-sm opacity-90 whitespace-nowrap">
+                    Bramka Napiwkowa
                 </h2>
                 <Sparkles className="text-white w-4 h-4 animate-pulse" />
             </div>
@@ -221,12 +267,13 @@ const TippingModal = () => {
                         className="space-y-8 flex-1 pt-2"
                     >
                         <div className="text-left space-y-2">
-                            <div className="flex items-center justify-start gap-3 pl-1">
-                                <div className="p-2 bg-black/10 rounded-full border border-black/5 shadow-inner">
-                                   <Trophy className="w-5 h-5 text-black drop-shadow-sm" />
-                                </div>
-                                {/* Text is white as requested, with shadow for readability on gold */}
-                                <p className="text-lg font-bold text-white drop-shadow-[0_1px_2px_rgba(0,0,0,0.3)] tracking-wide">Założyć konto Patrona?</p>
+                            <div className="flex items-center justify-start gap-2 pl-1">
+                                {/* Text is black */}
+                                <p className="text-lg font-bold text-black drop-shadow-[0_1px_2px_rgba(0,0,0,0.3)] tracking-wide">
+                                    Założyć konto Patrona?
+                                </p>
+                                {/* Trophy on the right, no circle */}
+                                <Trophy className="w-5 h-5 text-black drop-shadow-sm" />
                             </div>
                         </div>
 
@@ -406,16 +453,10 @@ const TippingModal = () => {
 
         {/* Footer Stripe */}
         <div className="pb-4 pt-2 flex items-center justify-center bg-black/5 backdrop-blur-sm z-10 border-t border-black/5">
-             <div className="flex items-center gap-2 opacity-40 hover:opacity-80 transition-all duration-300 mix-blend-multiply">
+             <div className="flex items-center gap-2 opacity-60 hover:opacity-100 transition-all duration-300">
                   <span className="text-[10px] text-black font-bold">Powered by</span>
-                  <div className="relative h-4 w-10">
-                      <Image
-                        src="/stripe.png"
-                        alt="Stripe"
-                        layout="fill"
-                        objectFit="contain"
-                        className="invert" // Invert stripe logo to be black on gold
-                      />
+                  <div className="relative flex items-center">
+                      <StripeLogo />
                   </div>
              </div>
         </div>

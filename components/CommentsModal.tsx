@@ -24,6 +24,8 @@ import { fetchComments } from '@/lib/queries';
 import * as DropdownMenu from '@radix-ui/react-dropdown-menu';
 import * as Tooltip from '@radix-ui/react-tooltip';
 
+import { fetchAuthorProfile } from '@/lib/queries';
+
 interface CommentItemProps {
   comment: CommentWithRelations;
   onLike: (id: string) => void;
@@ -31,12 +33,13 @@ interface CommentItemProps {
   onDelete: (id: string) => Promise<void>;
   onReport: (id: string) => void;
   onAvatarClick: (userId: string) => void;
+  onPrefetchUser: (userId: string) => void;
   currentUserId?: string;
   isReply?: boolean;
   lang: string;
 }
 
-const CommentItem: React.FC<CommentItemProps> = ({ comment, onLike, onReplySubmit, onDelete, onReport, onAvatarClick, currentUserId, isReply = false, lang }) => {
+const CommentItem: React.FC<CommentItemProps> = ({ comment, onLike, onReplySubmit, onDelete, onReport, onAvatarClick, onPrefetchUser, currentUserId, isReply = false, lang }) => {
   const { t } = useTranslation();
   const [isReplying, setIsReplying] = useState(false);
   const [replyText, setReplyText] = useState('');
@@ -84,7 +87,8 @@ const CommentItem: React.FC<CommentItemProps> = ({ comment, onLike, onReplySubmi
     >
       <div
         onClick={() => onAvatarClick(author.id)}
-        className="cursor-pointer flex-shrink-0"
+        onMouseEnter={() => onPrefetchUser(author.id)}
+        className="cursor-pointer flex-shrink-0 flex flex-col items-center"
       >
           <div className="relative w-8 h-8 mt-1">
             <Image
@@ -92,11 +96,11 @@ const CommentItem: React.FC<CommentItemProps> = ({ comment, onLike, onReplySubmi
               alt={t('userAvatar', { user: author.displayName || 'User' })}
               width={32}
               height={32}
-              className={`w-full h-full rounded-full object-cover hover:opacity-80 transition-opacity`}
+              className={`w-full h-full rounded-full object-cover hover:opacity-80 transition-opacity border border-yellow-400 shadow-[0_0_8px_rgba(250,204,21,0.4)]`}
             />
-             <div className="absolute -bottom-2 w-full flex justify-center">
-                <UserBadge role={author.role} className="scale-[0.5] transform" />
-            </div>
+          </div>
+          <div className="mt-1 flex justify-center">
+             <UserBadge role={author.role} className="scale-[0.7] transform origin-top" />
           </div>
       </div>
       <div className="flex-1 min-w-0">
@@ -192,6 +196,7 @@ const CommentItem: React.FC<CommentItemProps> = ({ comment, onLike, onReplySubmi
               onDelete={onDelete}
               onReport={onReport}
               onAvatarClick={onAvatarClick}
+                onPrefetchUser={onPrefetchUser}
               currentUserId={currentUserId}
               isReply={true}
               lang={lang}
@@ -358,6 +363,14 @@ const CommentsModal: React.FC<CommentsModalProps> = ({ isOpen, onClose, slideId,
     addToast(t('reportSubmitted') || 'Report submitted', 'success');
   };
 
+  const handlePrefetchUser = (userId: string) => {
+      queryClient.prefetchQuery({
+          queryKey: ['author', userId],
+          queryFn: () => fetchAuthorProfile(userId),
+          staleTime: 1000 * 60 * 5, // 5 minutes
+      });
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const trimmedComment = newComment.trim();
@@ -403,19 +416,24 @@ const CommentsModal: React.FC<CommentsModalProps> = ({ isOpen, onClose, slideId,
       <div className="p-4 custom-scrollbar">
         <AnimatePresence>
           <motion.div layout className="space-y-4">
-            {comments.map((comment: CommentWithRelations) => (
-              <CommentItem
-                key={comment.id}
-                comment={comment}
-                onLike={handleLike}
-                onReplySubmit={handleReplySubmit}
-                onDelete={handleDelete}
-                onReport={handleReport}
-                onAvatarClick={openPatronProfileModal}
-                currentUserId={user?.id}
-                lang={lang}
-              />
-            ))}
+            {comments.map((c) => {
+              const comment = c as unknown as CommentWithRelations;
+              if (!comment.author) return null;
+              return (
+                <CommentItem
+                  key={comment.id}
+                  comment={comment}
+                  onLike={handleLike}
+                  onReplySubmit={handleReplySubmit}
+                  onDelete={handleDelete}
+                  onReport={handleReport}
+                  onAvatarClick={openPatronProfileModal}
+                  onPrefetchUser={handlePrefetchUser}
+                  currentUserId={user?.id}
+                  lang={lang}
+                />
+              );
+            })}
             {hasNextPage && (
                  <div className="flex justify-center pt-2 pb-4">
                     <button
