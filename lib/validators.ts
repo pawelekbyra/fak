@@ -90,7 +90,7 @@ export const BaseSlideSchema = z.object({
   isLiked: z.boolean().default(false),
   initialComments: z.number().default(0),
 
-  access: z.enum(['public', 'secret']).default('public'),
+  accessLevel: z.enum(['PUBLIC', 'SECRET_PATRON', 'SECRET_PWA']).default('PUBLIC'),
 });
 
 export const HtmlSlideSchema = BaseSlideSchema.extend({

@@ -99,6 +99,7 @@ model Slide {
   commentCount Int       @default(0)
 
   public       Boolean   @default(false)
+  accessLevel  AccessLevel @default(PUBLIC)
   createdAt    DateTime  @default(now())
   updatedAt    DateTime  @updatedAt
   comments     Comment[]
@@ -180,4 +181,10 @@ model PushSubscription {
   is_pwa_installed Boolean @default(false)
 
   @@map("push_subscriptions")
+}
+
+enum AccessLevel {
+  PUBLIC
+  SECRET_PATRON
+  SECRET_PWA
 }

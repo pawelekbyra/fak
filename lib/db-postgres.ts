@@ -103,6 +103,7 @@ export async function createTables() {
         "slideType" VARCHAR(50) NOT NULL,
         title VARCHAR(255),
         content TEXT,
+        "accessLevel" VARCHAR(50) DEFAULT 'PUBLIC',
         "createdAt" TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
         UNIQUE(x, y)
     );
@@ -258,19 +259,19 @@ export async function pingDb() {
 export async function createSlide(slideData: any): Promise<any> {
     const sql = getDb();
     const id = 'slide_' + Math.random().toString(36).substring(2, 15);
-    const { userId, username, x, y, type, data, access, avatar } = slideData;
+    const { userId, username, x, y, type, data, accessLevel, avatar } = slideData;
 
     const title = data?.title || (type === 'html' ? 'HTML Slide' : 'Video Slide');
-    // Store complex objects in content, including access and avatar which aren't columns in the table
+    // Store complex objects in content, including avatar which isn't a column in the table
+    // We move accessLevel to a proper column, but keep access in content for legacy if needed, though DTO uses accessLevel now
     const content = JSON.stringify({
-        access,
         data,
         avatar
     });
 
     await sql`
-        INSERT INTO slides (id, "userId", username, x, y, "slideType", title, content)
-        VALUES (${id}, ${userId}, ${username}, ${x}, ${y}, ${type}, ${title}, ${content});
+        INSERT INTO slides (id, "userId", username, x, y, "slideType", title, content, "accessLevel")
+        VALUES (${id}, ${userId}, ${username}, ${x}, ${y}, ${type}, ${title}, ${content}, ${accessLevel || 'PUBLIC'});
     `;
     return { id };
 }
@@ -568,7 +569,7 @@ export async function getSlide(id: string): Promise<Slide | null> {
         initialComments: row.commentCount || 0,
         isLiked: false,
         avatar: content.avatar || '',
-        access: content.access || 'public',
+        accessLevel: row.accessLevel || 'PUBLIC',
         data: content.data,
     } as Slide;
 }
@@ -625,7 +626,7 @@ export async function getSlides(options: { limit?: number, cursor?: string, curr
             initialComments: row.commentCount || 0,
             isLiked: !!row.isLiked,
             avatar: row.userAvatar || content.avatar || '',
-            access: content.access || 'public',
+            accessLevel: row.accessLevel || 'PUBLIC',
             data: content.data,
         } as Slide;
     });
@@ -654,7 +655,7 @@ export async function getAllSlides(): Promise<Slide[]> {
             initialComments: row.commentCount || 0,
             isLiked: false,
             avatar: content.avatar || '',
-            access: content.access || 'public',
+            accessLevel: row.accessLevel || 'PUBLIC',
             data: content.data,
         } as Slide;
     });
@@ -671,7 +672,8 @@ export async function updateSlide(id: string, updates: Partial<Slide>): Promise<
 
     // Update content fields if provided in updates
     if (updates.data) content.data = updates.data;
-    if (updates.access) content.access = updates.access;
+    // access is now accessLevel and stored in a column, but we might want to keep it in content for legacy read?
+    // DTO doesn't have 'access' anymore, so updates (Partial<Slide>) won't have it.
     if (updates.avatar) content.avatar = updates.avatar;
 
     const newContent = JSON.stringify(content);

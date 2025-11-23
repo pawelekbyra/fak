@@ -78,7 +78,7 @@ const TopBar = () => {
   return (
     <>
       <div
-        className="fixed top-0 left-0 right-0 z-[60] flex items-center justify-between px-1 bg-black text-white border-b border-white/10"
+        className="fixed top-0 left-0 right-0 z-[60] flex items-center justify-between px-1 bg-black text-white border-b border-white/10 md:w-[calc(100vh*9/16)] md:left-1/2 md:-translate-x-1/2"
         style={{
           height: 'var(--topbar-height)',
           paddingTop: 'var(--safe-area-top)',

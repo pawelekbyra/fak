@@ -53,7 +53,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   }, []);
 
   return (
-    <div className="flex h-full flex-col relative">
+    <div className="flex h-full flex-col relative md:w-[calc(100vh*9/16)] md:mx-auto md:border md:border-zinc-800">
       <TopBar />
       <div className="flex-1 overflow-auto z-10">
         {children}

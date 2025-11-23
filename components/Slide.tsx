@@ -2,7 +2,7 @@
 
 import React, { memo, useState, useEffect, useRef } from 'react';
 import Image from 'next/image';
-import { SlideDTO, HtmlSlideDTO, VideoSlideDTO, CommentWithRelations } from '@/lib/dto';
+import { SlideDTO, HtmlSlideDTO, VideoSlideDTO } from '@/lib/dto';
 import { useStore } from '@/store/useStore';
 import VideoControls from './VideoControls';
 import { shallow } from 'zustand/shallow';
@@ -13,6 +13,7 @@ import Sidebar from './Sidebar';
 import { useUser } from '@/context/UserContext';
 import { cn } from '@/lib/utils';
 import SecretOverlay from './SecretOverlay';
+import PwaOverlay from './PwaOverlay';
 import { DEFAULT_AVATAR_URL } from '@/lib/constants';
 import LocalVideoPlayer from './LocalVideoPlayer';
 import { useQueryClient } from '@tanstack/react-query';
@@ -23,6 +24,8 @@ import HtmlContent from './HtmlContent';
 interface SlideUIProps {
     slide: SlideDTO;
 }
+
+import { usePWAStatus } from '@/hooks/usePWAStatus';
 
 const SlideUI = ({ slide }: SlideUIProps) => {
     const {
@@ -146,8 +149,18 @@ interface SlideProps {
 const Slide = memo<SlideProps>(({ slide, priorityLoad = false }) => {
     const { isLoggedIn } = useUser();
     const activeSlideId = useStore(state => state.activeSlide?.id);
+    const { isStandalone } = usePWAStatus();
+
+    // Determine active status: must be selected AND not locked by overlay
+    // But overlay is checked below. If overlay is active, video should be paused.
+
+    const isLockedSecret = slide.accessLevel === 'SECRET_PATRON' && !isLoggedIn;
+    const isLockedPWA = slide.accessLevel === 'SECRET_PWA' && !isStandalone;
+    const isLocked = isLockedSecret || isLockedPWA;
+
     const isActive = activeSlideId === slide.id;
-    const showSecretOverlay = slide.access === 'secret' && !isLoggedIn;
+    const shouldPlay = isActive && !isLocked;
+
     const queryClient = useQueryClient();
 
     // Prefetch comments and author profile logic
@@ -183,7 +196,8 @@ const Slide = memo<SlideProps>(({ slide, priorityLoad = false }) => {
     const renderContent = () => {
         switch (slide.type) {
             case 'video':
-                return <LocalVideoPlayer slide={slide as VideoSlideDTO} isActive={isActive} shouldLoad={priorityLoad} />;
+                // Pass shouldPlay instead of just isActive to control playback under overlay
+                return <LocalVideoPlayer slide={slide as VideoSlideDTO} isActive={shouldPlay} shouldLoad={priorityLoad} />;
             case 'html':
                 return (
                     <HtmlContent
@@ -197,12 +211,18 @@ const Slide = memo<SlideProps>(({ slide, priorityLoad = false }) => {
     };
 
     return (
-        <div className={cn(
-            "relative w-full h-full z-10 bg-black", 
-            showSecretOverlay && "blur-md brightness-50"
-        )}>
-            {renderContent()}
-            {showSecretOverlay ? <SecretOverlay /> : <SlideUI slide={slide} />}
+        <div className="relative w-full h-full z-10 bg-black">
+            {/* Background Content with Blur if locked */}
+            <div className={cn("w-full h-full transition-all duration-300", isLocked && "blur-md brightness-50")}>
+                {renderContent()}
+            </div>
+
+            {/* Overlays (Rendered on top without blur) */}
+            {isLockedSecret && <SecretOverlay />}
+            {isLockedPWA && <PwaOverlay />}
+
+            {/* UI (Only if not locked) */}
+            {!isLocked && <SlideUI slide={slide} />}
         </div>
     );
 });
