@@ -8,7 +8,6 @@ import { useTranslation } from '@/context/LanguageContext';
 import { useToast } from '@/context/ToastContext';
 import { useStore } from '@/store/useStore';
 import { X, ChevronDown, Check } from 'lucide-react';
-// Upewnij się, że AnimatePresence jest zaimportowane
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
 
@@ -100,9 +99,6 @@ const TippingModal = () => {
     }
   }, [isLoggedIn, user, isTippingModalOpen]);
 
-  // USUNIĘTO: Wczesny return, który blokował animacje wyjścia
-  // if (!isTippingModalOpen) return null;
-
   const handleNext = async () => {
     if (currentStep === 0) {
         // Step 0: Choose Recipient
@@ -111,12 +107,11 @@ const TippingModal = () => {
             return;
         }
 
-        // --- NOWA LOGIKA: Jeśli wybrano "Nikomu", zamknij modal ---
+        // Jeśli wybrano "Nikomu", zamknij modal
         if (formData.recipient === 'Nikt') {
             closeTippingModal();
             return;
         }
-        // ----------------------------------------------------------
 
         if (isLoggedIn) {
             setCurrentStep(2);
@@ -201,11 +196,10 @@ const TippingModal = () => {
   const suggestedAmounts = [10, 20, 50];
 
   return (
-    // DODANO: AnimatePresence owija wszystko, aby obsłużyć animacje wyjścia
     <AnimatePresence>
       {isTippingModalOpen && (
         <div className="fixed inset-0 z-[10200] flex items-center justify-center pointer-events-none">
-          {/* DODANO: Animacja dla tła (backdrop) */}
+          {/* Animacja tła */}
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -213,11 +207,11 @@ const TippingModal = () => {
             className="fixed inset-0 z-[-1] pointer-events-auto"
             onClick={closeTippingModal}
           />
-          {/* Główny kontener modala - animacje wejścia/wyjścia już tu były */}
+          {/* Główny kontener modala */}
           <motion.div
             initial={{ scale: 0.9, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
-            exit={{ scale: 0.9, opacity: 0 }} // To teraz zadziała dzięki AnimatePresence
+            exit={{ scale: 0.9, opacity: 0 }}
             transition={{ type: "spring", damping: 25, stiffness: 300 }}
             className="relative w-[90%] max-w-[420px] max-h-[85vh] flex flex-col rounded-[20px] shadow-[0_0_100px_-20px_rgba(255,255,255,0.4)] overflow-hidden bg-gradient-to-br from-gray-200 via-gray-400 to-gray-600 border-[3px] border-black pointer-events-auto"
           >
@@ -383,7 +377,8 @@ const TippingModal = () => {
                         initial={{ opacity: 0, x: 20 }}
                         animate={{ opacity: 1, x: 0 }}
                         exit={{ opacity: 0, x: -20 }}
-                        className="space-y-5 flex-1 relative z-10"
+                        // ZMIANA TUTAJ: space-y-5 na space-y-3
+                        className="space-y-3 flex-1 relative z-10"
                     >
                         <div className="text-center space-y-1">
                             <h3 className="text-lg font-bold text-black">Wybierz kwotę</h3>
@@ -434,7 +429,8 @@ const TippingModal = () => {
 
                         {/* Terms Checkbox */}
                         <div 
-                            className="flex items-center justify-center pt-2 gap-3 cursor-pointer group"
+                            // ZMIANA TUTAJ: usunięto 'pt-2'
+                            className="flex items-center justify-center gap-3 cursor-pointer group"
                             onClick={() => setFormData(prev => ({ ...prev, terms_accepted: !prev.terms_accepted }))}
                         >
                             <div className={cn(
