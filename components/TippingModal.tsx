@@ -14,15 +14,13 @@ import { cn } from '@/lib/utils';
 const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PK!);
 
 const StripeLogo = () => (
-    <svg xmlns="http://www.w3.org/2000/svg" width="50" height="21" viewBox="0 0 120 60" fillRule="evenodd" fill="#000000">
+    // Zwiększone logo Stripe
+    <svg xmlns="http://www.w3.org/2000/svg" width="60" height="25" viewBox="0 0 120 60" fillRule="evenodd" fill="#000000">
         <path d="M101.547 30.94c0-5.885-2.85-10.53-8.3-10.53-5.47 0-8.782 4.644-8.782 10.483 0 6.92 3.908 10.414 9.517 10.414 2.736 0 4.805-.62 6.368-1.494v-4.598c-1.563.782-3.356 1.264-5.632 1.264-2.23 0-4.207-.782-4.46-3.494h11.24c0-.3.046-1.494.046-2.046zM90.2 28.757c0-2.598 1.586-3.678 3.035-3.678 1.402 0 2.897 1.08 2.897 3.678zm-14.597-8.345c-2.253 0-3.7 1.057-4.506 1.793l-.3-1.425H65.73v26.805l5.747-1.218.023-6.506c.828.598 2.046 1.448 4.07 1.448 4.115 0 7.862-3.3 7.862-10.598-.023-6.667-3.816-10.3-7.84-10.3zm-1.38 15.84c-1.356 0-2.16-.483-2.713-1.08l-.023-8.53c.598-.667 1.425-1.126 2.736-1.126 2.092 0 3.54 2.345 3.54 5.356 0 3.08-1.425 5.38-3.54 5.38zm-16.4-17.196l5.77-1.24V13.15l-5.77 1.218zm0 1.747h5.77v20.115h-5.77zm-6.185 1.7l-.368-1.7h-4.966V40.92h5.747V27.286c1.356-1.77 3.655-1.448 4.368-1.195v-5.287c-.736-.276-3.425-.782-4.782 1.7zm-11.494-6.7L34.535 17l-.023 18.414c0 3.402 2.552 5.908 5.954 5.908 1.885 0 3.264-.345 4.023-.76v-4.667c-.736.3-4.368 1.356-4.368-2.046V25.7h4.368v-4.897h-4.37zm-15.54 10.828c0-.897.736-1.24 1.954-1.24a12.85 12.85 0 0 1 5.7 1.47V21.47c-1.908-.76-3.793-1.057-5.7-1.057-4.667 0-7.77 2.437-7.77 6.506 0 6.345 8.736 5.333 8.736 8.07 0 1.057-.92 1.402-2.207 1.402-1.908 0-4.345-.782-6.276-1.84v5.47c2.138.92 4.3 1.3 6.276 1.3 4.782 0 8.07-2.368 8.07-6.483-.023-6.85-8.782-5.632-8.782-8.207z"/>
     </svg>
 );
 
 const StarryBackground = () => {
-    // 3 TYPES of icons now: Sparkles, Hearts, and Stars.
-    // Significantly increased density for all.
-    
     const sparkles = [
         { top: '5%', left: '10%', delay: 0, scale: 0.8 },
         { top: '15%', left: '85%', delay: 1.2, scale: 1 },
@@ -60,7 +58,7 @@ const StarryBackground = () => {
         { top: '18%', left: '8%', delay: 3.4 },
     ];
 
-    const stars = [ // New classic 5-point stars
+    const stars = [
         { top: '8%', left: '22%', delay: 0.4 },
         { top: '92%', left: '55%', delay: 2.7 },
         { top: '38%', left: '88%', delay: 1.3 },
@@ -110,6 +108,74 @@ const StarryBackground = () => {
                     <Star size={10} fill="currentColor" />
                 </motion.div>
             ))}
+        </div>
+    );
+};
+
+// Komponent pojedynczego wybuchu fajerwerków
+const SingleFirework = ({ top, left }: { top: string, left: string }) => {
+    const particleCount = 20;
+    const particles = Array.from({ length: particleCount });
+
+    return (
+        <div className="absolute pointer-events-none z-0" style={{ top, left }}>
+            {particles.map((_, i) => {
+                const angle = (i / particleCount) * 360;
+                const radians = (angle * Math.PI) / 180;
+                const distance = Math.random() * 80 + 30; 
+                const targetX = Math.cos(radians) * distance;
+                const targetY = Math.sin(radians) * distance + (Math.random() * 40);
+
+                return (
+                    <motion.div
+                        key={i}
+                        className="absolute w-1 h-1 bg-white rounded-full shadow-[0_0_4px_2px_rgba(255,255,255,0.5)]"
+                        initial={{ x: 0, y: 0, opacity: 1, scale: 1.5 }}
+                        animate={{
+                            x: targetX,
+                            y: targetY,
+                            opacity: [1, 0.8, 0],
+                            scale: [1.5, 0.5, 0],
+                        }}
+                        transition={{
+                            duration: 1.8 + Math.random(),
+                            ease: [0.25, 0.1, 0.25, 1],
+                        }}
+                    />
+                );
+            })}
+        </div>
+    );
+};
+
+// Komponent zarządzający tłami fajerwerków
+const FireworksBackground = () => {
+    const [fireworks, setFireworks] = useState<{ id: number; top: string; left: string }[]>([]);
+
+    useEffect(() => {
+        const interval = setInterval(() => {
+            const newId = Date.now();
+            const top = `${Math.random() * 70 + 15}%`;
+            const left = `${Math.random() * 70 + 15}%`;
+
+            setFireworks(prev => [...prev, { id: newId, top, left }]);
+
+            setTimeout(() => {
+                setFireworks(prev => prev.filter(fw => fw.id !== newId));
+            }, 3000);
+
+        }, 2500);
+
+        return () => clearInterval(interval);
+    }, []);
+
+    return (
+        <div className="absolute inset-0 pointer-events-none overflow-hidden rounded-[24px]">
+            <AnimatePresence>
+                {fireworks.map(fw => (
+                    <SingleFirework key={fw.id} top={fw.top} left={fw.left} />
+                ))}
+            </AnimatePresence>
         </div>
     );
 };
@@ -278,10 +344,11 @@ const TippingModal = () => {
         <div className="absolute inset-0 opacity-20 pointer-events-none bg-[url('https://www.transparenttextures.com/patterns/noise.png')] mix-blend-overlay z-0"></div>
 
         <StarryBackground />
+        {/* Tło z fajerwerkami */}
+        <FireworksBackground />
         
         <div className="absolute top-0 left-0 right-0 h-[1px] bg-white/60 z-20"></div>
 
-        {/* Header - X button moved to absolute top-right */}
         <div className="relative p-6 text-center shrink-0 border-b border-black/5 bg-white/10 backdrop-blur-sm z-10">
             <div className="flex items-center justify-center gap-2 mb-1">
                 <h2 className="text-xl font-black text-black tracking-wide drop-shadow-sm opacity-90 whitespace-nowrap">
@@ -289,10 +356,10 @@ const TippingModal = () => {
                 </h2>
                 <Sparkles className="text-white w-4 h-4 animate-pulse" />
             </div>
-            {/* Improved X button: black, bold, closer to corner */}
+            {/* Przycisk X jeszcze bliżej narożnika: top-2 right-2 */}
             <button
                 onClick={closeTippingModal}
-                className="absolute right-3 top-3 p-2 text-black hover:text-black/70 hover:bg-black/5 rounded-full transition-colors z-50"
+                className="absolute right-2 top-2 p-2 text-black hover:text-black/70 hover:bg-black/5 rounded-full transition-colors z-50"
             >
                 <X size={20} strokeWidth={3} />
             </button>
@@ -320,7 +387,6 @@ const TippingModal = () => {
                         <div className="text-left space-y-2">
                             <div className="flex items-center justify-start gap-3 pl-1">
                                 <p className="text-lg font-bold text-black drop-shadow-[0_1px_2px_rgba(0,0,0,0.3)] tracking-wide">Założyć konto patrona?</p>
-                                {/* Trophy icon removed here */}
                             </div>
                         </div>
 
@@ -493,7 +559,8 @@ const TippingModal = () => {
         )}
 
         <div className="pb-4 pt-2 flex items-center justify-center bg-black/5 backdrop-blur-sm z-10 border-t border-black/5">
-             <div className="flex items-center gap-0.5 opacity-60 hover:opacity-100 transition-all duration-300">
+             {/* Gap-0 dla maksymalnego zbliżenia */}
+             <div className="flex items-center gap-0 opacity-60 hover:opacity-100 transition-all duration-300">
                   <span className="text-[10px] text-black font-bold">Powered by</span>
                   <div className="relative flex items-center">
                       <StripeLogo />
