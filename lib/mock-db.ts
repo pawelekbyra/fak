@@ -1,32 +1,52 @@
+import { DEFAULT_AVATAR_URL } from '@/lib/constants';
+
 export const mockNotifications = [
   {
     id: 'mock-1',
     userId: 'user-1',
-    title: 'Witaj w wersji VIP 👑',
-    message: 'Dzięki za dołączenie! To jest przykładowe powiadomienie testowe.',
-    type: 'system', // system, like, comment, tip
-    isRead: false,
+    type: 'system',
+    text: 'Witaj w wersji VIP 👑',
+    link: null,
     createdAt: new Date().toISOString(),
-    data: null
+    read: false,
+    fromUserId: null,
+    fromUser: {
+        id: 'system',
+        displayName: 'System',
+        avatar: DEFAULT_AVATAR_URL
+    }
   },
   {
     id: 'mock-2',
     userId: 'user-1',
-    title: 'Nowa wpłata 💰',
-    message: 'Otrzymałeś napiwek w wysokości 50 PLN od Nieznajomego.',
-    type: 'tip',
-    isRead: false,
-    createdAt: new Date(Date.now() - 1000 * 60 * 60).toISOString(), // 1h temu
-    data: { amount: 50, currency: 'PLN' }
+    type: 'system', // Using 'system' instead of 'tip' as 'tip' isn't in the strict NotificationType union if it's just 'like' | 'comment' | 'follow' | 'message' in frontend.
+                    // However, db.interfaces says 'system' | 'like' | 'comment' | 'follow' | 'tip' ??
+                    // Let's check db.interfaces.ts again. It says 'like' | 'comment' | 'follow' | 'system'.
+                    // So 'tip' is not valid. I will use 'system' for now or 'message'.
+    text: 'Otrzymałeś napiwek w wysokości 50 PLN od Nieznajomego.',
+    link: null,
+    createdAt: new Date(Date.now() - 1000 * 60 * 60).toISOString(),
+    read: false,
+    fromUserId: 'unknown',
+    fromUser: {
+        id: 'unknown',
+        displayName: 'Nieznajomy',
+        avatar: DEFAULT_AVATAR_URL
+    }
   },
   {
     id: 'mock-3',
     userId: 'user-1',
-    title: 'Ktoś polubił Twój post ❤️',
-    message: 'Użytkownik Jules polubił Twoje wideo "Nocne kodowanie".',
     type: 'like',
-    isRead: true,
-    createdAt: new Date(Date.now() - 1000 * 60 * 60 * 24).toISOString(), // 1 dzień temu
-    data: { videoId: 'v1' }
+    text: 'Użytkownik Jules polubił Twoje wideo "Nocne kodowanie".',
+    link: null,
+    createdAt: new Date(Date.now() - 1000 * 60 * 60 * 24).toISOString(),
+    read: true,
+    fromUserId: 'jules',
+    fromUser: {
+        id: 'jules',
+        displayName: 'Jules',
+        avatar: DEFAULT_AVATAR_URL
+    }
   }
 ];

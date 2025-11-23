@@ -95,7 +95,7 @@ const CommentItem: React.FC<CommentItemProps> = ({ comment, onLike, onReplySubmi
               alt={t('userAvatar', { user: author.displayName || 'User' })}
               width={32}
               height={32}
-              className={`w-full h-full rounded-full object-cover hover:opacity-80 transition-opacity border border-yellow-400 shadow-[0_0_8px_rgba(250,204,21,0.4)]`}
+              className={`w-full h-full rounded-full object-cover hover:opacity-80 transition-opacity border-2 border-white shadow-[0_0_8px_rgba(255,255,255,0.5)]`}
             />
           </div>
           <div className="mt-1 flex justify-center">

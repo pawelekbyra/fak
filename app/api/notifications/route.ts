@@ -17,7 +17,7 @@ export async function GET(req: Request) {
     // Jeśli wymuszamy mocki LUB brak usera -> zwracamy mocki od razu
     if (forceMock || !session?.user) {
       console.log("🔔 API: Returning mock notifications (Force Mock or Guest)");
-      return NextResponse.json(mockNotifications);
+      return NextResponse.json({ success: true, notifications: mockNotifications });
     }
 
     // 2. Próba pobrania z prawdziwej bazy danych
@@ -33,21 +33,21 @@ export async function GET(req: Request) {
 
       // Jeśli user nie ma powiadomień, też możemy dorzucić jedno powitalne mockowe (opcjonalnie)
       if (notifications.length === 0) {
-         return NextResponse.json(mockNotifications);
+         return NextResponse.json({ success: true, notifications: mockNotifications });
       }
 
-      return NextResponse.json(notifications);
+      return NextResponse.json({ success: true, notifications });
 
     } catch (dbError) {
       console.error("⚠️ API: Database error, falling back to mocks:", dbError);
       // TUTAJ JEST KLUCZ: Zamiast błędu 500, zwracamy mocki!
-      return NextResponse.json(mockNotifications);
+      return NextResponse.json({ success: true, notifications: mockNotifications });
     }
 
   } catch (error) {
     console.error("🔥 API: Critical Error:", error);
     // Ostatnia deska ratunku - zawsze zwróć tablicę, nigdy 500
-    return NextResponse.json(mockNotifications);
+    return NextResponse.json({ success: true, notifications: mockNotifications });
   }
 }
 
