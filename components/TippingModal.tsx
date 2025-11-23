@@ -14,107 +14,90 @@ import { cn } from '@/lib/utils';
 const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PK!);
 
 const StripeLogo = () => (
-    // Zwiększone logo Stripe
     <svg xmlns="http://www.w3.org/2000/svg" width="60" height="25" viewBox="0 0 120 60" fillRule="evenodd" fill="#000000">
         <path d="M101.547 30.94c0-5.885-2.85-10.53-8.3-10.53-5.47 0-8.782 4.644-8.782 10.483 0 6.92 3.908 10.414 9.517 10.414 2.736 0 4.805-.62 6.368-1.494v-4.598c-1.563.782-3.356 1.264-5.632 1.264-2.23 0-4.207-.782-4.46-3.494h11.24c0-.3.046-1.494.046-2.046zM90.2 28.757c0-2.598 1.586-3.678 3.035-3.678 1.402 0 2.897 1.08 2.897 3.678zm-14.597-8.345c-2.253 0-3.7 1.057-4.506 1.793l-.3-1.425H65.73v26.805l5.747-1.218.023-6.506c.828.598 2.046 1.448 4.07 1.448 4.115 0 7.862-3.3 7.862-10.598-.023-6.667-3.816-10.3-7.84-10.3zm-1.38 15.84c-1.356 0-2.16-.483-2.713-1.08l-.023-8.53c.598-.667 1.425-1.126 2.736-1.126 2.092 0 3.54 2.345 3.54 5.356 0 3.08-1.425 5.38-3.54 5.38zm-16.4-17.196l5.77-1.24V13.15l-5.77 1.218zm0 1.747h5.77v20.115h-5.77zm-6.185 1.7l-.368-1.7h-4.966V40.92h5.747V27.286c1.356-1.77 3.655-1.448 4.368-1.195v-5.287c-.736-.276-3.425-.782-4.782 1.7zm-11.494-6.7L34.535 17l-.023 18.414c0 3.402 2.552 5.908 5.954 5.908 1.885 0 3.264-.345 4.023-.76v-4.667c-.736.3-4.368 1.356-4.368-2.046V25.7h4.368v-4.897h-4.37zm-15.54 10.828c0-.897.736-1.24 1.954-1.24a12.85 12.85 0 0 1 5.7 1.47V21.47c-1.908-.76-3.793-1.057-5.7-1.057-4.667 0-7.77 2.437-7.77 6.506 0 6.345 8.736 5.333 8.736 8.07 0 1.057-.92 1.402-2.207 1.402-1.908 0-4.345-.782-6.276-1.84v5.47c2.138.92 4.3 1.3 6.276 1.3 4.782 0 8.07-2.368 8.07-6.483-.023-6.85-8.782-5.632-8.782-8.207z"/>
     </svg>
 );
 
-const StarryBackground = () => {
-    const sparkles = [
-        { top: '5%', left: '10%', delay: 0, scale: 0.8 },
-        { top: '15%', left: '85%', delay: 1.2, scale: 1 },
-        { top: '25%', left: '40%', delay: 2.5, scale: 0.7 },
-        { top: '35%', left: '15%', delay: 0.5, scale: 0.9 },
-        { top: '45%', left: '70%', delay: 3, scale: 1.1 },
-        { top: '55%', left: '25%', delay: 1.8, scale: 0.8 },
-        { top: '65%', left: '90%', delay: 0.2, scale: 1 },
-        { top: '75%', left: '50%', delay: 2.2, scale: 0.7 },
-        { top: '85%', left: '10%', delay: 1.5, scale: 0.9 },
-        { top: '10%', left: '60%', delay: 2.8, scale: 1 },
-        { top: '90%', left: '80%', delay: 0.8, scale: 0.8 },
-        { top: '50%', left: '5%', delay: 3.5, scale: 1.2 },
-        { top: '30%', left: '95%', delay: 1.9, scale: 0.9 },
-        { top: '12%', left: '35%', delay: 0.3, scale: 0.6 },
-        { top: '60%', left: '60%', delay: 1.1, scale: 1.0 },
-        { top: '82%', left: '35%', delay: 2.6, scale: 0.8 },
-        { top: '42%', left: '92%', delay: 1.6, scale: 0.9 },
-        { top: '95%', left: '25%', delay: 0.9, scale: 0.7 },
-        { top: '2%', left: '75%', delay: 3.2, scale: 1.1 },
-        { top: '28%', left: '5%', delay: 1.4, scale: 0.8 },
-    ];
+// --- DYNAMIC BACKGROUND ICONS ---
+// Zamiast statycznej listy, generujemy ikonki dynamicznie w losowych miejscach
 
-    const hearts = [
-        { top: '20%', left: '30%', delay: 0.7 },
-        { top: '70%', left: '75%', delay: 2.1 },
-        { top: '40%', left: '55%', delay: 3.2 },
-        { top: '10%', left: '90%', delay: 1.4 },
-        { top: '80%', left: '20%', delay: 0.3 },
-        { top: '33%', left: '82%', delay: 2.5 },
-        { top: '58%', left: '12%', delay: 0.9 },
-        { top: '88%', left: '60%', delay: 1.8 },
-        { top: '5%', left: '45%', delay: 2.9 },
-        { top: '52%', left: '42%', delay: 1.2 },
-        { top: '18%', left: '8%', delay: 3.4 },
-    ];
+interface FloatingIconData {
+    id: number;
+    type: 'sparkle' | 'heart' | 'star';
+    top: string;
+    left: string;
+    scale: number;
+    duration: number;
+}
 
-    const stars = [
-        { top: '8%', left: '22%', delay: 0.4 },
-        { top: '92%', left: '55%', delay: 2.7 },
-        { top: '38%', left: '88%', delay: 1.3 },
-        { top: '62%', left: '38%', delay: 3.1 },
-        { top: '15%', left: '50%', delay: 1.9 },
-        { top: '78%', left: '5%', delay: 0.6 },
-        { top: '48%', left: '95%', delay: 2.3 },
-        { top: '22%', left: '72%', delay: 1.1 },
-        { top: '85%', left: '92%', delay: 2.8 },
-        { top: '55%', left: '8%', delay: 1.6 },
-        { top: '3%', left: '92%', delay: 3.3 },
-        { top: '68%', left: '22%', delay: 0.8 },
-    ];
+const DynamicBackground = () => {
+    const [icons, setIcons] = useState<FloatingIconData[]>([]);
+
+    useEffect(() => {
+        // Funkcja dodająca nowe ikonki
+        const addIcon = () => {
+            const id = Date.now() + Math.random();
+            const types: ('sparkle' | 'heart' | 'star')[] = ['sparkle', 'heart', 'star'];
+            const type = types[Math.floor(Math.random() * types.length)];
+            
+            const icon: FloatingIconData = {
+                id,
+                type,
+                top: `${Math.random() * 100}%`,
+                left: `${Math.random() * 100}%`,
+                scale: 0.5 + Math.random() * 0.8, // Losowa wielkość
+                duration: 2 + Math.random() * 3, // Losowy czas trwania (2-5s)
+            };
+
+            setIcons(prev => [...prev, icon]);
+
+            // Usuń ikonkę po zakończeniu animacji
+            setTimeout(() => {
+                setIcons(prev => prev.filter(i => i.id !== id));
+            }, icon.duration * 1000);
+        };
+
+        // Bardzo gęste spawnowanie (co 100ms)
+        const interval = setInterval(addIcon, 100);
+        
+        // Dodaj startową pulę, żeby nie było pusto na początku
+        for(let i=0; i<20; i++) addIcon();
+
+        return () => clearInterval(interval);
+    }, []);
 
     return (
         <div className="absolute inset-0 z-0 pointer-events-none overflow-hidden">
-            {sparkles.map((item, i) => (
-                <motion.div
-                    key={`sparkle-${i}`}
-                    className="absolute text-white/50"
-                    style={{ top: item.top, left: item.left }}
-                    animate={{ opacity: [0.2, 1, 0.2], scale: [item.scale * 0.8, item.scale * 1.2, item.scale * 0.8] }}
-                    transition={{ duration: 3, repeat: Infinity, delay: item.delay, ease: "easeInOut" }}
-                >
-                    <Sparkles size={12} />
-                </motion.div>
-            ))}
-            {hearts.map((item, i) => (
-                <motion.div
-                    key={`heart-${i}`}
-                    className="absolute text-white/30"
-                    style={{ top: item.top, left: item.left }}
-                    animate={{ opacity: [0, 0.6, 0], scale: [0.8, 1.1, 0.8], y: [0, -5, 0] }}
-                    transition={{ duration: 4, repeat: Infinity, delay: item.delay, ease: "easeInOut" }}
-                >
-                    <Heart size={14} fill="currentColor" />
-                </motion.div>
-            ))}
-             {stars.map((item, i) => (
-                <motion.div
-                    key={`star-${i}`}
-                    className="absolute text-white/40"
-                    style={{ top: item.top, left: item.left }}
-                    animate={{ opacity: [0.1, 0.8, 0.1], rotate: [0, 45, 0] }}
-                    transition={{ duration: 5, repeat: Infinity, delay: item.delay, ease: "easeInOut" }}
-                >
-                    <Star size={10} fill="currentColor" />
-                </motion.div>
-            ))}
+            <AnimatePresence>
+                {icons.map((icon) => (
+                    <motion.div
+                        key={icon.id}
+                        className="absolute text-white/40"
+                        style={{ top: icon.top, left: icon.left }}
+                        initial={{ opacity: 0, scale: 0 }}
+                        animate={{ 
+                            opacity: [0, 0.8, 0], 
+                            scale: [0, icon.scale, 0],
+                            y: [0, -10 + Math.random() * 20, 0] // Delikatny ruch
+                        }}
+                        exit={{ opacity: 0 }}
+                        transition={{ duration: icon.duration, ease: "easeInOut" }}
+                    >
+                        {icon.type === 'sparkle' && <Sparkles size={12} />}
+                        {icon.type === 'heart' && <Heart size={14} fill="currentColor" />}
+                        {icon.type === 'star' && <Star size={10} fill="currentColor" />}
+                    </motion.div>
+                ))}
+            </AnimatePresence>
         </div>
     );
 };
 
-// Komponent pojedynczego wybuchu fajerwerków
-const SingleFirework = ({ top, left }: { top: string, left: string }) => {
-    const particleCount = 20;
+// --- FIREWORKS SYSTEM ---
+
+const SingleFirework = ({ top, left, scale }: { top: string, left: string, scale: number }) => {
+    const particleCount = 20; 
     const particles = Array.from({ length: particleCount });
 
     return (
@@ -122,14 +105,19 @@ const SingleFirework = ({ top, left }: { top: string, left: string }) => {
             {particles.map((_, i) => {
                 const angle = (i / particleCount) * 360;
                 const radians = (angle * Math.PI) / 180;
-                const distance = Math.random() * 80 + 30; 
+                // Losowa odległość wybuchu zależna od skali
+                const distance = (Math.random() * 80 + 30) * scale; 
                 const targetX = Math.cos(radians) * distance;
-                const targetY = Math.sin(radians) * distance + (Math.random() * 40);
+                const targetY = Math.sin(radians) * distance + (Math.random() * 20);
 
                 return (
                     <motion.div
                         key={i}
-                        className="absolute w-1 h-1 bg-white rounded-full shadow-[0_0_4px_2px_rgba(255,255,255,0.5)]"
+                        className="absolute bg-white rounded-full shadow-[0_0_6px_3px_rgba(255,255,255,0.6)]"
+                        style={{ 
+                            width: 3 * scale, 
+                            height: 3 * scale 
+                        }}
                         initial={{ x: 0, y: 0, opacity: 1, scale: 1.5 }}
                         animate={{
                             x: targetX,
@@ -138,7 +126,7 @@ const SingleFirework = ({ top, left }: { top: string, left: string }) => {
                             scale: [1.5, 0.5, 0],
                         }}
                         transition={{
-                            duration: 1.8 + Math.random(),
+                            duration: 1.2 + Math.random(),
                             ease: [0.25, 0.1, 0.25, 1],
                         }}
                     />
@@ -148,37 +136,44 @@ const SingleFirework = ({ top, left }: { top: string, left: string }) => {
     );
 };
 
-// Komponent zarządzający tłami fajerwerków
 const FireworksBackground = () => {
-    const [fireworks, setFireworks] = useState<{ id: number; top: string; left: string }[]>([]);
+    const [fireworks, setFireworks] = useState<{ id: number; top: string; left: string; scale: number }[]>([]);
 
     useEffect(() => {
-        const interval = setInterval(() => {
-            const newId = Date.now();
-            const top = `${Math.random() * 70 + 15}%`;
-            const left = `${Math.random() * 70 + 15}%`;
+        // Dużo częstsze wybuchy (randomowo od 400ms do 1200ms)
+        const spawnFirework = () => {
+            const newId = Date.now() + Math.random();
+            const top = `${Math.random() * 80 + 10}%`;
+            const left = `${Math.random() * 80 + 10}%`;
+            const scale = 0.5 + Math.random() * 1.0; // Losowa wielkość (0.5x do 1.5x)
 
-            setFireworks(prev => [...prev, { id: newId, top, left }]);
+            setFireworks(prev => [...prev, { id: newId, top, left, scale }]);
 
             setTimeout(() => {
                 setFireworks(prev => prev.filter(fw => fw.id !== newId));
-            }, 3000);
+            }, 2500);
+            
+            // Zaplanuj kolejny wybuch
+            setTimeout(spawnFirework, 400 + Math.random() * 800);
+        };
 
-        }, 2500);
+        // Uruchom pętlę
+        const timeout = setTimeout(spawnFirework, 500);
 
-        return () => clearInterval(interval);
+        return () => clearTimeout(timeout);
     }, []);
 
     return (
         <div className="absolute inset-0 pointer-events-none overflow-hidden rounded-[24px]">
             <AnimatePresence>
                 {fireworks.map(fw => (
-                    <SingleFirework key={fw.id} top={fw.top} left={fw.left} />
+                    <SingleFirework key={fw.id} top={fw.top} left={fw.left} scale={fw.scale} />
                 ))}
             </AnimatePresence>
         </div>
     );
 };
+
 
 const CheckoutForm = ({ clientSecret, onClose }: { clientSecret: string, onClose: () => void }) => {
     const stripe = useStripe();
@@ -343,8 +338,10 @@ const TippingModal = () => {
 
         <div className="absolute inset-0 opacity-20 pointer-events-none bg-[url('https://www.transparenttextures.com/patterns/noise.png')] mix-blend-overlay z-0"></div>
 
-        <StarryBackground />
-        {/* Tło z fajerwerkami */}
+        {/* Dynamiczny background (gwiazdki, serca, iskry w losowych miejscach) */}
+        <DynamicBackground />
+        
+        {/* Fajerwerki */}
         <FireworksBackground />
         
         <div className="absolute top-0 left-0 right-0 h-[1px] bg-white/60 z-20"></div>
@@ -356,7 +353,7 @@ const TippingModal = () => {
                 </h2>
                 <Sparkles className="text-white w-4 h-4 animate-pulse" />
             </div>
-            {/* Przycisk X jeszcze bliżej narożnika: top-2 right-2 */}
+            {/* Przycisk X: top-2 right-2 */}
             <button
                 onClick={closeTippingModal}
                 className="absolute right-2 top-2 p-2 text-black hover:text-black/70 hover:bg-black/5 rounded-full transition-colors z-50"
@@ -559,7 +556,6 @@ const TippingModal = () => {
         )}
 
         <div className="pb-4 pt-2 flex items-center justify-center bg-black/5 backdrop-blur-sm z-10 border-t border-black/5">
-             {/* Gap-0 dla maksymalnego zbliżenia */}
              <div className="flex items-center gap-0 opacity-60 hover:opacity-100 transition-all duration-300">
                   <span className="text-[10px] text-black font-bold">Powered by</span>
                   <div className="relative flex items-center">
