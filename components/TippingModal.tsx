@@ -13,9 +13,9 @@ import { cn } from '@/lib/utils';
 
 const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PK!);
 
-// Logo Stripe w wersji BIAŁEJ (dla ciemnego tła)
+// Logo Stripe w wersji CZARNEJ (dla jasnego/metalicznego tła)
 const StripeLogo = () => (
-    <svg xmlns="http://www.w3.org/2000/svg" width="60" height="25" viewBox="0 0 120 60" fillRule="evenodd" fill="#ffffff">
+    <svg xmlns="http://www.w3.org/2000/svg" width="60" height="25" viewBox="0 0 120 60" fillRule="evenodd" fill="#000000">
         <path d="M101.547 30.94c0-5.885-2.85-10.53-8.3-10.53-5.47 0-8.782 4.644-8.782 10.483 0 6.92 3.908 10.414 9.517 10.414 2.736 0 4.805-.62 6.368-1.494v-4.598c-1.563.782-3.356 1.264-5.632 1.264-2.23 0-4.207-.782-4.46-3.494h11.24c0-.3.046-1.494.046-2.046zM90.2 28.757c0-2.598 1.586-3.678 3.035-3.678 1.402 0 2.897 1.08 2.897 3.678zm-14.597-8.345c-2.253 0-3.7 1.057-4.506 1.793l-.3-1.425H65.73v26.805l5.747-1.218.023-6.506c.828.598 2.046 1.448 4.07 1.448 4.115 0 7.862-3.3 7.862-10.598-.023-6.667-3.816-10.3-7.84-10.3zm-1.38 15.84c-1.356 0-2.16-.483-2.713-1.08l-.023-8.53c.598-.667 1.425-1.126 2.736-1.126 2.092 0 3.54 2.345 3.54 5.356 0 3.08-1.425 5.38-3.54 5.38zm-16.4-17.196l5.77-1.24V13.15l-5.77 1.218zm0 1.747h5.77v20.115h-5.77zm-6.185 1.7l-.368-1.7h-4.966V40.92h5.747V27.286c1.356-1.77 3.655-1.448 4.368-1.195v-5.287c-.736-.276-3.425-.782-4.782 1.7zm-11.494-6.7L34.535 17l-.023 18.414c0 3.402 2.552 5.908 5.954 5.908 1.885 0 3.264-.345 4.023-.76v-4.667c-.736.3-4.368 1.356-4.368-2.046V25.7h4.368v-4.897h-4.37zm-15.54 10.828c0-.897.736-1.24 1.954-1.24a12.85 12.85 0 0 1 5.7 1.47V21.47c-1.908-.76-3.793-1.057-5.7-1.057-4.667 0-7.77 2.437-7.77 6.506 0 6.345 8.736 5.333 8.736 8.07 0 1.057-.92 1.402-2.207 1.402-1.908 0-4.345-.782-6.276-1.84v5.47c2.138.92 4.3 1.3 6.276 1.3 4.782 0 8.07-2.368 8.07-6.483-.023-6.85-8.782-5.632-8.782-8.207z"/>
     </svg>
 );
@@ -52,20 +52,20 @@ const CheckoutForm = ({ clientSecret, onClose }: { clientSecret: string, onClose
 
     return (
         <form onSubmit={handleSubmit} className="w-full">
-            <div className="mb-4 min-h-[200px] mix-blend-screen">
-                {/* Poprawka: usunięto 'appearance' stąd, jest ono definiowane w Elements w TippingModal */}
+            <div className="mb-4 min-h-[200px] mix-blend-multiply">
                 <PaymentElement 
                     options={{ 
                         layout: 'tabs',
+                        // Appearance is handled in the parent Element wrapper to avoid errors
                     }} 
                 />
             </div>
-            {/* White Button for high contrast */}
+            {/* Black Button for contrast on metallic background */}
             <button
                 disabled={isProcessing || !stripe || !elements}
-                className="w-full py-3 rounded-lg font-black text-black text-lg bg-white border border-white/20 shadow-[0_5px_15px_rgba(255,255,255,0.1)] hover:shadow-[0_8px_20px_rgba(255,255,255,0.2)] hover:scale-[1.01] active:scale-95 transition-all disabled:opacity-50 disabled:hover:scale-100 tracking-widest relative overflow-hidden group"
+                className="w-full py-3 rounded-lg font-black text-white text-lg bg-neutral-900 border border-black/20 shadow-[0_5px_15px_rgba(0,0,0,0.2)] hover:shadow-[0_8px_20px_rgba(0,0,0,0.3)] hover:scale-[1.01] active:scale-95 transition-all disabled:opacity-50 disabled:hover:scale-100 tracking-widest relative overflow-hidden group"
             >
-                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-black/10 to-transparent -translate-x-full group-hover:animate-[shimmer_1.5s_infinite]" />
+                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:animate-[shimmer_1.5s_infinite]" />
                 {isProcessing ? (t('processing') || "PRZETWARZANIE...") : "ENTER"}
             </button>
         </form>
@@ -177,36 +177,38 @@ const TippingModal = () => {
         animate={{ scale: 1, opacity: 1 }}
         exit={{ scale: 0.9, opacity: 0 }}
         transition={{ type: "spring", damping: 25, stiffness: 300 }}
-        // NEW BACKGROUND: Deep Dark Premium with animated subtle gradient
-        className="relative w-[90%] max-w-[420px] max-h-[85vh] flex flex-col rounded-[20px] shadow-[0_0_80px_-20px_rgba(0,0,0,0.8)] overflow-hidden bg-neutral-950 border border-white/10 pointer-events-auto"
+        // BACKGROUND: Metallic Silver with Black Border (Reverted color scheme)
+        className="relative w-[90%] max-w-[420px] max-h-[85vh] flex flex-col rounded-[20px] shadow-[0_0_100px_-20px_rgba(255,255,255,0.4)] overflow-hidden bg-gradient-to-br from-gray-100 via-gray-300 to-gray-500 border-[3px] border-black pointer-events-auto"
       >
-        {/* Subtle Animated Background Gradient (Mesh effect) */}
-        <div className="absolute top-[-50%] left-[-50%] w-[200%] h-[200%] bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-indigo-900/20 via-neutral-950 to-neutral-950 animate-[spin_20s_linear_infinite] z-0 pointer-events-none opacity-50"></div>
-        
-        {/* Noise Texture for material feel */}
-        <div className="absolute inset-0 opacity-[0.03] pointer-events-none bg-[url('https://www.transparenttextures.com/patterns/noise.png')] z-0"></div>
+        {/* Animated Glossy Shine on Border */}
+        <div className="absolute inset-0 border-[6px] border-transparent rounded-[21px] pointer-events-none overflow-hidden z-[50]">
+            <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/50 to-transparent opacity-0 animate-[shine-border_4s_infinite]" />
+        </div>
 
+        {/* Shine Overlay (Texture) */}
+        <div className="absolute inset-0 opacity-15 pointer-events-none bg-[url('https://www.transparenttextures.com/patterns/noise.png')] mix-blend-overlay z-0"></div>
+        
         {/* Top Highlight Line */}
-        <div className="absolute top-0 left-0 right-0 h-[1px] bg-white/20 z-20"></div>
+        <div className="absolute top-0 left-0 right-0 h-[1px] bg-white/70 z-20"></div>
 
         {/* Header - Compact */}
-        <div className="relative pt-5 pb-3 px-5 text-center shrink-0 z-10">
-            <h2 className="text-xl font-bold text-white tracking-wide drop-shadow-sm opacity-90">
+        <div className="relative pt-5 pb-3 px-5 text-center shrink-0 z-10 border-b border-black/5 bg-white/10 backdrop-blur-sm">
+            <h2 className="text-xl font-black text-black tracking-wide drop-shadow-sm opacity-90">
                 Bramka Napiwkowa
             </h2>
-            {/* Close Button X: top-3 right-3, white */}
+            {/* Close Button X: black */}
             <button
                 onClick={closeTippingModal}
-                className="absolute right-3 top-3 p-1.5 text-white/50 hover:text-white hover:bg-white/10 rounded-full transition-colors z-50"
+                className="absolute right-3 top-3 p-1.5 text-black/50 hover:text-black hover:bg-black/10 rounded-full transition-colors z-50"
             >
                 <X size={20} strokeWidth={2.5} />
             </button>
         </div>
 
         {/* Progress Bar - Compact */}
-        <div className="h-1 w-full bg-white/5 relative overflow-hidden z-10 mb-1">
+        <div className="h-1 w-full bg-black/10 relative overflow-hidden z-10 mb-1">
             <motion.div
-                className="h-full bg-white"
+                className="h-full bg-neutral-900"
                 initial={{ width: 0 }}
                 animate={{ width: `${progress}%` }}
                 transition={{ duration: 0.5, ease: "easeInOut" }}
@@ -224,8 +226,10 @@ const TippingModal = () => {
                         exit={{ opacity: 0, x: -20 }}
                         className="space-y-4 flex-1"
                     >
-                        <div className="text-left">
-                            <p className="text-lg font-bold text-white tracking-wide">Założyć konto patrona?</p>
+                        {/* ZWIĘKSZONY ODSTĘP OD PASKA: pt-4 */}
+                        <div className="text-left pt-4">
+                            {/* Patrona z dużej litery */}
+                            <p className="text-lg font-bold text-black tracking-wide">Założyć konto Patrona?</p>
                         </div>
 
                         <div className="space-y-3">
@@ -234,8 +238,8 @@ const TippingModal = () => {
                                     className={cn(
                                         "flex items-center justify-start p-4 gap-3 rounded-xl border cursor-pointer transition-all duration-300 group relative overflow-hidden",
                                         formData.create_account 
-                                            ? "bg-white/10 border-white/20 shadow-lg" 
-                                            : "bg-white/5 border-white/5 hover:bg-white/10"
+                                            ? "bg-neutral-900 border-neutral-900 shadow-lg" 
+                                            : "bg-black/5 border-black/5 hover:bg-black/10"
                                     )}
                                     onClick={() => setFormData(prev => ({ ...prev, create_account: !prev.create_account }))}
                                 >
@@ -243,12 +247,12 @@ const TippingModal = () => {
                                         "w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all duration-300 shrink-0 z-10", 
                                         formData.create_account 
                                             ? "bg-white border-white" 
-                                            : "border-white/40 group-hover:border-white/60"
+                                            : "border-black/40 group-hover:border-black/60"
                                     )}>
-                                        {formData.create_account && <div className="w-2 h-2 bg-black rounded-full" />}
+                                        {formData.create_account && <div className="w-2 h-2 bg-neutral-900 rounded-full" />}
                                     </div>
                                     
-                                    <span className={cn("text-base font-bold transition-colors z-10", formData.create_account ? "text-white" : "text-white/70")}>
+                                    <span className={cn("text-base font-bold transition-colors z-10", formData.create_account ? "text-white" : "text-black/70")}>
                                         No jacha!
                                     </span>
                                 </div>
@@ -261,11 +265,11 @@ const TippingModal = () => {
                                         placeholder="Adres email"
                                         value={formData.email}
                                         onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                                        className="relative w-full bg-white/5 border border-white/10 rounded-lg px-4 py-3 text-white placeholder:text-white/30 focus:outline-none focus:bg-white/10 focus:border-white/30 transition-all font-medium"
+                                        className="relative w-full bg-black/5 border border-black/10 rounded-lg px-4 py-3 text-black placeholder:text-black/30 focus:outline-none focus:bg-black/10 focus:border-black/30 transition-all font-medium"
                                     />
                                 </div>
-                                <p className="text-[11px] text-white/50 text-center px-2">
-                                    Na ten email wyślemy Ci <span className="text-white/90 font-bold">dane do logowania</span>.
+                                <p className="text-[11px] text-black/50 text-center px-2">
+                                    Na ten email wyślemy Ci <span className="text-black/90 font-bold">dane do logowania</span>.
                                 </p>
                             </div>
                         </div>
@@ -281,8 +285,8 @@ const TippingModal = () => {
                         className="space-y-5 flex-1 relative z-10"
                     >
                         <div className="text-center space-y-1">
-                            <h3 className="text-lg font-bold text-white">Wybierz kwotę</h3>
-                            <p className="text-xs text-white/50 font-medium uppercase tracking-wider">Ile chcesz przekazać?</p>
+                            <h3 className="text-lg font-bold text-black">Wybierz kwotę</h3>
+                            <p className="text-xs text-black/50 font-medium uppercase tracking-wider">Ile chcesz przekazać?</p>
                         </div>
 
                         <div className="grid grid-cols-3 gap-2">
@@ -293,8 +297,8 @@ const TippingModal = () => {
                                     className={cn(
                                         "py-3 rounded-lg font-bold transition-all border relative overflow-hidden group",
                                         formData.amount === amount
-                                            ? "bg-white border-white text-black shadow-lg scale-[1.02]"
-                                            : "bg-white/5 border-white/10 text-white/60 hover:bg-white/10 hover:text-white"
+                                            ? "bg-neutral-900 border-neutral-900 text-white shadow-lg scale-[1.02]"
+                                            : "bg-black/5 border-black/10 text-black/60 hover:bg-black/10 hover:text-black"
                                     )}
                                 >
                                     {amount} {formData.currency}
@@ -303,19 +307,19 @@ const TippingModal = () => {
                         </div>
 
                         <div className="relative group mt-2">
-                            <div className="relative flex items-center bg-white/5 border border-white/10 rounded-xl overflow-hidden transition-colors focus-within:bg-white/10 focus-within:border-white/20">
+                            <div className="relative flex items-center bg-black/5 border border-black/10 rounded-xl overflow-hidden transition-colors focus-within:bg-black/10 focus-within:border-black/20">
                                 <input
                                     type="number"
                                     value={formData.amount}
                                     onChange={(e) => setFormData({ ...formData, amount: Number(e.target.value) })}
-                                    className="flex-1 bg-transparent text-center text-3xl font-black text-white py-4 focus:outline-none z-10 placeholder:text-white/10"
+                                    className="flex-1 bg-transparent text-center text-3xl font-black text-black py-4 focus:outline-none z-10 placeholder:text-black/10"
                                     placeholder="0"
                                 />
-                                <div className="pr-4 z-10 border-l border-white/10 pl-3">
+                                <div className="pr-4 z-10 border-l border-black/10 pl-3">
                                     <select
                                         value={formData.currency}
                                         onChange={(e) => setFormData({ ...formData, currency: e.target.value as any })}
-                                        className="bg-transparent text-white/80 font-bold text-sm focus:outline-none cursor-pointer hover:text-white transition-colors"
+                                        className="bg-transparent text-black/80 font-bold text-sm focus:outline-none cursor-pointer hover:text-black transition-colors"
                                     >
                                         <option value="PLN" className="text-black">PLN</option>
                                         <option value="EUR" className="text-black">EUR</option>
@@ -337,23 +341,23 @@ const TippingModal = () => {
                         className="space-y-4 flex-1 relative z-10"
                     >
                         <div className="text-center">
-                            <div className="inline-block bg-white/5 border border-white/10 px-5 py-2 rounded-full shadow-inner">
-                                <span className="text-xl font-black text-white">{formData.amount.toFixed(2)} {formData.currency}</span>
+                            <div className="inline-block bg-black/5 border border-black/10 px-5 py-2 rounded-full shadow-inner">
+                                <span className="text-xl font-black text-black">{formData.amount.toFixed(2)} {formData.currency}</span>
                             </div>
                         </div>
 
                         {clientSecret && (
-                            <div className="bg-white/5 backdrop-blur-sm p-4 rounded-xl border border-white/10 mt-1">
+                            <div className="bg-black/5 backdrop-blur-sm p-4 rounded-xl border border-black/10 mt-1">
                                 <Elements 
                                     stripe={stripePromise} 
                                     options={{ 
                                         clientSecret, 
                                         appearance: { 
-                                            theme: 'night',
+                                            theme: 'stripe',
                                             variables: { 
-                                                colorPrimary: '#ffffff', 
-                                                colorBackground: '#262626', 
-                                                colorText: '#ffffff',
+                                                colorPrimary: '#000000', 
+                                                colorBackground: '#ffffff', 
+                                                colorText: '#000000',
                                                 colorDanger: '#ef4444',
                                                 fontFamily: 'inherit',
                                                 borderRadius: '8px',
@@ -376,18 +380,18 @@ const TippingModal = () => {
                 {currentStep > 0 && (
                     <button
                         onClick={handleBack}
-                        className="px-4 py-3 rounded-lg font-bold text-white/50 bg-white/5 border border-white/5 hover:bg-white/10 hover:text-white transition-all text-sm"
+                        className="px-4 py-3 rounded-lg font-bold text-black/50 bg-black/5 border border-black/5 hover:bg-black/10 hover:text-black transition-all text-sm"
                     >
                         Wstecz
                     </button>
                 )}
-                {/* Main Action Button - White for Contrast */}
+                {/* Main Action Button - Black for Contrast */}
                 <button
                     onClick={handleNext}
                     disabled={isProcessing}
-                    className="group flex-1 flex items-center justify-center gap-2 py-3 rounded-lg font-black text-lg text-black bg-white border border-white/20 shadow-[0_5px_20px_rgba(255,255,255,0.15)] hover:shadow-[0_8px_25px_rgba(255,255,255,0.25)] hover:scale-[1.01] active:scale-95 transition-all disabled:opacity-50 disabled:hover:scale-100 relative overflow-hidden tracking-widest"
+                    className="group flex-1 flex items-center justify-center gap-2 py-3 rounded-lg font-black text-lg text-white bg-neutral-900 border border-black/20 shadow-[0_5px_20px_rgba(0,0,0,0.15)] hover:shadow-[0_8px_25px_rgba(0,0,0,0.25)] hover:scale-[1.01] active:scale-95 transition-all disabled:opacity-50 disabled:hover:scale-100 relative overflow-hidden tracking-widest"
                 >
-                    <div className="absolute inset-0 bg-gradient-to-r from-transparent via-black/10 to-transparent -translate-x-full group-hover:animate-[shimmer_1.5s_infinite]" />
+                    <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent -translate-x-full group-hover:animate-[shimmer_1.5s_infinite]" />
                     {isProcessing ? (
                         <span className="animate-pulse">PRZETWARZANIE...</span>
                     ) : (
@@ -397,9 +401,9 @@ const TippingModal = () => {
             </div>
         )}
 
-        <div className="pb-3 pt-2 flex items-center justify-center bg-black/20 backdrop-blur-sm z-10 border-t border-white/5">
+        <div className="pb-3 pt-2 flex items-center justify-center bg-black/5 backdrop-blur-sm z-10 border-t border-black/5">
              <div className="flex items-center gap-0 opacity-40 hover:opacity-80 transition-all duration-300">
-                  <span className="text-[9px] text-white font-bold uppercase tracking-widest">Powered by</span>
+                  <span className="text-[9px] text-black font-bold uppercase tracking-widest">Powered by</span>
                   <div className="relative flex items-center -ml-3">
                       <StripeLogo />
                   </div>
