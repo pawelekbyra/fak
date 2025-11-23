@@ -118,7 +118,7 @@ const ProfileTab: React.FC<ProfileTabProps> = ({ onClose }) => {
                       alt={t('avatarAlt')}
                       width={96}
                       height={96}
-                      className="w-full h-full object-cover rounded-full border-2 border-pink-500"
+                      className="w-full h-full object-cover rounded-full border-2 border-white"
                       id="userAvatar"
                       unoptimized={!!previewUrl}
                     />

@@ -61,7 +61,7 @@ export function PatronProfileModal({ patronId, onClose }: PatronProfileModalProp
                                       alt={profile.username}
                                       layout="fill"
                                       objectFit="cover"
-                                      className="rounded-full border-2 border-yellow-400 shadow-[0_0_15px_rgba(250,204,21,0.5)]"
+                                      className="rounded-full border-2 border-white shadow-[0_0_15px_rgba(255,255,255,0.5)]"
                                     />
                                 </div>
                                 <h3 className="text-2xl font-bold">{profile.username}</h3>

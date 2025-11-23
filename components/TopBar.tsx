@@ -99,13 +99,15 @@ const TopBar = () => {
             <div className="flex justify-center flex-1 text-center">
               <button
                 onClick={() => setIsLoginPanelOpen(panel => !panel)}
-                className="flex items-center justify-center gap-2 font-semibold text-sm text-white transition-all duration-300 focus:outline-none whitespace-nowrap outline-none"
+                className="relative flex items-center justify-center font-semibold text-sm text-white transition-all duration-300 focus:outline-none whitespace-nowrap outline-none"
               >
                 <span>{loggedOutTitle}</span>
-                <ChevronDown
-                  size={16}
-                  className={`transition-transform duration-200 ${isLoginPanelOpen ? 'rotate-180' : ''}`}
-                />
+                <div className="absolute left-full ml-0.5 flex items-center">
+                  <ChevronDown
+                    size={16}
+                    className={`transition-transform duration-200 ${isLoginPanelOpen ? 'rotate-180' : ''}`}
+                  />
+                </div>
               </button>
             </div>
             <div className="flex justify-end items-center gap-1">
