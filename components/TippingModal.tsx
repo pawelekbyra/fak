@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { loadStripe } from '@stripe/stripe-js';
 import { Elements, PaymentElement, useStripe, useElements } from '@stripe/react-stripe-js';
 import { useUser } from '@/context/UserContext';
@@ -88,6 +88,10 @@ const TippingModal = () => {
   const [clientSecret, setClientSecret] = useState<string | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
 
+  // NOWY STAN DLA WŁASNEGO DROPDOWNA WALUTY
+  const [isCurrencyDropdownOpen, setIsCurrencyDropdownOpen] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
   useEffect(() => {
     if (isLoggedIn) {
         setFormData(prev => ({ ...prev, email: user?.email || '' }));
@@ -95,24 +99,33 @@ const TippingModal = () => {
         if (!isTippingModalOpen) {
             setCurrentStep(0);
             setFormData(prev => ({ ...prev, create_account: false, terms_accepted: false, recipient: '' }));
+            setIsCurrencyDropdownOpen(false); // Reset dropdown state
         }
     }
   }, [isLoggedIn, user, isTippingModalOpen]);
 
+  // Zamykanie dropdowna po kliknięciu poza nim
+  useEffect(() => {
+      const handleClickOutside = (event: MouseEvent) => {
+          if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+              setIsCurrencyDropdownOpen(false);
+          }
+      };
+      document.addEventListener('mousedown', handleClickOutside);
+      return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+
   const handleNext = async () => {
     if (currentStep === 0) {
-        // Step 0: Choose Recipient
         if (!formData.recipient) {
             addToast('Wybierz odbiorcę, aby kontynuować.', 'error');
             return;
         }
-
-        // Jeśli wybrano "Nikomu", zamknij modal
         if (formData.recipient === 'Nikt') {
             closeTippingModal();
             return;
         }
-
         if (isLoggedIn) {
             setCurrentStep(2);
         } else {
@@ -120,7 +133,6 @@ const TippingModal = () => {
         }
     }
     else if (currentStep === 1) {
-        // Step 1: Account Data (Only for guests)
         if (formData.create_account) {
             if (!formData.email) {
                 addToast(t('errorEmailRequired') || 'Podaj adres email', 'error');
@@ -135,12 +147,10 @@ const TippingModal = () => {
         setCurrentStep(2);
     }
     else if (currentStep === 2) {
-        // Step 2: Amount & Terms
         if (!formData.terms_accepted) {
             addToast('Musisz zaakceptować regulamin, aby kontynuować.', 'error');
             return;
         }
-
         if (formData.amount <= 0) {
             addToast(t('errorMinTipAmount', { minAmount: '0', currency: formData.currency }) || 'Kwota musi być większa od 0', 'error');
             return;
@@ -194,12 +204,12 @@ const TippingModal = () => {
   const progress = ((currentVisualStep + 1) / totalSteps) * 100;
 
   const suggestedAmounts = [10, 20, 50];
+  const currencies = ['PLN', 'EUR', 'USD', 'GBP'];
 
   return (
     <AnimatePresence>
       {isTippingModalOpen && (
         <div className="fixed inset-0 z-[10200] flex items-center justify-center pointer-events-none">
-          {/* Animacja tła */}
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -207,7 +217,6 @@ const TippingModal = () => {
             className="fixed inset-0 z-[-1] pointer-events-auto"
             onClick={closeTippingModal}
           />
-          {/* Główny kontener modala */}
           <motion.div
             initial={{ scale: 0.9, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
@@ -246,7 +255,6 @@ const TippingModal = () => {
 
         <div className="flex-1 overflow-y-auto px-5 pt-5 pb-0 custom-scrollbar flex flex-col relative z-10">
             <AnimatePresence mode="wait">
-                {/* STEP 0: RECIPIENT SELECTION */}
                 {currentStep === 0 && (
                     <motion.div
                         key="step0"
@@ -260,7 +268,6 @@ const TippingModal = () => {
                         </div>
 
                         <div className="space-y-3 pt-2">
-                            {/* Option 1: Paweł */}
                             <div 
                                 className={cn(
                                     "flex items-center justify-start p-4 gap-4 rounded-xl border cursor-pointer transition-all duration-300 group relative overflow-hidden",
@@ -270,7 +277,6 @@ const TippingModal = () => {
                                 )}
                                 onClick={() => setFormData(prev => ({ ...prev, recipient: 'Paweł' }))}
                             >
-                                {/* Custom Radio Circle */}
                                 <div className={cn(
                                     "w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all duration-300 shrink-0 z-10",
                                     formData.recipient === 'Paweł'
@@ -285,7 +291,6 @@ const TippingModal = () => {
                                 </span>
                             </div>
 
-                            {/* Option 2: Nikomu */}
                             <div 
                                 className={cn(
                                     "flex items-center justify-start p-4 gap-4 rounded-xl border cursor-pointer transition-all duration-300 group relative overflow-hidden",
@@ -295,7 +300,6 @@ const TippingModal = () => {
                                 )}
                                 onClick={() => setFormData(prev => ({ ...prev, recipient: 'Nikt' }))}
                             >
-                                {/* Custom Radio Circle */}
                                 <div className={cn(
                                     "w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all duration-300 shrink-0 z-10",
                                     formData.recipient === 'Nikt'
@@ -313,7 +317,6 @@ const TippingModal = () => {
                     </motion.div>
                 )}
 
-                {/* STEP 1: ACCOUNT DATA (Old Step 0) */}
                 {currentStep === 1 && (
                     <motion.div
                         key="step1"
@@ -370,14 +373,12 @@ const TippingModal = () => {
                     </motion.div>
                 )}
 
-                {/* STEP 2: AMOUNT & TERMS (Old Step 1) */}
                 {currentStep === 2 && (
                     <motion.div
                         key="step2"
                         initial={{ opacity: 0, x: 20 }}
                         animate={{ opacity: 1, x: 0 }}
                         exit={{ opacity: 0, x: -20 }}
-                        // ZMIANA TUTAJ: space-y-5 na space-y-3
                         className="space-y-3 flex-1 relative z-10"
                     >
                         <div className="text-center space-y-1">
@@ -404,33 +405,69 @@ const TippingModal = () => {
                             ))}
                         </div>
 
-                        <div className="relative flex items-center bg-black/5 border border-black/10 rounded-xl overflow-hidden transition-colors focus-within:bg-black/10 focus-within:border-black/20 shadow-inner">
+                        <div className="relative flex items-center bg-black/5 border border-black/10 rounded-xl transition-colors focus-within:bg-black/10 focus-within:border-black/20 shadow-inner z-20" ref={dropdownRef}>
                             <input
                                 type="number"
                                 value={formData.amount}
                                 onChange={(e) => setFormData({ ...formData, amount: Number(e.target.value) })}
-                                className="flex-1 w-full bg-transparent text-center text-3xl font-black text-black py-4 focus:outline-none placeholder:text-black/10 pl-4"
+                                className="flex-1 w-full bg-transparent text-center text-3xl font-black text-black py-4 focus:outline-none placeholder:text-black/10 pl-4 rounded-l-xl"
                                 placeholder="0"
                             />
-                            <div className="h-full border-l border-black/10 flex items-center bg-black/5 hover:bg-black/10 transition-colors relative shrink-0">
-                                <select
-                                    value={formData.currency}
-                                    onChange={(e) => setFormData({ ...formData, currency: e.target.value as any })}
-                                    className="appearance-none bg-transparent font-bold text-lg text-black py-4 pl-4 pr-10 cursor-pointer focus:outline-none z-10"
+                            
+                            {/* CUSTOM CURRENCY DROPDOWN TRIGGER */}
+                            <div 
+                                className="h-full border-l border-black/10 flex items-center bg-black/5 hover:bg-black/10 transition-colors relative shrink-0 cursor-pointer pl-4 pr-10 rounded-r-xl"
+                                onClick={() => setIsCurrencyDropdownOpen(!isCurrencyDropdownOpen)}
+                            >
+                                <span className="font-bold text-lg text-black select-none">{formData.currency}</span>
+                                <motion.div
+                                    animate={{ rotate: isCurrencyDropdownOpen ? 180 : 0 }}
+                                    transition={{ duration: 0.2 }}
+                                    className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center justify-center"
                                 >
-                                    <option value="PLN">PLN</option>
-                                    <option value="EUR">EUR</option>
-                                    <option value="USD">USD</option>
-                                    <option value="GBP">GBP</option>
-                                </select>
-                                <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-black/50 pointer-events-none z-0" />
+                                    <ChevronDown className="w-4 h-4 text-black/50" />
+                                </motion.div>
                             </div>
+
+                             {/* CUSTOM CURRENCY DROPDOWN LIST */}
+                            <AnimatePresence>
+                                {isCurrencyDropdownOpen && (
+                                    <motion.div
+                                        initial={{ opacity: 0, y: -10, scale: 0.95 }}
+                                        animate={{ opacity: 1, y: 0, scale: 1 }}
+                                        exit={{ opacity: 0, y: -10, scale: 0.95 }}
+                                        transition={{ duration: 0.2, ease: "easeInOut" }}
+                                        className="absolute top-[calc(100%+8px)] right-0 w-32 bg-neutral-900 border border-black/20 rounded-xl shadow-xl overflow-hidden z-50"
+                                    >
+                                        <div className="py-1">
+                                            {currencies.map((currency) => (
+                                                <button
+                                                    key={currency}
+                                                    onClick={() => {
+                                                        setFormData({ ...formData, currency: currency as any });
+                                                        setIsCurrencyDropdownOpen(false);
+                                                    }}
+                                                    className={cn(
+                                                        "w-full flex items-center justify-between px-4 py-2.5 text-left font-bold transition-colors relative group",
+                                                        formData.currency === currency 
+                                                            ? "text-white bg-white/10" 
+                                                            : "text-white/70 hover:text-white hover:bg-white/5"
+                                                    )}
+                                                >
+                                                    <span>{currency}</span>
+                                                    {formData.currency === currency && (
+                                                        <Check size={16} className="text-white" />
+                                                    )}
+                                                </button>
+                                            ))}
+                                        </div>
+                                    </motion.div>
+                                )}
+                            </AnimatePresence>
                         </div>
 
-                        {/* Terms Checkbox */}
                         <div 
-                            // ZMIANA TUTAJ: usunięto 'pt-2'
-                            className="flex items-center justify-center gap-3 cursor-pointer group"
+                            className="flex items-center justify-center gap-3 cursor-pointer group relative z-10"
                             onClick={() => setFormData(prev => ({ ...prev, terms_accepted: !prev.terms_accepted }))}
                         >
                             <div className={cn(
@@ -448,7 +485,6 @@ const TippingModal = () => {
                     </motion.div>
                 )}
 
-                {/* STEP 3: PAYMENT (Old Step 2) */}
                 {currentStep === 3 && (
                     <motion.div
                         key="step3"
@@ -491,7 +527,6 @@ const TippingModal = () => {
             </AnimatePresence>
         </div>
 
-        {/* Footer Buttons */}
         {currentStep < 3 && (
             <div className="px-5 pb-5 pt-3 flex gap-2 bg-transparent z-20 relative">
                 {currentStep > 0 && (
