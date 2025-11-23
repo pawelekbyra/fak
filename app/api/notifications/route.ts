@@ -5,49 +5,56 @@ import { prisma } from '@/lib/prisma';
 import { mockNotifications } from '@/lib/mock-db';
 import { db } from '@/lib/db';
 
-export const dynamic = 'force-dynamic'; // Ważne: zapobiega cache'owaniu statycznemu
+export const dynamic = 'force-dynamic';
 
 export async function GET(req: Request) {
   try {
-    // 1. Sprawdź sesję (ale nie blokuj, jeśli chcemy testować)
     const session = await auth();
     const url = new URL(req.url);
     const forceMock = url.searchParams.get('mock') === 'true';
 
-    // Jeśli wymuszamy mocki LUB brak usera -> zwracamy mocki od razu
+    // Helper to return success wrapper
+    const successResponse = (data: any[]) => NextResponse.json({ success: true, notifications: data });
+
     if (forceMock || !session?.user) {
       console.log("🔔 API: Returning mock notifications (Force Mock or Guest)");
-      return NextResponse.json(mockNotifications);
+      return successResponse(mockNotifications);
     }
 
-    // 2. Próba pobrania z prawdziwej bazy danych
     try {
-      // Sprawdźmy czy prisma w ogóle jest zdefiniowana
       if (!prisma) throw new Error("Prisma client is undefined");
 
       const notifications = await prisma.notification.findMany({
         where: { userId: session.user.id },
         orderBy: { createdAt: 'desc' },
-        take: 20, // Limit dla bezpieczeństwa
+        take: 20,
+        include: {
+          fromUser: {
+            select: {
+              id: true,
+              displayName: true,
+              avatar: true
+            }
+          }
+        }
       });
 
-      // Jeśli user nie ma powiadomień, też możemy dorzucić jedno powitalne mockowe (opcjonalnie)
       if (notifications.length === 0) {
-         return NextResponse.json(mockNotifications);
+         // Return mocks if no real notifications exist, for better DX
+         return successResponse(mockNotifications);
       }
 
-      return NextResponse.json(notifications);
+      return successResponse(notifications);
 
     } catch (dbError) {
       console.error("⚠️ API: Database error, falling back to mocks:", dbError);
-      // TUTAJ JEST KLUCZ: Zamiast błędu 500, zwracamy mocki!
-      return NextResponse.json(mockNotifications);
+      return successResponse(mockNotifications);
     }
 
   } catch (error) {
     console.error("🔥 API: Critical Error:", error);
-    // Ostatnia deska ratunku - zawsze zwróć tablicę, nigdy 500
-    return NextResponse.json(mockNotifications);
+    // Always return mock data in correct format on error
+    return NextResponse.json({ success: true, notifications: mockNotifications });
   }
 }
 

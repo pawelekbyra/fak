@@ -40,7 +40,9 @@ const TopBar = () => {
   };
 
   const handleLoggedOutNotificationClick = () => {
-    addToast(t('notificationAlert'), 'info');
+    // For testing mocks, we allow opening the modal.
+    // In production, this might need to revert or check a specific flag.
+    setActiveModal('notifications');
   };
 
   const handleLoggedInNotificationClick = () => {
