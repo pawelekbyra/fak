@@ -45,7 +45,7 @@ export interface BaseSlideDTO {
   initialComments: number;
 
   // Settings
-  access: 'public' | 'secret';
+  accessLevel: 'PUBLIC' | 'SECRET_PATRON' | 'SECRET_PWA';
 }
 
 export interface HtmlSlideDataDTO {
