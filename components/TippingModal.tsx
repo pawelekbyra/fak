@@ -7,7 +7,7 @@ import { useUser } from '@/context/UserContext';
 import { useTranslation } from '@/context/LanguageContext';
 import { useToast } from '@/context/ToastContext';
 import { useStore } from '@/store/useStore';
-import { X, ChevronRight, Sparkles, Trophy } from 'lucide-react';
+import { X, ChevronRight, Sparkles, Trophy, Crown } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
 
@@ -134,7 +134,7 @@ const TippingModal = () => {
             setFormData(prev => ({ ...prev, create_account: false }));
         }
     }
-  }, [isLoggedIn, user, isTippingModalOpen]);
+  }, [isLoggedIn, user, isTippingModalOpen, currentStep]);
 
   if (!isTippingModalOpen) return null;
 
