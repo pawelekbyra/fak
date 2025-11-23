@@ -20,8 +20,6 @@ const StripeLogo = () => (
 );
 
 // --- DYNAMIC BACKGROUND ICONS ---
-// Zamiast statycznej listy, generujemy ikonki dynamicznie w losowych miejscach
-
 interface FloatingIconData {
     id: number;
     type: 'sparkle' | 'heart' | 'star';
@@ -35,7 +33,6 @@ const DynamicBackground = () => {
     const [icons, setIcons] = useState<FloatingIconData[]>([]);
 
     useEffect(() => {
-        // Funkcja dodająca nowe ikonki
         const addIcon = () => {
             const id = Date.now() + Math.random();
             const types: ('sparkle' | 'heart' | 'star')[] = ['sparkle', 'heart', 'star'];
@@ -46,23 +43,22 @@ const DynamicBackground = () => {
                 type,
                 top: `${Math.random() * 100}%`,
                 left: `${Math.random() * 100}%`,
-                scale: 0.5 + Math.random() * 0.8, // Losowa wielkość
-                duration: 2 + Math.random() * 3, // Losowy czas trwania (2-5s)
+                scale: 0.5 + Math.random() * 0.8,
+                duration: 2 + Math.random() * 3,
             };
 
             setIcons(prev => [...prev, icon]);
 
-            // Usuń ikonkę po zakończeniu animacji
             setTimeout(() => {
                 setIcons(prev => prev.filter(i => i.id !== id));
             }, icon.duration * 1000);
         };
 
-        // Bardzo gęste spawnowanie (co 100ms)
-        const interval = setInterval(addIcon, 100);
+        // ZWIĘKSZONA GĘSTOŚĆ: co 30ms (ok. 3x częściej niż wcześniej)
+        const interval = setInterval(addIcon, 30);
         
-        // Dodaj startową pulę, żeby nie było pusto na początku
-        for(let i=0; i<20; i++) addIcon();
+        // ZWIĘKSZONA PULA STARTOWA: 60 elementów
+        for(let i=0; i<60; i++) addIcon();
 
         return () => clearInterval(interval);
     }, []);
@@ -77,9 +73,9 @@ const DynamicBackground = () => {
                         style={{ top: icon.top, left: icon.left }}
                         initial={{ opacity: 0, scale: 0 }}
                         animate={{ 
-                            opacity: [0, 0.8, 0], 
+                            opacity: [0, 0.9, 0], 
                             scale: [0, icon.scale, 0],
-                            y: [0, -10 + Math.random() * 20, 0] // Delikatny ruch
+                            y: [0, -10 + Math.random() * 20, 0]
                         }}
                         exit={{ opacity: 0 }}
                         transition={{ duration: icon.duration, ease: "easeInOut" }}
@@ -105,7 +101,6 @@ const SingleFirework = ({ top, left, scale }: { top: string, left: string, scale
             {particles.map((_, i) => {
                 const angle = (i / particleCount) * 360;
                 const radians = (angle * Math.PI) / 180;
-                // Losowa odległość wybuchu zależna od skali
                 const distance = (Math.random() * 80 + 30) * scale; 
                 const targetX = Math.cos(radians) * distance;
                 const targetY = Math.sin(radians) * distance + (Math.random() * 20);
@@ -140,12 +135,12 @@ const FireworksBackground = () => {
     const [fireworks, setFireworks] = useState<{ id: number; top: string; left: string; scale: number }[]>([]);
 
     useEffect(() => {
-        // Dużo częstsze wybuchy (randomowo od 400ms do 1200ms)
+        // ZWIĘKSZONA CZĘSTOTLIWOŚĆ FAJERWERKÓW (co 130ms - 400ms)
         const spawnFirework = () => {
             const newId = Date.now() + Math.random();
             const top = `${Math.random() * 80 + 10}%`;
             const left = `${Math.random() * 80 + 10}%`;
-            const scale = 0.5 + Math.random() * 1.0; // Losowa wielkość (0.5x do 1.5x)
+            const scale = 0.5 + Math.random() * 1.0; 
 
             setFireworks(prev => [...prev, { id: newId, top, left, scale }]);
 
@@ -153,12 +148,11 @@ const FireworksBackground = () => {
                 setFireworks(prev => prev.filter(fw => fw.id !== newId));
             }, 2500);
             
-            // Zaplanuj kolejny wybuch
-            setTimeout(spawnFirework, 400 + Math.random() * 800);
+            // Kolejny wybuch bardzo szybko
+            setTimeout(spawnFirework, 130 + Math.random() * 270);
         };
 
-        // Uruchom pętlę
-        const timeout = setTimeout(spawnFirework, 500);
+        const timeout = setTimeout(spawnFirework, 200);
 
         return () => clearTimeout(timeout);
     }, []);
@@ -168,6 +162,64 @@ const FireworksBackground = () => {
             <AnimatePresence>
                 {fireworks.map(fw => (
                     <SingleFirework key={fw.id} top={fw.top} left={fw.left} scale={fw.scale} />
+                ))}
+            </AnimatePresence>
+        </div>
+    );
+};
+
+// --- NEW: COMETS ANIMATION ---
+
+const CometsBackground = () => {
+    const [comets, setComets] = useState<{ id: number; top: string; left: string; scale: number }[]>([]);
+
+    useEffect(() => {
+        const spawnComet = () => {
+            const newId = Date.now() + Math.random();
+            // Startują głównie z prawej strony lub góry
+            const startRight = Math.random() > 0.5;
+            
+            setComets(prev => [...prev, { 
+                id: newId, 
+                // Jeśli start z prawej: left > 100%, top losowy. Jeśli z góry: top < 0%, left losowy.
+                top: startRight ? `${Math.random() * 60}%` : `-10%`, 
+                left: startRight ? `110%` : `${50 + Math.random() * 50}%`,
+                scale: 0.5 + Math.random() * 0.8
+            }]);
+
+            setTimeout(() => {
+                setComets(prev => prev.filter(c => c.id !== newId));
+            }, 2000); 
+
+            // SPORO KOMET: co ok. 200-500ms
+            setTimeout(spawnComet, 200 + Math.random() * 300);
+        };
+
+        const timeout = setTimeout(spawnComet, 500);
+        return () => clearTimeout(timeout);
+    }, []);
+
+    return (
+        <div className="absolute inset-0 z-0 pointer-events-none overflow-hidden rounded-[24px]">
+            <AnimatePresence>
+                {comets.map(comet => (
+                    <motion.div
+                        key={comet.id}
+                        className="absolute"
+                        style={{ top: comet.top, left: comet.left, scale: comet.scale }}
+                        initial={{ opacity: 0, x: 0, y: 0 }}
+                        animate={{ 
+                            opacity: [0, 1, 1, 0], 
+                            x: -600, // Lot w lewo
+                            y: 600   // Lot w dół
+                        }}
+                        transition={{ duration: 1.2 + Math.random() * 0.5, ease: "easeIn" }}
+                    >
+                        {/* Głowa komety */}
+                        <div className="w-1.5 h-1.5 bg-white rounded-full shadow-[0_0_10px_2px_rgba(255,255,255,0.8)]" />
+                        {/* Ogon komety */}
+                        <div className="absolute top-0 right-0 w-[80px] h-[2px] bg-gradient-to-r from-transparent via-white/50 to-white origin-right transform -rotate-45 -translate-x-[78px] translate-y-[2px]" />
+                    </motion.div>
                 ))}
             </AnimatePresence>
         </div>
@@ -338,9 +390,12 @@ const TippingModal = () => {
 
         <div className="absolute inset-0 opacity-20 pointer-events-none bg-[url('https://www.transparenttextures.com/patterns/noise.png')] mix-blend-overlay z-0"></div>
 
-        {/* Dynamiczny background (gwiazdki, serca, iskry w losowych miejscach) */}
+        {/* Dynamiczny background (gwiazdki, serca, iskry) */}
         <DynamicBackground />
         
+        {/* Komety (WARSTWA KOMET) */}
+        <CometsBackground />
+
         {/* Fajerwerki */}
         <FireworksBackground />
         
