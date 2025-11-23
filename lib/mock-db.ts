@@ -1,32 +1,62 @@
 export const mockNotifications = [
   {
     id: 'mock-1',
-    userId: 'user-1',
-    title: 'Witaj w wersji VIP 👑',
-    message: 'Dzięki za dołączenie! To jest przykładowe powiadomienie testowe.',
-    type: 'system', // system, like, comment, tip
-    isRead: false,
+    userId: 'current-user',
+    type: 'system',
+    text: 'Witaj w Ting Tong! 🎥 To jest przykładowe powiadomienie.',
+    link: null,
     createdAt: new Date().toISOString(),
-    data: null
+    read: false,
+    fromUserId: 'system',
+    fromUser: {
+      id: 'system',
+      displayName: 'System',
+      avatar: '/icons/icon-192x192.png'
+    }
   },
   {
     id: 'mock-2',
-    userId: 'user-1',
-    title: 'Nowa wpłata 💰',
-    message: 'Otrzymałeś napiwek w wysokości 50 PLN od Nieznajomego.',
-    type: 'tip',
-    isRead: false,
-    createdAt: new Date(Date.now() - 1000 * 60 * 60).toISOString(), // 1h temu
-    data: { amount: 50, currency: 'PLN' }
+    userId: 'current-user',
+    type: 'like',
+    text: 'Użytkownik Pola polubił Twój film.',
+    link: null,
+    createdAt: new Date(Date.now() - 1000 * 60 * 60).toISOString(),
+    read: false,
+    fromUserId: 'u2',
+    fromUser: {
+      id: 'u2',
+      displayName: 'Pola',
+      avatar: 'https://i.pravatar.cc/150?u=pola'
+    }
   },
   {
     id: 'mock-3',
-    userId: 'user-1',
-    title: 'Ktoś polubił Twój post ❤️',
-    message: 'Użytkownik Jules polubił Twoje wideo "Nocne kodowanie".',
-    type: 'like',
-    isRead: true,
-    createdAt: new Date(Date.now() - 1000 * 60 * 60 * 24).toISOString(), // 1 dzień temu
-    data: { videoId: 'v1' }
+    userId: 'current-user',
+    type: 'comment',
+    text: 'Użytkownik Jan skomentował Twój film: "Sztos! 🔥"',
+    link: null,
+    createdAt: new Date(Date.now() - 1000 * 60 * 60 * 24).toISOString(),
+    read: true,
+    fromUserId: 'u3',
+    fromUser: {
+      id: 'u3',
+      displayName: 'Jan',
+      avatar: 'https://i.pravatar.cc/150?u=jan'
+    }
+  },
+  {
+    id: 'mock-4',
+    userId: 'current-user',
+    type: 'follow',
+    text: 'Użytkownik Marek zaczął Cię obserwować.',
+    link: null,
+    createdAt: new Date(Date.now() - 1000 * 60 * 60 * 48).toISOString(),
+    read: true,
+    fromUserId: 'u4',
+    fromUser: {
+      id: 'u4',
+      displayName: 'Marek',
+      avatar: 'https://i.pravatar.cc/150?u=marek'
+    }
   }
 ];
