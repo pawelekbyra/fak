@@ -199,7 +199,7 @@ const NotificationPopup: React.FC<NotificationPopupProps> = ({ isOpen, onClose }
       {isOpen && (
         <motion.div
           // Zmiany: z-[80] (nad TopBar z-[60]), items-start (góra), pt-3 (odstęp od krawędzi)
-          className="fixed inset-0 z-[80] flex items-start justify-center bg-black/50 pt-3 md:pt-5"
+          className="fixed inset-0 z-[80] flex items-start justify-center bg-black/50 pt-3 md:pt-5 md:w-[calc(100vh*9/16)] md:left-1/2 md:-translate-x-1/2"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}

@@ -34,7 +34,7 @@ export default async function SlideManagementPage() {
           initialLikes: s.initialLikes,
           isLiked: s.isLiked,
           initialComments: s.initialComments,
-          access: s.access,
+          accessLevel: s.accessLevel,
       };
 
       if (s.type === 'video') {
@@ -88,7 +88,7 @@ export default async function SlideManagementPage() {
         avatar: author.avatar || '',
         x: 0, // Default value
         y: 0, // Default value
-        access: 'public' as const,
+        accessLevel: 'PUBLIC' as const,
       };
 
       let newSlideData: any; // Using any to bypass strict type checks for now during refactor

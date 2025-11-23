@@ -42,7 +42,7 @@ const AccountPanel: React.FC<AccountPanelProps> = ({ onClose }) => {
 
   return (
     <motion.div
-      className="fixed inset-0 bg-black/80 z-[9999]"
+      className="fixed inset-0 bg-black/80 z-[9999] md:w-[calc(100vh*9/16)] md:left-1/2 md:-translate-x-1/2"
       initial={{ opacity: 0, pointerEvents: 'none' }}
       animate={{ opacity: 1, pointerEvents: 'auto' }}
       exit={{ opacity: 0, pointerEvents: 'none' }}

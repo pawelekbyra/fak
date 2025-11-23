@@ -1,5 +1,5 @@
 import React, { memo, useEffect } from 'react';
-import { Heart, MessageSquare, User, Share2, Wallet } from 'lucide-react';
+import { Heart, MessageSquare, User, Share2 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import Ably from 'ably';
 import { ably } from '@/lib/ably-client';
@@ -92,9 +92,14 @@ const Sidebar: React.FC<SidebarProps> = ({
     }
   };
 
+  // Shared styles
+  const buttonClass = "flex flex-col items-center gap-[2px] justify-center cursor-pointer";
+  const labelClass = "text-[11px] leading-[1.1] text-center drop-shadow-md font-medium text-white";
+  const iconSize = 32;
+
   return (
     <aside
-      className="absolute right-0 flex flex-col items-center gap-[6px] z-20"
+      className="absolute right-0 flex flex-col items-center gap-[12px] z-20"
       style={{
         top: 'calc((var(--app-height) - var(--topbar-height) - var(--bottombar-height)) / 2 + var(--topbar-height))',
         transform: 'translateY(-50%)',
@@ -120,18 +125,18 @@ const Sidebar: React.FC<SidebarProps> = ({
       {/* Like */}
       <motion.button
         onClick={handleLike}
-        className="flex flex-col items-center gap-0.5 text-white text-xs font-semibold"
+        className={buttonClass}
         data-action="toggle-like"
         data-slide-id={slideId}
         whileTap={{ scale: 0.9 }}
       >
         <Heart
-          size={32}
-          strokeWidth={1.4}
-          className={`transition-colors duration-200 ${isLiked ? 'fill-red-500 stroke-red-500' : 'fill-transparent stroke-white'}`}
+          size={iconSize}
+          strokeWidth={1.5}
+          className={`transition-colors duration-200 ${isLiked ? 'fill-[var(--accent-color,theme(colors.rose.500))] stroke-white' : 'fill-transparent stroke-white'}`}
           style={{ filter: 'drop-shadow(0 0 3px rgba(0,0,0,0.5))' }}
         />
-        <span className="icon-label">{formatCount(currentLikes)}</span>
+        <span className={labelClass}>{formatCount(currentLikes)}</span>
       </motion.button>
 
       {/* Comments */}
@@ -139,23 +144,27 @@ const Sidebar: React.FC<SidebarProps> = ({
         data-testid="comments-button"
         data-action="open-comments-modal"
         onClick={() => setActiveModal('comments')}
-        className="flex flex-col items-center gap-0.5 text-white text-xs font-semibold"
+        className={buttonClass}
         whileTap={{ scale: 0.9 }}
       >
-        <MessageSquare size={32} strokeWidth={1.4} className="stroke-white" style={{ filter: 'drop-shadow(0 0 3px rgba(0,0,0,0.5))' }}/>
-        <span className="icon-label">{formatCount(commentsCount)}</span>
+        <MessageSquare size={iconSize} strokeWidth={1.5} className="stroke-white" style={{ filter: 'drop-shadow(0 0 3px rgba(0,0,0,0.5))' }}/>
+        <span className={labelClass}>{formatCount(commentsCount)}</span>
       </motion.button>
 
       {/* Share */}
-      <button onClick={handleShare} data-action="share" className="flex flex-col items-center gap-0.5 text-white text-xs font-semibold">
-        <Share2 size={32} strokeWidth={1.4} className="stroke-white" style={{ filter: 'drop-shadow(0 0 3px rgba(0,0,0,0.5))' }}/>
-        <span className="icon-label">{t('shareText') || 'Share'}</span>
+      <button onClick={handleShare} data-action="share" className={buttonClass}>
+        <Share2 size={iconSize} strokeWidth={1.5} className="stroke-white" style={{ filter: 'drop-shadow(0 0 3px rgba(0,0,0,0.5))' }}/>
+        <span className={labelClass}>{t('shareText') || 'Udostępnij'}</span>
       </button>
 
-      {/* Tip Jar */}
-      <button onClick={openTippingModal} data-action="show-tip-jar" className="flex flex-col items-center gap-0.5 text-white text-xs font-semibold mt-4">
-        <Wallet size={32} strokeWidth={1.4} className="stroke-white" style={{ filter: 'drop-shadow(0 0 3px rgba(0,0,0,0.5))' }}/>
-        <span className="icon-label">Napiwek</span>
+      {/* Tip Jar (Custom SVG) */}
+      <button onClick={openTippingModal} data-action="show-tip-jar" className={buttonClass + " mt-2"}>
+        <svg viewBox="0 0 24 24" className="text-white drop-shadow-md" style={{ width: iconSize, height: iconSize }} fill="none" stroke="currentColor" strokeWidth="1.5">
+           <rect x="2" y="7" width="20" height="12" rx="2" ry="2" />
+           <path d="M2 10h20" />
+           <circle cx="18" cy="13" r="2" />
+        </svg>
+        <span className={labelClass}>Napiwek</span>
       </button>
     </aside>
   );

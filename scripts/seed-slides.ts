@@ -1,5 +1,6 @@
 import { config } from 'dotenv';
 import { prisma } from '../lib/prisma';
+import { AccessLevel } from '@prisma/client';
 
 config({ path: '.env.local' });
 
@@ -26,29 +27,26 @@ async function seedSlides() {
             title: "Big Buck Bunny",
             mp4: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4",
             hls: "https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8", // Example HLS
-            poster: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/images/BigBuckBunny.jpg"
+            poster: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/images/BigBuckBunny.jpg",
+            accessLevel: 'PUBLIC' as AccessLevel
         },
         {
             title: "Elephant Dream",
             mp4: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ElephantsDream.mp4",
             hls: null,
-            poster: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/images/ElephantsDream.jpg"
+            poster: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/images/ElephantsDream.jpg",
+            accessLevel: 'SECRET_PATRON' as AccessLevel
         },
         {
             title: "For Bigger Blazes",
             mp4: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4",
             hls: null,
-            poster: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/images/ForBiggerBlazes.jpg"
+            poster: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/images/ForBiggerBlazes.jpg",
+            accessLevel: 'SECRET_PWA' as AccessLevel
         }
     ];
 
     // 3. Create Slides
-    // We use a loop and create them. Since we don't have unique constraints on Title,
-    // we can't easily "upsert" based on title without a custom where.
-    // We will delete existing slides for this author to prevent duplication on reset,
-    // OR we just create them. Since this is usually run after db:reset, it's fine.
-    // But to be "Safe Seed", we should check if they exist.
-
     for (const [index, video] of videos.entries()) {
         const slideTitle = video.title;
 
@@ -61,41 +59,48 @@ async function seedSlides() {
         });
 
         if (existing) {
-            console.log(`Skipping existing slide: ${slideTitle}`);
-            continue;
+             // If access level changed, we might want to update it.
+             if (existing.accessLevel !== video.accessLevel) {
+                 await prisma.slide.update({
+                     where: { id: existing.id },
+                     data: { accessLevel: video.accessLevel }
+                 });
+                 console.log(`Updated access level for ${slideTitle} to ${video.accessLevel}`);
+             } else {
+                 console.log(`Skipping existing slide: ${slideTitle}`);
+             }
+             continue;
         }
 
         // Construct the JSON content structure expected by the app
-        // Based on lib/db-postgres.ts structure: { access, data: { title, mp4Url, ... }, avatar }
         const contentJson = JSON.stringify({
-            access: 'public',
-            avatar: author.avatar || '', // Should be empty or set
+            avatar: author.avatar || '',
             data: {
                 title: video.title,
                 mp4Url: video.mp4,
-                hlsUrl: video.hls, // Can be null
+                hlsUrl: video.hls,
                 poster: video.poster,
-                description: `Seeded video: ${video.title}`
+                description: `Seeded video: ${video.title} (${video.accessLevel})`
             }
         });
 
         await prisma.slide.create({
             data: {
                 userId: author.id,
-                username: author.username, // Denormalized
+                username: author.username,
                 title: video.title,
                 content: contentJson,
                 slideType: 'video',
+                accessLevel: video.accessLevel,
                 x: 0,
-                y: index, // Vertical stack
-                // Fill standard fields too for compatibility if we ever switch back
+                y: index,
                 videoUrl: video.mp4,
                 thumbnailUrl: video.poster,
-                public: true
+                public: video.accessLevel === 'PUBLIC'
             }
         });
 
-        console.log(`✅ Created slide: ${slideTitle}`);
+        console.log(`✅ Created slide: ${slideTitle} with access: ${video.accessLevel}`);
     }
 
     console.log('Slides seeded successfully.');

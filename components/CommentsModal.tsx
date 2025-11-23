@@ -455,7 +455,7 @@ const CommentsModal: React.FC<CommentsModalProps> = ({ isOpen, onClose, slideId,
     <AnimatePresence>
       {isOpen && (
         <motion.div
-          className="fixed inset-0 bg-black/60 z-50 flex items-end"
+          className="fixed inset-0 bg-black/60 z-50 flex items-end md:w-[calc(100vh*9/16)] md:left-1/2 md:-translate-x-1/2"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
