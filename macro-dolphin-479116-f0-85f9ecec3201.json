@@ -1,0 +1,13 @@
+{
+  "type": "service_account",
+  "project_id": "macro-dolphin-479116-f0",
+  "private_key_id": "85f9ecec32013a72d86d59ad4025c43bded93c66",
+  "private_key": "-----BEGIN PRIVATE KEY-----\nMIIEvAIBADANBgkqhkiG9w0BAQEFAASCBKYwggSiAgEAAoIBAQCfBlXyZDVRLb/P\n2K1JwySPbEi0gscBcDA1TzmRRGuqqyP2p64Dd67nC/Y3w1z17A+/STaDGMAZdCeM\nMJeKrF4DRQbU3W6hJHLj/TGDB76tMVOQ502IVJRTD511QFQEbIHZMTh+LUff38JJ\nr39LatgNRpeEYPXcXIwfoFtYkiyKaBvBcHPkG3PC62g43hOLltx5Fn/R8D8PsA7z\nslOlS5acET38ZSdGCdNZ8T7vas7Jt8NThbwCwOAjNtY6fl2n7CN9JPgCoqMjkFyw\nUTZaXS4wXO035P4oVJRsVbdDE4tx1Tu65PAq3axzsHRxt+8pdWYE91yv2TlQlM8Q\nnt6uD3XpAgMBAAECggEAP82kdTTEeZYf8+4NFN/BTvQUtawU2VxgUzs+ryyjAB5b\nNw7u0ABYgeX4O0ZciWTVqptezjmDdZL3fRVP7/kZXTl4NLbFOM0tdZD0KQzV8Zot\nW6GaJ30755mHxO/y5bV9YZ2Qe3uCb23Q/4x0x9cN6UGt8BSRAIF3TQcjL0WyrjLW\nKnjBhVNOLUcR9Up1ZfGMja7Ll7ZXARuMsJVs5TbPEv9JwjJvvOunDS9lxUlaCNky\nAja6gZW2Z/VK6fVBub3x/OTgW+Tt/w816t7+ZPQjVyEZokHwVfG7xrCo7w8kBH0J\n6/fXSHbzHvNlC8J3mZyXkNFCC/XsHqoSB6bxFJ06YwKBgQDLTsyeEVKAjVW4SY7G\n9p8+ltXjFJxdzH2RXyaX+zYzOWI7O6UNMhylRmdNiILiFfUXrRGEP8ldpIknphsj\nR+No+C742z3P4pTqKlEo4akKeDCFbvfqCpDlT3xO8Bjo6LX9Vr34K4xKw0Rkfj1R\n75GC4k+EmGIm92FdYFdhAYYqxwKBgQDIPWoqNBPHq29iTqEyDDe3v/CUp2I2wjOC\nihVhC95jMBKxo3zBK9RBpGPDoICQv/AR/p/nyb2qBBZUSqL9ye33oM/M5kcKE6Ao\nvUMMJx3gxd9WqS07c0ncmrSeioWAd/KJlhDEvCcWjvC2siksx+aSl2K5v2eITXel\nml00W38pzwKBgAuGTP0M2FNnL5vBt7E5m69Nl5RGv9JlXBzYevSUje77asEW0XVd\nCNiplAOGIH02Z21PJzYK85w2TnwL42/tjEuP/gGnU+qr2msnuPALUqzAQWfe8Xi3\n3pzRE6fZ3l+diWtx9lTSCyLVzNOxgEJbxTDZKU7H4JB6528Gng1mq7dTAoGARffP\nxPd1geuRfBRllwtV3Msg0ZC7bM7nGNIPLl3rU1VU8uVhjk42WMmMYqsOwYWP6XnD\nfkasE2BiPQnnci7BDCoQ8lP0trys1g9sAi8Y7ZW2uJ1cxM1AHemg+1UD2SQQh6r8\nKQJl1igUTIJsiM1A8DAduzH6h1IqYJ9TuhvOj1kCgYBuIrHYb+vpyjOx6C4EvoRE\n3I5PbiedOr+G2LdzHlmQ/Q1qqICzZAjDKqdc7Lxty3JinZPHNas2M5Bm3eNNnuty\nOPP/D3CLHJUTsOUawV95Wk6/UL5xAYeAy1rNjy3EcDj3AVDmNdrwvvhfgPBKCobB\nmU6m7Y2hm7wKpL0G3ILbGQ==\n-----END PRIVATE KEY-----\n",
+  "client_email": "dupek-167@macro-dolphin-479116-f0.iam.gserviceaccount.com",
+  "client_id": "115643885511289335072",
+  "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+  "token_uri": "https://oauth2.googleapis.com/token",
+  "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
+  "client_x509_cert_url": "https://www.googleapis.com/robot/v1/metadata/x509/dupek-167%40macro-dolphin-479116-f0.iam.gserviceaccount.com",
+  "universe_domain": "googleapis.com"
+}

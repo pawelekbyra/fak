@@ -18,9 +18,9 @@ export async function GET() {
 
   try {
     // 2. Test nie-streamingowy Gemini
-    // Switching to 'gemini-1.5-pro-latest' as 'gemini-1.5-flash' caused a "model not found" error.
+    // Using gemini-1.5-flash as gemini-2.5-flash (requested) is not a valid model version yet.
     const result = await generateText({
-      model: google('gemini-1.5-pro-latest'),
+      model: google('gemini-1.5-flash'), // Używamy prostego modelu
       prompt: 'Odpowiedz jednym słowem: OK',
     });
 
