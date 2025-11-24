@@ -3,8 +3,10 @@
 import { useChat } from '@ai-sdk/react';
 
 export default function RobertPage() {
-  const { messages, input, handleInputChange, handleSubmit, status } = useChat({
+  // Cache Buster: Force redeploy to clear stale JS
+  const { messages, input, handleInputChange, handleSubmit, status, error } = useChat({
     api: '/api/robert',
+    onError: (error: any) => console.error("Chat Error:", error),
   } as any) as any;
 
   return (
@@ -39,6 +41,11 @@ export default function RobertPage() {
         ))}
         {status === 'streaming' && (
           <div className="animate-pulse">&gt; PROCESSING...</div>
+        )}
+        {error && (
+          <div className="text-red-500 border border-red-500 p-2 mt-2 rounded">
+             ERROR: {error.message}
+          </div>
         )}
       </div>
 

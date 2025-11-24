@@ -11,6 +11,10 @@ export async function POST(req: Request) {
   // Diagnostyka w logach serwera
   console.log(`[ROBERT] Start. Google Key present: ${!!process.env.GOOGLE_GENERATIVE_AI_API_KEY}, GitHub Token present: ${!!process.env.GITHUB_TOKEN}`);
 
+  if (!process.env.GOOGLE_GENERATIVE_AI_API_KEY) {
+    return Response.json({ error: "Missing GOOGLE_GENERATIVE_AI_API_KEY" }, { status: 500 });
+  }
+
   try {
     const { messages } = await req.json();
 
@@ -73,14 +77,14 @@ export async function POST(req: Request) {
               return { success: false, error: error.message };
             }
           },
-        }),
+        } as any),
       },
     });
 
-    return result.toDataStreamResponse();
+    return (result as any).toDataStreamResponse();
     
   } catch (error) {
     console.error("[ROBERT ERROR]", error);
-    return new Response("Internal Server Error", { status: 500 });
+    return Response.json({ error: error instanceof Error ? error.message : "Internal Server Error" }, { status: 500 });
   }
 }
