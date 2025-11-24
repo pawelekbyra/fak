@@ -6,8 +6,8 @@ import { useEffect, useRef, useState } from 'react';
 export default function RobertPage() {
   // TU JEST PROBLEM: Brakowało 'api' i 'streamProtocol'
   const { messages, error, regenerate, sendMessage } = useChat({
-    api: '/api/robert',        // <--- TĘLINIJKĘ TRZEBA DODAĆ/UPEWNIĆ SIĘ ŻE JEST
-    streamProtocol: 'text',    // <--- TĘ LINIJKĘ TEŻ
+    api: '/api/robert',
+    streamProtocol: 'text',
   } as any);
 
   const [input, setInput] = useState('');

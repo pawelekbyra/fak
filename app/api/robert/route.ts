@@ -31,7 +31,6 @@ export async function POST(req: Request) {
       messages: convertToModelMessages(messages),
     });
 
-    // TU BYŁ PROBLEM Z TYPE-CHECKING, UŻYWAMY toTextStreamResponse()
     return result.toTextStreamResponse();
     
   } catch (error) {
