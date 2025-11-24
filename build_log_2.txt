@@ -1,0 +1,62 @@
+yarn run v1.22.22
+$ ./node_modules/.bin/prisma generate && next build
+Prisma schema loaded from prisma/schema.prisma
+
+✔ Generated Prisma Client (v5.19.1) to ./node_modules/@prisma/client in 207ms
+
+Start by importing your Prisma Client (See: http://pris.ly/d/importing-client)
+
+Tip: Want to react to database changes in your app as they happen? Discover how with Pulse: https://pris.ly/tip-1-pulse
+
+Attention: Next.js now collects completely anonymous telemetry regarding usage.
+This information is used to shape Next.js' roadmap and prioritize features.
+You can learn more, including how to opt-out if you'd not like to participate in this anonymous program, by visiting the following URL:
+https://nextjs.org/telemetry
+
+  ▲ Next.js 14.2.32
+
+   Creating an optimized production build ...
+ ⚠ Compiled with warnings
+
+./node_modules/keyv/src/index.js
+Critical dependency: the request of a dependency is an expression
+
+Import trace for requested module:
+./node_modules/keyv/src/index.js
+./node_modules/cacheable-request/src/index.js
+./node_modules/got/dist/source/core/index.js
+./node_modules/got/dist/source/create.js
+./node_modules/got/dist/source/index.js
+./node_modules/ably/build/ably-node.js
+./lib/ably-server.ts
+./app/api/ably-token/route.ts
+
+ ✓ Compiled successfully
+   Linting and checking validity of types ...
+
+./components/FeedSwiper.tsx
+132:6  Warning: React Hook useEffect has missing dependencies: 'playVideo', 'setActiveSlide', 'setNextSlide', and 'slides.length'. Either include them or remove the dependency array.  react-hooks/exhaustive-deps
+132:7  Warning: React Hook useEffect has a complex expression in the dependency array. Extract it to a separate variable so it can be statically checked.  react-hooks/exhaustive-deps
+
+./components/LocalVideoPlayer.tsx
+63:8  Warning: React Hook useEffect has a missing dependency: 'slide.data'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+
+./components/Sidebar.tsx
+113:14  Warning: Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+
+info  - Need to disable some ESLint rules? Learn more here: https://nextjs.org/docs/basic-features/eslint#disabling-rules
+Failed to compile.
+
+./app/robert/page.tsx:6:21
+Type error: Property 'input' does not exist on type 'UseChatHelpers<UIMessage<unknown, UIDataTypes, UITools>>'.
+
+[0m [90m 4 |[39m[0m
+[0m [90m 5 |[39m [36mexport[39m [36mdefault[39m [36mfunction[39m [33mRobertPage[39m() {[0m
+[0m[31m[1m>[22m[39m[90m 6 |[39m   [36mconst[39m { messages[33m,[39m input[33m,[39m handleInputChange[33m,[39m handleSubmit[33m,[39m status } [33m=[39m useChat({[0m
+[0m [90m   |[39m                     [31m[1m^[22m[39m[0m
+[0m [90m 7 |[39m     api[33m:[39m [32m'/api/robert'[39m[33m,[39m[0m
+[0m [90m 8 |[39m   })[33m;[39m[0m
+[0m [90m 9 |[39m[0m
+Next.js build worker exited with code: 1 and signal: null
+error Command failed with exit code 1.
+info Visit https://yarnpkg.com/en/docs/cli/run for documentation about this command.
