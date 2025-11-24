@@ -13,10 +13,6 @@ export default function ClientLayoutWrapper({
 }) {
   const pathname = usePathname();
 
-  if (pathname?.startsWith("/robert")) {
-    return <>{children}</>;
-  }
-
   return (
     <Providers>
       <AppLayout>{children}</AppLayout>
