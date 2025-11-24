@@ -6,15 +6,18 @@ import { ToastProvider } from '@/context/ToastContext';
 import React from 'react';
 import Preloader from './Preloader';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { usePathname } from 'next/navigation';
 
 // Create a client
 const queryClient = new QueryClient();
 
 export function Providers({ children }: { children: React.ReactNode }) {
+  const pathname = usePathname();
+
   return (
     <QueryClientProvider client={queryClient}>
       <LanguageProvider>
-        <Preloader />
+        {!pathname?.startsWith('/robert') && <Preloader />}
         <UserProvider>
           <ToastProvider>
             {children}
