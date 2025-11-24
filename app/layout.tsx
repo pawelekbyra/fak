@@ -2,10 +2,7 @@ import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
 import { cn } from "@/lib/utils";
-import { Providers } from "@/components/Providers";
-import AppLayout from "@/components/AppLayout";
-import PWAInstallPrompt from "@/components/PWAInstallPrompt";
-import Script from "next/script";
+import ClientLayoutWrapper from "@/components/ClientLayoutWrapper";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -27,22 +24,7 @@ export default function RootLayout({
           <meta name="theme-color" content="#000000" />
       </head>
       <body className={cn("antialiased", inter.className)}>
-        <Providers>
-          <AppLayout>{children}</AppLayout>
-          <PWAInstallPrompt />
-        </Providers>
-        <Script
-          data-name="BMC-Widget"
-          data-cfasync="false"
-          src="https://cdnjs.buymeacoffee.com/1.0.0/widget.prod.min.js"
-          data-id="pawelperfect"
-          data-description="Support me on Buy me a coffee!"
-          data-message=""
-          data-color="#FF5F5F"
-          data-position="Right"
-          data-x_margin="18"
-          data-y_margin="18"
-        />
+        <ClientLayoutWrapper>{children}</ClientLayoutWrapper>
       </body>
     </html>
   );
