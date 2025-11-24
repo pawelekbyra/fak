@@ -26,8 +26,8 @@ Użyj narzędzia create_file, aby zapisać kod.`,
           path: z.string().describe('The file path to create or update'),
           content: z.string().describe('The content of the file'),
           message: z.string().describe('Commit message'),
-        }),
-        execute: async ({ path, content, message }) => {
+        }) as any,
+        execute: async ({ path, content, message }: { path: any; content: any; message: any }) => {
           try {
             // Check for GITHUB_TOKEN
             if (!process.env.GITHUB_TOKEN) {
