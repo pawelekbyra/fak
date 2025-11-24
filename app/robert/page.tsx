@@ -77,7 +77,13 @@ export default function RobertPage() {
         )}
       </div>
 
-      <form onSubmit={handleSafeSubmit} className="flex gap-2">
+      <form
+        onSubmit={(e) => {
+          e.preventDefault(); // ZAPOBIEGAMY PRZEŁADOWANIU STRONY
+          handleSubmit(e); // WYWOŁUJEMY LOGIKĘ AI HOOKA
+        }}
+        className="flex gap-2"
+      >
         <span className="flex items-center text-green-500">&gt;</span>
         <input
           className="flex-1 bg-black border border-green-800 text-green-500 p-2 focus:outline-none focus:border-green-500 rounded"
