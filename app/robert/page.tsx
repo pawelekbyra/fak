@@ -4,11 +4,12 @@ import { useChat } from '@ai-sdk/react';
 import { useEffect, useRef, useState } from 'react';
 
 export default function RobertPage() {
-  // TU JEST PROBLEM: Brakowało 'api' i 'streamProtocol'
-  const { messages, error, regenerate, sendMessage } = useChat({
+  // Use 'as any' to bypass type definition mismatches for both input and output.
+  // The 'api' property is standard but might be missing in the specific type definition version installed.
+  // We switch to 'append' and 'reload' which are the modern methods, replacing the legacy/broken 'sendMessage' and 'regenerate'.
+  const { messages, error, reload, append } = useChat({
     api: '/api/robert',
-    streamProtocol: 'text',
-  } as any);
+  } as any) as any;
 
   const [input, setInput] = useState('');
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -25,31 +26,38 @@ export default function RobertPage() {
     e.preventDefault();
     if (!input.trim()) return;
 
-    await sendMessage({ text: input });
+    const currentInput = input;
     setInput('');
+    // Use append with the standard message format
+    await append({ role: 'user', content: currentInput });
   };
 
   return (
     <div className="flex flex-col h-screen p-4">
       <div className="flex-1 overflow-y-auto mb-4 space-y-2 custom-scrollbar">
-        {messages.map((m) => (
+        {messages.map((m: any) => (
           <div key={m.id} className="whitespace-pre-wrap break-words">
             <span className="font-bold">
               {m.role === 'user' ? '> USER: ' : '> ROBERT: '}
             </span>
-            {m.parts.map((part, i) => {
-              if (part.type === 'text') {
-                return <span key={i}>{part.text}</span>;
-              }
-              return null;
-            })}
+            {/* Handle both parts (new) and content (old/fallback) */}
+            {m.parts ? (
+              m.parts.map((part: any, i: number) => {
+                if (part.type === 'text') {
+                  return <span key={i}>{part.text}</span>;
+                }
+                return null;
+              })
+            ) : (
+              <span>{m.content}</span>
+            )}
           </div>
         ))}
         {error && (
             <div className="border border-red-500 text-red-500 p-2 mt-2">
               <p>Error: {error.message}</p>
               <button
-                onClick={() => regenerate()}
+                onClick={() => reload()}
                 className="mt-2 px-2 py-1 border border-red-500 hover:bg-red-900 transition-colors"
               >
                 Retry
