@@ -1,25 +1,36 @@
 'use client'; 
+
 import { useChat } from '@ai-sdk/react';
-import React, { FormEvent } from 'react'; // Dodajemy import FormEvent
+// Ważny import dla poprawnego typowania zdarzenia formularza
+import React, { FormEvent } from 'react'; 
 
 export default function RobertPage() {
-  // Uproszczone wywołanie hooka
-  const { messages, input, handleInputChange, handleSubmit, status, error, reload } = useChat({
+  // POPRAWKA KOMPILACJI #1: Dodano 'error' i 'reload' do destrukturyzacji, usunięto as any na końcu
+  const { 
+    messages, 
+    input, 
+    handleInputChange, 
+    handleSubmit, 
+    status, 
+    error, 
+    reload 
+  } = useChat({
     api: '/api/robert',
+    // POPRAWKA KOMPILACJI #2: Jawny typ ': any' dla 'err'
     onError: (err: any) => { 
       console.error("[ROBERT-UI] Chat Hook Error:", err);
     }
-  };
+  });
 
-  // Nowa funkcja do bezpiecznej obsługi submit (zgodna z błędem w konsoli)
-  const handleSafeSubmit = (e: FormEvent) => {
-    e.preventDefault();
-
-    // Ostateczne sprawdzenie, czy handleSubmit jest funkcją, zanim ją wywołamy
+  // ZABEZPIECZENIE: Funkcja obsługująca submit z e.preventDefault() i sprawdzeniem handleSubmit
+  const handleSafeSubmit = (e: FormEvent<HTMLFormElement>) => {
+    e.preventDefault(); // Zapobiega przeładowaniu strony po kliknięciu EXECUTE
+    
+    // Sprawdza, czy handleSubmit istnieje i jest funkcją, zapobiegając błędom typu "c is not a function"
     if (typeof handleSubmit === 'function') {
       handleSubmit(e);
     } else {
-      console.error("ROBERT DEBUG: handleSubmit is not available or is not a function.");
+      console.error("ROBERT CRITICAL: handleSubmit is not available!");
     }
   };
 
@@ -27,12 +38,12 @@ export default function RobertPage() {
     <div className="flex flex-col h-screen bg-black text-green-500 font-mono p-4 overflow-hidden relative z-[100]">
       <div className="flex-1 overflow-y-auto mb-4 border border-green-900 p-4 rounded custom-scrollbar">
         
-        {/* TUTAJ WZMACNIAMY LOGIKĘ WYŚWIETLANIA BŁĘDÓW HOOKA */}
+        {/* WERSJA DIAGNOSTYCZNA: Wyświetlanie błędu z hooka */}
         {error && (
             <div className="text-red-500 mt-4 border border-red-900 p-4 whitespace-pre-wrap">
                 &gt; CRITICAL ERROR: Communication Failure.
                 <br/>
-                **Szczegóły:** {error ? (error as any).message : 'Unknown error'}
+                **Szczegóły:** {error.message}
                 <br/>
                 <button 
                    onClick={() => reload()} 
@@ -77,13 +88,8 @@ export default function RobertPage() {
         )}
       </div>
 
-      <form
-        onSubmit={(e) => {
-          e.preventDefault(); // ZAPOBIEGAMY PRZEŁADOWANIU STRONY
-          handleSubmit(e); // WYWOŁUJEMY LOGIKĘ AI HOOKA
-        }}
-        className="flex gap-2"
-      >
+      {/* UŻYWAMY handleSafeSubmit */}
+      <form onSubmit={handleSafeSubmit} className="flex gap-2"> 
         <span className="flex items-center text-green-500">&gt;</span>
         <input
           className="flex-1 bg-black border border-green-800 text-green-500 p-2 focus:outline-none focus:border-green-500 rounded"
