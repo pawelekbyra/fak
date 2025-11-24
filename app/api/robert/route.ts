@@ -89,10 +89,10 @@ export async function POST(req: Request) {
               return { success: false, error: error.message };
             }
           },
-        }),
+        } as any),
       },
     });
-    return result.toDataStreamResponse();
+    return (result as any).toDataStreamResponse();
   } catch (error: any) {
     console.error("[ROBERT FATAL ERROR]", error);
     return Response.json({ error: error.message || "Unknown Server Error during AI initialization." }, { status: 500 });
