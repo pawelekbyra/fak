@@ -1,6 +1,11 @@
 # FAK / Ting Tong (Next-Gen) 🚀
 Next-Gen Vertical Video Platform with Direct Creator Monetization.
 
+## 🧬 PROJEKT GENESIS
+Ten projekt zawiera autonomicznego agenta o nazwie "Robert", który działa w trybie "God Mode".
+Robert jest zintegrowany z systemem pod ścieżką `/robert` i wykorzystuje model Google Gemini jako swój mózg.
+Posiada on pełną autonomię w zakresie modyfikacji kodu i rozwoju aplikacji.
+
 Witaj w dokumentacji produkcyjnej wersji Ting Tong (FAK). To nie jest zwykły klon TikToka. To platforma, która oddaje władzę twórcom, eliminując pośredników i algorytmy. Projekt łączy wirusowość krótkich form wideo z modelem subskrypcyjnym (Patronite/OnlyFans), ale we własnym, kontrolowanym ekosystemie.
 
 📚 **Spis Treści**
