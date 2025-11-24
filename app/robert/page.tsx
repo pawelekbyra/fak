@@ -7,7 +7,7 @@ export default function RobertPage() {
   const { messages, error, regenerate, sendMessage } = useChat({
     api: '/api/robert',
     streamProtocol: 'text',
-  });
+  } as any);
 
   const [input, setInput] = useState('');
   const messagesEndRef = useRef<HTMLDivElement>(null);
