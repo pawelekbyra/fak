@@ -20,7 +20,7 @@ export async function POST(req: Request) {
     const system = fs.readFileSync(personaPath, 'utf-8');
 
     const result = streamText({
-      model: google('gemini-1.5-flash'),
+      model: google('gemini-1.5-pro-latest'),
       system,
       messages: convertToModelMessages(messages),
     });
