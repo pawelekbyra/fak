@@ -4,8 +4,7 @@ import { useChat } from '@ai-sdk/react';
 import { useEffect, useRef, useState } from 'react';
 
 export default function RobertPage() {
-  // TU JEST PROBLEM: Brakowało 'api' i 'streamProtocol'
-  const { messages, error, regenerate, sendMessage } = useChat({
+  const { messages, error, reload, append } = useChat({
     api: '/api/robert',
     streamProtocol: 'text',
   } as any);
@@ -25,7 +24,7 @@ export default function RobertPage() {
     e.preventDefault();
     if (!input.trim()) return;
 
-    await sendMessage({ text: input });
+    await append({ role: 'user', content: input });
     setInput('');
   };
 
@@ -37,19 +36,14 @@ export default function RobertPage() {
             <span className="font-bold">
               {m.role === 'user' ? '> USER: ' : '> ROBERT: '}
             </span>
-            {m.parts.map((part, i) => {
-              if (part.type === 'text') {
-                return <span key={i}>{part.text}</span>;
-              }
-              return null;
-            })}
+            <span>{m.content}</span>
           </div>
         ))}
         {error && (
             <div className="border border-red-500 text-red-500 p-2 mt-2">
               <p>Error: {error.message}</p>
               <button
-                onClick={() => regenerate()}
+                onClick={() => reload()}
                 className="mt-2 px-2 py-1 border border-red-500 hover:bg-red-900 transition-colors"
               >
                 Retry
