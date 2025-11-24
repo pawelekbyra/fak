@@ -20,6 +20,7 @@ model User {
   image          String?
   bio            String?   // User biography/description
   role           String    @default("user") // "user", "admin", "patron"
+  isFirstLogin   Boolean   @default(false) // Flag indicating if the user needs to complete first login setup
   emailConsent   Boolean   @default(false)
   emailLanguage  String?   @default("pl")
   sessionVersion Int       @default(1)

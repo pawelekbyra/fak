@@ -13,8 +13,11 @@ import CommentsModal from './CommentsModal';
 import AccountPanel from './AccountPanel';
 import NotificationPopup from './NotificationPopup';
 import { AnimatePresence } from 'framer-motion';
+import FirstLoginSetupModal from './FirstLoginSetupModal';
+import { useUser } from '@/context/UserContext';
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
+  const { user } = useUser();
   const {
     activeModal,
     setActiveModal,
@@ -103,6 +106,11 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
       <AnimatePresence>
         {activeModal === 'account' && <AccountPanel key="account-panel" onClose={() => setActiveModal(null)} />}
       </AnimatePresence>
+
+      {/* Mandatory First Login Setup Modal */}
+      {user?.isFirstLogin && (
+        <FirstLoginSetupModal />
+      )}
     </div>
   );
 }
