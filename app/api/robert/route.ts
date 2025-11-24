@@ -27,7 +27,7 @@ Użyj narzędzia create_file, aby zapisać kod.`,
           content: z.string().describe('The content of the file'),
           message: z.string().describe('Commit message'),
         }),
-        execute: async ({ path, content, message }) => {
+        execute: async ({ path, content, message }: { path: string; content: string; message: string }) => {
           try {
             // Check for GITHUB_TOKEN
             if (!process.env.GITHUB_TOKEN) {
@@ -71,9 +71,9 @@ Użyj narzędzia create_file, aby zapisać kod.`,
             return { success: false, error: error.message };
           }
         },
-      }),
+      } as any),
     },
   });
 
-  return result.toDataStreamResponse();
+  return (result as any).toDataStreamResponse();
 }

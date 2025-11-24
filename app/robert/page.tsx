@@ -5,10 +5,11 @@ import { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
 
 export default function RobertPage() {
-  const { messages, input, handleInputChange, handleSubmit } = useChat({
+  const { messages, sendMessage, status } = useChat({
     api: '/api/robert',
-  });
+  } as any);
   const [mounted, setMounted] = useState(false);
+  const [input, setInput] = useState('');
 
   useEffect(() => {
     setMounted(true);
@@ -18,6 +19,21 @@ export default function RobertPage() {
       document.body.style.overflow = '';
     };
   }, []);
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setInput(e.target.value);
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!input.trim()) return;
+
+    // Save current input and clear it immediately
+    const text = input;
+    setInput('');
+
+    await sendMessage({ text });
+  };
 
   if (!mounted) return null;
 
@@ -38,9 +54,21 @@ export default function RobertPage() {
               <span className="font-bold opacity-70">
                 {m.role === 'user' ? 'USER > ' : 'ROBERT > '}
               </span>
-              {m.content}
+              {m.parts ? (
+                m.parts.map((part: any, i: number) => {
+                   if (part.type === 'text') return <span key={i}>{part.text}</span>;
+                   if (part.type === 'tool-invocation') return <span key={i} className="text-yellow-500">[TOOL: {part.toolInvocation.toolName}]</span>;
+                   return null;
+                })
+              ) : (
+                // Fallback for older message format or simplified text
+                 (m as any).content
+              )}
             </div>
           ))}
+          {status === 'streaming' && (
+             <div className="animate-pulse">&gt; PROCESSING...</div>
+          )}
         </div>
 
         <form onSubmit={handleSubmit} className="flex gap-2">
@@ -55,6 +83,7 @@ export default function RobertPage() {
           <button
               type="submit"
               className="bg-green-900 text-black px-4 py-2 hover:bg-green-700 font-bold rounded"
+              disabled={status === 'streaming'}
           >
             EXECUTE
           </button>
