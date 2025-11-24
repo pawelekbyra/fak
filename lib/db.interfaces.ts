@@ -14,6 +14,7 @@ export interface User {
   // We will allow both temporarily or stick to lowercase.
   // Prisma schema says @default("user").
   role?: 'user' | 'admin' | 'patron' | 'author';
+  isFirstLogin?: boolean;
   emailConsent?: boolean;
   emailLanguage?: string | null;
 }

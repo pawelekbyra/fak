@@ -14,6 +14,7 @@ declare module "next-auth" {
       displayName: string | null;
       avatar: string | null;
       sessionVersion?: number;
+      isFirstLogin?: boolean;
     } & DefaultSession["user"]
   }
 
@@ -24,6 +25,7 @@ declare module "next-auth" {
     displayName: string | null;
     avatar: string | null;
     sessionVersion?: number;
+    isFirstLogin?: boolean;
   }
 }
 
@@ -35,5 +37,6 @@ declare module "next-auth/jwt" {
     displayName: string | null;
     avatar: string | null;
     sessionVersion?: number;
+    isFirstLogin?: boolean;
   }
 }

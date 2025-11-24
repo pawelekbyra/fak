@@ -223,13 +223,16 @@ export async function createUserByAdmin(email: string) {
         }
 
         // Create User
+        // Note: username is required @unique in schema, so we keep the random logic for it.
+        // But displayName should be the email part or empty, and we set isFirstLogin = true
         await prisma.user.create({
             data: {
                 email,
                 password: hashedPassword,
                 username: username,
-                displayName: username,
+                displayName: email.split('@')[0], // Set initial displayName to email prefix, user must change it
                 role: 'user', // Default role
+                isFirstLogin: true,
                 emailConsent: true,
                 emailLanguage: 'pl'
             }
