@@ -1,6 +1,7 @@
 'use client';
 
 import { useChat } from '@ai-sdk/react';
+import { TextStreamChatTransport } from 'ai';
 import { useEffect, useRef, useState } from 'react';
 import { Terminal, Send, Trash2, Cpu } from 'lucide-react';
 
