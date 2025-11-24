@@ -16,10 +16,8 @@ export async function POST(req: Request) {
       );
     }
 
-    // Ścieżka do pliku persony
     const personaPath = path.join(process.cwd(), 'robert-persona.md');
     
-    // Zabezpieczenie: Jeśli plik nie istnieje, użyj domyślnego promptu, żeby nie wywalić błędu
     let system = "Jesteś pomocnym asystentem.";
     if (fs.existsSync(personaPath)) {
        system = fs.readFileSync(personaPath, 'utf-8');
@@ -28,13 +26,11 @@ export async function POST(req: Request) {
     }
 
     const result = streamText({
-      // ✅ Używamy najnowszego modelu Gemini 3 (wersja Preview)
       model: google('gemini-3-pro-preview'), 
       system,
       messages: convertToModelMessages(messages),
     });
 
-    // ✅ Poprawka: Używamy metody, której wymaga Twój kompilator
     return result.toTextStreamResponse();
     
   } catch (error) {

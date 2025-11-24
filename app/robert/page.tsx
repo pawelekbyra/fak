@@ -1,18 +1,15 @@
 'use client';
 
 import { useChat } from '@ai-sdk/react';
-import { DefaultChatTransport } from 'ai';
 import { useEffect, useRef, useState } from 'react';
 
 export default function RobertPage() {
   const { messages, error, regenerate, sendMessage } = useChat({
-    transport: new DefaultChatTransport({
-      api: '/api/robert',
-    }),
+    api: '/api/robert',
+    streamProtocol: 'text',
   });
 
   const [input, setInput] = useState('');
-
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const scrollToBottom = () => {
