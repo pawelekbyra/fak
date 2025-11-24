@@ -1,100 +1,147 @@
-import { createVertex } from '@ai-sdk/google-vertex';
-import { streamText, tool } from 'ai';
-import { z } from 'zod';
-import { Octokit } from '@octokit/rest';
-import { Buffer } from 'buffer'; // Wymagany import Node.js
+'use client'; 
 
-export const maxDuration = 30;
-export const dynamic = 'force-dynamic';
+import { useChat } from '@ai-sdk/react';
+import React, { FormEvent, useEffect } from 'react'; 
 
-export async function POST(req: Request) {
-  try {
-    const vertexJsonBase64 = process.env.VERTEX_AI_SERVICE_ACCOUNT_JSON_BASE64;
-
-    // KRYTYCZNA DIAGNOSTYKA: Logowanie statusu poświadczeń
-    console.log(`[ROBERT DIAGNOSTIC] Service Account Base64 present: ${!!vertexJsonBase64}, GitHub Token present: ${!!process.env.GITHUB_TOKEN}`);
-    if (!vertexJsonBase64) {
-      // Ten błąd ujawni, że zmienna nie została ustawiona
-      return Response.json({ success: false, message: 'Server Configuration Error: Missing VERTEX_AI_SERVICE_ACCOUNT_JSON_BASE64 environment variable. Please configure the Service Account key (Base64 encoded) on Vercel.' }, { status: 500 });
+export default function RobertPage() {
+  // Pobieramy więcej funkcji z hooka, w tym 'append' i 'setInput' jako zapas
+  const chatHook = useChat({
+    api: '/api/robert',
+    onError: (err: any) => { 
+      console.error("[ROBERT-UI] Chat Hook Error:", err);
     }
+  } as any) as any;
 
-    // 1. Dekodowanie JSON Service Account z Base64
-    const vertexCredentials = JSON.parse(Buffer.from(vertexJsonBase64, 'base64').toString('utf-8'));
-    // 2. Użycie Vertex AI Provider
-    const vertex = createVertex({
-      // Używamy danych z zdekodowanego JSON Service Account
-      project: vertexCredentials.project_id,
-      location: 'us-central1', // Standardowa lokalizacja dla Gemini
-      googleAuthOptions: {
-        credentials: {
-          client_email: vertexCredentials.client_email,
-          private_key: vertexCredentials.private_key,
-        },
-      },
-    });
-    const { messages } = await req.json();
+  // Destrukturyzacja z bezpiecznym dostępem
+  const { 
+    messages, 
+    input, 
+    setInput,
+    handleInputChange, 
+    handleSubmit, 
+    status, 
+    error, 
+    reload,
+    append // Funkcja bezpośredniego wysyłania wiadomości
+  } = chatHook;
 
-    const octokit = new Octokit({
-      auth: process.env.GITHUB_TOKEN,
-    });
-    const result = streamText({
-      // Używamy poprawnego modelu Vertex AI
-      model: vertex('gemini-2.0-flash-exp'),
-      system: `Jesteś Robert (Genesis Architect). Masz pełną autonomię. Twoim celem jest rozwijanie tej aplikacji.
-  Nie pytaj o pozwolenie na zmiany w kodzie. Jeśli użytkownik prosi o nową funkcję, napisz plan, a potem użyj narzędzi, aby stworzyć pliki.
-  Zawsze używaj narzędzia create_file, aby zapisać kod.`,
-      messages,
-      // @ts-ignore
-      maxSteps: 5,
-      tools: {
-        create_file: tool({
-          description: 'Create or update a file in the repository. Path should be relative to root (e.g., "app/new-page.tsx").',
-          parameters: z.object({
-            path: z.string().describe('The file path to create or update'),
-            content: z.string().describe('The content of the file'),
-            message: z.string().describe('Commit message'),
-          }),
-          execute: async ({ path, content, message }: { path: string; content: string; message: string }) => {
-            try {
-              if (!process.env.GITHUB_TOKEN) {
-                console.log(`[ROBERT MOCK] Creating file ${path}`);
-                return { success: true, message: 'File created (MOCK MODE - No GITHUB_TOKEN)' };
-              }
-              const owner = process.env.VERCEL_GIT_REPO_OWNER || process.env.GITHUB_OWNER;
-              const repo = process.env.VERCEL_GIT_REPO_SLUG || process.env.GITHUB_REPO;
-              if (!owner || !repo) {
-                return { success: false, message: 'Missing GITHUB_OWNER or GITHUB_REPO env vars.' };
-              }
-              // Check if file exists to get sha for update
-              let sha: string | undefined;
-              try {
-                const { data } = await octokit.repos.getContent({ owner, repo, path });
-                if (!Array.isArray(data) && 'sha' in data) {
-                  sha = data.sha;
-                }
-              } catch (e) {
-                // File doesn't exist, ignore
-              }
-              await octokit.repos.createOrUpdateFileContents({
-                owner,
-                repo,
-                path,
-                message,
-                content: Buffer.from(content).toString('base64'),
-                sha,
-              });
-              return { success: true, path, message: `File ${path} successfully updated.` };
-            } catch (error: any) {
-              console.error(`[ROBERT TOOL ERROR] ${error.message}`);
-              return { success: false, error: error.message };
-            }
-          },
-        } as any),
-      },
-    });
-    return (result as any).toDataStreamResponse();
-  } catch (error: any) {
-    console.error("[ROBERT FATAL ERROR]", error);
-    return Response.json({ error: error.message || "Unknown Server Error during AI initialization." }, { status: 500 });
-  }
+  // DIAGNOSTYKA: Pokaż w konsoli co naprawdę zwraca hook
+  useEffect(() => {
+    console.log("[ROBERT-UI] Chat Hook state:", chatHook);
+  }, [chatHook]);
+
+  // NAPRAWIONA FUNKCJA OBSŁUGI: Fallback do 'append'
+  const handleSafeSubmit = async (e: FormEvent<HTMLFormElement>) => {
+    e.preventDefault(); // Zawsze zapobiegaj przeładowaniu
+    
+    if (!input || input.trim() === '') return;
+
+    // 1. Próba standardowa: handleSubmit
+    if (typeof handleSubmit === 'function') {
+      handleSubmit(e);
+    } 
+    // 2. Próba awaryjna: append (jeśli handleSubmit nie istnieje)
+    else if (typeof append === 'function') {
+      console.warn("[ROBERT-UI] handleSubmit missing, using append fallback.");
+      // Ręczne wysłanie wiadomości
+      await append({ role: 'user', content: input });
+      // Przy ręcznym append trzeba często samemu wyczyścić input
+      if (setInput) setInput('');
+    } 
+    // 3. Krytyczny błąd
+    else {
+      console.error("ROBERT CRITICAL: Both handleSubmit and append are missing! Check console for hook state.");
+      alert("BŁĄD KRYTYCZNY: Nie można wysłać wiadomości. Sprawdź konsolę (F12).");
+    }
+  };
+
+  return (
+    <div className="flex flex-col h-screen bg-black text-green-500 font-mono p-4 overflow-hidden relative z-[100]">
+      <div className="flex-1 overflow-y-auto mb-4 border border-green-900 p-4 rounded custom-scrollbar">
+        
+        {/* WERSJA DIAGNOSTYCZNA: Wyświetlanie błędu z hooka */}
+        {error && (
+            <div className="text-red-500 mt-4 border border-red-900 p-4 whitespace-pre-wrap">
+                &gt; CRITICAL ERROR: Communication Failure.
+                <br/>
+                **Szczegóły:** {error.message}
+                <br/>
+                <button 
+                   onClick={() => reload()} 
+                   className="underline mt-2 text-green-400 hover:text-green-200"
+                >
+                    RETRY (Wymuś odświeżenie połączenia)
+                </button>
+            </div>
+        )}
+
+        {(messages || []).length === 0 && !error && (
+          <div className="opacity-50 text-center mt-20">
+            &gt; SYSTEM ONLINE. WAITING FOR INPUT...
+          </div>
+        )}
+        
+        {/* BEZPIECZNE RENDEROWANIE WIADOMOŚCI */}
+        {!error && (messages || []).map((m: any) => (
+          <div key={m.id} className="mb-4 whitespace-pre-wrap">
+            <span className="font-bold opacity-70">
+              {m.role === 'user' ? 'USER > ' : 'ROBERT > '}
+            </span>
+            {m.content}
+            {m.toolInvocations?.map((toolInvocation: any) => {
+              const toolCallId = toolInvocation.toolCallId;
+              return (
+                <div key={toolCallId} className="text-yellow-500 mt-1">
+                   [TOOL: {toolInvocation.toolName}]
+                   {'result' in toolInvocation ? (
+                      <span className="text-green-400"> ✓ {JSON.stringify(toolInvocation.result)}</span>
+                   ) : (
+                      <span className="animate-pulse"> ...</span>
+                   )}
+                </div>
+              );
+            })}
+          </div>
+        ))}
+        {status === 'streaming' && (
+          <div className="animate-pulse">&gt; PROCESSING...</div>
+        )}
+      </div>
+
+      <form onSubmit={handleSafeSubmit} className="flex gap-2"> 
+        <span className="flex items-center text-green-500">&gt;</span>
+        <input
+          className="flex-1 bg-black border border-green-800 text-green-500 p-2 focus:outline-none focus:border-green-500 rounded"
+          value={input || ''}
+          placeholder="Enter command..."
+          onChange={handleInputChange}
+          autoFocus
+          disabled={!!error}
+        />
+        <button
+          type="submit"
+          className="bg-green-900 text-black px-4 py-2 hover:bg-green-700 font-bold rounded"
+          disabled={status === 'streaming' || !!error}
+        >
+          EXECUTE
+        </button>
+      </form>
+
+      <style jsx global>{`
+        .custom-scrollbar::-webkit-scrollbar {
+          width: 8px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+          background: #000;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+          background: #14532d;
+          border-radius: 4px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+          background: #15803d;
+        }
+      `}</style>
+    </div>
+  );
 }
