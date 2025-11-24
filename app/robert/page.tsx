@@ -97,12 +97,12 @@ export default function RobertPage() {
           placeholder="Enter command..."
           onChange={handleInputChange}
           autoFocus
-          disabled={!!error} // Wyłączamy input, gdy jest błąd
+          // Removed disabled={!!error} to allow retrying without reloading
         />
         <button
           type="submit"
           className="bg-green-900 text-black px-4 py-2 hover:bg-green-700 font-bold rounded"
-          disabled={status === 'streaming' || !!error} // Wyłączamy przycisk, gdy jest błąd
+          disabled={status === 'streaming'} // Only disable while streaming
         >
           EXECUTE
         </button>
