@@ -3,7 +3,6 @@
 import { useChat } from '@ai-sdk/react';
 
 export default function RobertPage() {
-  // Cache Buster: Force redeploy to clear stale JS
   const { messages, input, handleInputChange, handleSubmit, status, error } = useChat({
     api: '/api/robert',
     onError: (error: any) => console.error("Chat Error:", error),
