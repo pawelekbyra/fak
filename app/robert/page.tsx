@@ -4,6 +4,7 @@ import { useChat } from '@ai-sdk/react';
 import { useEffect, useRef, useState } from 'react';
 
 export default function RobertPage() {
+  // TU JEST PROBLEM: Brakowało 'api' i 'streamProtocol'
   const { messages, error, regenerate, sendMessage } = useChat({
     api: '/api/robert',
     streamProtocol: 'text',
