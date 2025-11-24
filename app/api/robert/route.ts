@@ -10,13 +10,25 @@ export async function POST(req: Request) {
     const { messages } = await req.json();
 
     if (!process.env.GOOGLE_GENERATIVE_AI_API_KEY) {
-      // ... obsługa błędu klucza ...
+      return new Response(
+        JSON.stringify({ error: 'GOOGLE_GENERATIVE_AI_API_KEY environment variable is not set' }),
+        { status: 500, headers: { 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Wczytanie promptu systemowego z pliku
+    const personaPath = path.join(process.cwd(), 'robert-persona.md');
+    
+    // Sprawdzenie czy plik istnieje (opcjonalne zabezpieczenie)
+    if (!fs.existsSync(personaPath)) {
+       console.error('Persona file not found at:', personaPath);
     }
     
-    // ... wczytywanie persony ...
+    // Definicja zmiennej system (to tego brakowało)
+    const system = fs.readFileSync(personaPath, 'utf-8');
 
     const result = streamText({
-      // ✅ Zmiana na najnowszy model Gemini 3
+      // ✅ Używamy najnowszego modelu Gemini 3 (wersja Preview)
       model: google('gemini-3-pro-preview'), 
       system,
       messages: convertToModelMessages(messages),
@@ -24,6 +36,10 @@ export async function POST(req: Request) {
 
     return result.toDataStreamResponse();
   } catch (error) {
-    // ... obsługa błędu ...
+    console.error('Error in /api/robert:', error);
+    return new Response(
+      JSON.stringify({ error: 'An error occurred while processing your request' }),
+      { status: 500, headers: { 'Content-Type': 'application/json' } }
+    );
   }
 }
