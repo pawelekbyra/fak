@@ -1,15 +1,12 @@
 'use client';
 
 import { useChat } from '@ai-sdk/react';
-import { DefaultChatTransport } from 'ai';
-import { FormEvent, useEffect, useRef, useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { Cpu, Send, Trash2 } from 'lucide-react';
 
 export default function LolekPage() {
   const { messages, error, sendMessage, regenerate, setMessages, status, stop } = useChat({
-    transport: new DefaultChatTransport({
-      api: '/api/lolek',
-    }),
+    api: '/api/lolek',
     onError: (err) => {
         console.error("Chat error:", err);
     }
@@ -63,15 +60,28 @@ export default function LolekPage() {
             <p>Waiting for user input.</p>
           </div>
         )}
-        {messages.map(m => (
-          <div key={m.id} className={`flex flex-col ${m.role === 'user' ? 'items-end' : 'items-start'}`}>
-            <span className={`text-xs opacity-50 mb-1 ${m.role === 'user' ? 'text-blue-400' : 'text-green-400'}`}>
-              {m.role === 'user' ? 'USR-CMD >' : 'SYS-OUT >'}
+        {messages.map(message => (
+          <div key={message.id} className={`flex flex-col ${message.role === 'user' ? 'items-end' : 'items-start'}`}>
+            <span className={`text-xs opacity-50 mb-1 ${message.role === 'user' ? 'text-blue-400' : 'text-green-400'}`}>
+              {message.role === 'user' ? 'USR-CMD >' : 'SYS-OUT >'}
             </span>
-            <div className={`max-w-[85%] whitespace-pre-wrap break-words ${m.role === 'user' ? 'text-blue-300' : 'text-green-300'}`}>
-              {m.parts.map((part, index) =>
-                part.type === 'text' ? <span key={index}>{part.text}</span> : null
-              )}
+            <div className={`max-w-[85%] whitespace-pre-wrap break-words ${message.role === 'user' ? 'text-blue-300' : 'text-green-300'}`}>
+              {message.parts.map((part, i) => {
+                switch (part.type) {
+                  case 'text':
+                    return <span key={`${message.id}-${i}`}>{part.text}</span>;
+                  case 'tool-weather':
+                  case 'tool-convertFahrenheitToCelsius':
+                    return (
+                      <div key={`${message.id}-${i}`} className="p-2 my-2 border border-green-800 bg-black/30">
+                        <p className="text-xs font-bold text-yellow-400 mb-1">TOOL CALL: {part.toolName}</p>
+                        <pre className="text-xs whitespace-pre-wrap">{JSON.stringify(part, null, 2)}</pre>
+                      </div>
+                    );
+                  default:
+                    return null;
+                }
+              })}
             </div>
           </div>
         ))}
