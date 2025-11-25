@@ -127,11 +127,13 @@ const CommentItem: React.FC<CommentItemProps> = ({ comment, onLike, onReplySubmi
             </div>
 
              <DropdownMenu.Root>
-                <DropdownMenu.Trigger asChild>
-                  <button className="text-white/40 hover:text-white opacity-0 group-hover:opacity-100 transition-opacity">
-                    <MoreHorizontal size={16} />
-                  </button>
-                </DropdownMenu.Trigger>
+                {currentUserId === comment.authorId && (
+                    <DropdownMenu.Trigger asChild>
+                      <button className="text-white/40 hover:text-white opacity-0 group-hover:opacity-100 transition-opacity">
+                        <MoreHorizontal size={16} />
+                      </button>
+                    </DropdownMenu.Trigger>
+                )}
                 <DropdownMenu.Portal>
                   <DropdownMenu.Content className="min-w-[150px] bg-gray-800 rounded-md p-1 shadow-xl z-[60] border border-white/10" align="end">
                     {currentUserId === comment.authorId ? (
@@ -269,6 +271,11 @@ const CommentsModal: React.FC<CommentsModalProps> = ({ isOpen, onClose, slideId,
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ commentId }),
+    }).then(res => {
+        if (!res.ok) {
+            return res.json().then(data => { throw new Error(data.message || 'Failed to like comment') });
+        }
+        return res.json();
     }),
     onMutate: async (commentId: string) => {
       await queryClient.cancelQueries({ queryKey: ['comments', slideId] });
@@ -292,10 +299,11 @@ const CommentsModal: React.FC<CommentsModalProps> = ({ isOpen, onClose, slideId,
       });
       return { previousComments };
     },
-    onError: (err, variables, context) => {
+    onError: (err: Error, variables, context) => {
       if (context?.previousComments) {
         queryClient.setQueryData(['comments', slideId], context.previousComments);
       }
+      addToast(t(err.message) || 'Action failed', 'error');
     },
     onSettled: () => {
       queryClient.invalidateQueries({ queryKey: ['comments', slideId] });
@@ -307,10 +315,18 @@ const CommentsModal: React.FC<CommentsModalProps> = ({ isOpen, onClose, slideId,
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ slideId, text, parentId }),
+    }).then(res => {
+        if (!res.ok) {
+            return res.json().then(data => { throw new Error(data.message || 'Failed to post comment') });
+        }
+        return res.json();
     }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['comments', slideId] });
     },
+    onError: (err: Error) => {
+        addToast(t(err.message) || 'Failed to post comment', 'error');
+    }
   });
 
   const deleteMutation = useMutation({
@@ -318,6 +334,11 @@ const CommentsModal: React.FC<CommentsModalProps> = ({ isOpen, onClose, slideId,
       method: 'DELETE',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ commentId }),
+    }).then(res => {
+        if (!res.ok) {
+            return res.json().then(data => { throw new Error(data.message || 'Failed to delete comment') });
+        }
+        return res.json();
     }),
     onMutate: async (commentId: string) => {
       await queryClient.cancelQueries({ queryKey: ['comments', slideId] });
@@ -332,10 +353,11 @@ const CommentsModal: React.FC<CommentsModalProps> = ({ isOpen, onClose, slideId,
       });
       return { previousComments };
     },
-    onError: (err, variables, context) => {
+    onError: (err: Error, variables, context) => {
       if (context?.previousComments) {
         queryClient.setQueryData(['comments', slideId], context.previousComments);
       }
+      addToast(t(err.message) || 'Failed to delete comment', 'error');
     },
     onSettled: () => {
       queryClient.invalidateQueries({ queryKey: ['comments', slideId] });
