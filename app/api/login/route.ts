@@ -13,29 +13,31 @@ export async function POST(req: Request) {
       return NextResponse.json({ success: false, message: 'Missing login or password' }, { status: 400 });
     }
 
-    // Delegate authentication to NextAuth's `signIn` function
-    // It will use the `authorize` function in `auth.ts`
+    // signIn will throw an error if auth fails, which is caught below.
+    // The `authorize` function in `auth.ts` returns the full user object on success.
     await signIn('credentials', {
       login,
       password,
-      redirect: false, // Prevent NextAuth from redirecting
+      redirect: false,
     });
 
-    // If signIn completes without throwing an error, authentication was successful.
-    // Now, fetch the user data to return to the client.
-    let user = null;
-    if (login.includes('@')) {
-      user = await prisma.user.findUnique({ where: { email: login } });
-    } else {
-      user = await prisma.user.findUnique({ where: { username: login } });
-    }
+    // After successful sign-in, we need to fetch the user to return a safe object.
+    // This logic is now correct because we are explicitly sanitizing the output.
+    const user = await prisma.user.findFirst({
+        where: {
+            OR: [
+                { email: login },
+                { username: login }
+            ]
+        }
+    });
 
-    // This should always find a user if signIn was successful, but as a safeguard:
     if (!user) {
-        return NextResponse.json({ success: false, message: 'User not found after successful login' }, { status: 500 });
+        // This case should theoretically not be reached if signIn was successful.
+        return NextResponse.json({ success: false, message: 'User not found after login' }, { status: 500 });
     }
 
-    // Prepare a safe user object to return
+    // Explicitly create a safe user object to return to the client, omitting the password.
     const userWithoutPassword = {
         id: user.id,
         email: user.email,
@@ -48,20 +50,15 @@ export async function POST(req: Request) {
     return NextResponse.json({ success: true, user: userWithoutPassword });
 
   } catch (error) {
-    // Handle NextAuth specific errors
     if (error instanceof AuthError) {
       switch (error.type) {
         case 'CredentialsSignin':
-          // This error is thrown when the `authorize` function returns null
           return NextResponse.json({ success: false, message: 'Invalid credentials' }, { status: 401 });
         default:
           return NextResponse.json({ success: false, message: 'Authentication error' }, { status: 500 });
       }
     }
 
-    // If it's not a NextAuth error, it might be something else (e.g., JSON parsing).
-    // Let Next.js handle it by re-throwing, which will result in a 500.
-    // Or, for more control, return a generic error response.
     console.error("Login API Error:", error);
     return NextResponse.json({ success: false, message: 'Internal Server Error' }, { status: 500 });
   }

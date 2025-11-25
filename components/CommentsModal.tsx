@@ -400,7 +400,7 @@ const CommentsModal: React.FC<CommentsModalProps> = ({ isOpen, onClose, slideId,
     if (error && comments.length === 0) {
       return (
         <div className="flex-1 flex items-center justify-center text-center text-red-400 p-4">
-          {error.message}
+          <p>{t('commentsError') || 'Could not load comments.'}</p>
         </div>
       );
     }
