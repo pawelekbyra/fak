@@ -362,18 +362,23 @@ export async function getComments(
     cursor: cursor ? { id: cursor } : undefined,
     orderBy: { createdAt: 'desc' },
     include: {
-      author: true,
-      likes: true, // Needed to map to likedBy
+      author: {
+        select: { id: true, username: true, displayName: true, avatar: true, role: true }
+      },
+      likes: {
+        select: { userId: true }
+      },
       replies: {
         include: {
-          author: true,
-          likes: true
+          author: {
+            select: { id: true, username: true, displayName: true, avatar: true, role: true }
+          },
+          likes: {
+            select: { userId: true }
+          }
         },
         orderBy: { createdAt: 'asc' }
       },
-      _count: {
-        select: { likes: true }
-      }
     }
   });
 
@@ -383,17 +388,21 @@ export async function getComments(
     nextCursor = nextItem?.id || null;
   }
 
-  // Map Prisma result to DTO (transform likes -> likedBy)
-  const mappedComments = comments.map(c => ({
-    ...c,
-    likedBy: c.likes.map(l => l.userId),
-    replies: c.replies.map(r => ({
+  // Map Prisma result to DTO
+  const mappedComments = comments.map(c => {
+    const mappedReplies = c.replies.map(r => ({
       ...r,
       likedBy: r.likes.map(l => l.userId),
-      replies: [], // Max depth 1 for now, or recursive if needed
+      replies: [], // Max depth 1
       _count: { likes: r.likes.length }
-    }))
-  }));
+    }));
+    return {
+      ...c,
+      likedBy: c.likes.map(l => l.userId),
+      replies: mappedReplies,
+      _count: { likes: c.likes.length },
+    };
+  });
 
   return { comments: mappedComments, nextCursor };
 }

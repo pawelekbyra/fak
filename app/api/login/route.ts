@@ -5,14 +5,14 @@ import { AuthError } from 'next-auth';
 import { DEFAULT_AVATAR_URL } from '@/lib/constants';
 
 export async function POST(req: Request) {
+  const body = await req.json();
+  const { login, password } = body;
+
+  if (!login || !password) {
+    return NextResponse.json({ success: false, message: 'Missing login or password' }, { status: 400 });
+  }
+
   try {
-    const body = await req.json();
-    const { login, password } = body;
-
-    if (!login || !password) {
-      return NextResponse.json({ success: false, message: 'Missing login or password' }, { status: 400 });
-    }
-
     // signIn will throw an error if auth fails, which is caught below.
     // The `authorize` function in `auth.ts` returns the full user object on success.
     await signIn('credentials', {
@@ -59,7 +59,9 @@ export async function POST(req: Request) {
       }
     }
 
+    // This will now catch other errors, like if prisma fails, but not auth errors.
     console.error("Login API Error:", error);
-    return NextResponse.json({ success: false, message: 'Internal Server Error' }, { status: 500 });
+    // Rethrow to let Next.js handle it, which will result in a 500.
+    throw error;
   }
 }
