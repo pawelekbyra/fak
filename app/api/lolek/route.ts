@@ -33,7 +33,7 @@ export async function POST(req: Request) {
     const { messages }: { messages: UIMessage[] } = await req.json();
 
     const result = streamText({
-      model: google('gemini-1.5-pro-latest'),
+      model: google('gemini-3-pro-preview'),
       system,
       messages: convertToCoreMessages(messages),
       stopWhen: stepCountIs(5), // Enable multi-step tool calls
