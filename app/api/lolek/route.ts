@@ -120,6 +120,75 @@ export async function POST(req: Request) {
             }
           },
         }),
+        setVercelEnvVar: tool({
+          description: 'Ustawia lub aktualizuje zmienną środowiskową w projekcie Vercel.',
+          inputSchema: z.object({
+            key: z.string().describe('Nazwa zmiennej środowiskowej.'),
+            value: z.string().describe('Wartość zmiennej środowiskowej.'),
+            target: z.enum(['production', 'preview', 'development']).describe('Środowisko docelowe.'),
+          }),
+          execute: async ({ key, value, target }) => {
+            const token = process.env.VERCEL_API_TOKEN;
+            const projectId = process.env.VERCEL_PROJECT_ID;
+            if (!token || !projectId) {
+              return { error: 'Brak konfiguracji Vercel (Token/ProjectID).' };
+            }
+
+            try {
+              const response = await fetch(`https://api.vercel.com/v10/projects/${projectId}/env`, {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                  Authorization: `Bearer ${token}`,
+                },
+                body: JSON.stringify({
+                  key,
+                  value,
+                  type: 'encrypted',
+                  target: [target],
+                }),
+              });
+
+              if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(`Vercel API Error: ${errorData.error.message}`);
+              }
+
+              return { status: 'success', message: `Zmienna ${key} została pomyślnie ustawiona dla środowiska ${target}.` };
+            } catch (error: any) {
+              return { error: `Nie udało się ustawić zmiennej: ${error.message}` };
+            }
+          },
+        }),
+        purgeVercelCache: tool({
+          description: 'Czyści pamięć podręczną (Data Cache) dla całego projektu Vercel.',
+          inputSchema: z.object({}),
+          execute: async () => {
+            const token = process.env.VERCEL_API_TOKEN;
+            const projectId = process.env.VERCEL_PROJECT_ID;
+            if (!token || !projectId) {
+              return { error: 'Brak konfiguracji Vercel (Token/ProjectID).' };
+            }
+
+            try {
+              const response = await fetch(`https://api.vercel.com/v1/projects/${projectId}/data-cache/purge`, {
+                method: 'POST',
+                headers: {
+                  Authorization: `Bearer ${token}`,
+                },
+              });
+
+              if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(`Vercel API Error: ${errorData.error.message}`);
+              }
+
+              return { status: 'success', message: 'Zlecono czyszczenie pamięci podręcznej dla projektu.' };
+            } catch (error: any) {
+              return { error: `Nie udało się wyczyścić pamięci podręcznej: ${error.message}` };
+            }
+          },
+        }),
         weather: tool({
           description: 'Get the weather in a location (fahrenheit)',
           inputSchema: z.object({
