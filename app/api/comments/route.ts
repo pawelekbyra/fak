@@ -14,13 +14,14 @@ export async function GET(request: NextRequest) {
   const cursor = searchParams.get('cursor') || undefined;
   const limitParam = searchParams.get('limit');
   const limit = limitParam ? parseInt(limitParam, 10) : 20;
+  const sortBy = searchParams.get('sortBy') as 'latest' | 'top' | null;
 
   if (!slideId) {
     return NextResponse.json({ success: false, message: 'slideId is required' }, { status: 400 });
   }
 
   try {
-    const { comments, nextCursor } = await db.getComments(slideId, { limit, cursor });
+    const { comments, nextCursor } = await db.getComments(slideId, { limit, cursor, sortBy: sortBy || 'latest' });
     return NextResponse.json({ success: true, comments, nextCursor });
   } catch (error) {
     console.error('Error fetching comments:', error);

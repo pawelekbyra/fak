@@ -21,7 +21,7 @@ const fetchSlides = async () => {
 };
 
 const Preloader: React.FC = () => {
-  const { t, selectInitialLang } = useTranslation();
+  const { t, selectInitialLang, isLangSelected } = useTranslation();
   const {
     setIsMuted,
     togglePlay,
@@ -33,7 +33,6 @@ const Preloader: React.FC = () => {
     shallow
   );
 
-  const [isHiding, setIsHiding] = useState(false);
   const [showLangButtons, setShowLangButtons] = useState(false);
 
   // Zmieniamy użycie useQuery, aby odebrać 'data'
@@ -59,13 +58,11 @@ const Preloader: React.FC = () => {
     if (!useStore.getState().isPlaying) {
       togglePlay();
     }
-
-    setIsHiding(true);
   };
 
   return (
     <AnimatePresence>
-      {!isHiding && (
+      {!isLangSelected && (
         <motion.div
           className="absolute inset-0 bg-black z-[10000] overflow-hidden flex flex-col items-center justify-center p-4 gap-8"
           initial={{ opacity: 1 }}

@@ -83,8 +83,11 @@ const CommentItem: React.FC<CommentItemProps> = ({ comment, onLike, onReplySubmi
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -20 }}
-      className={`flex items-start gap-3 ${isReply ? 'ml-8' : ''} group`}
+      className={`flex items-start gap-2 ${isReply ? 'ml-6' : ''} group relative`}
     >
+      {isReply && (
+        <div className="absolute left-3 top-2 bottom-2 w-px bg-white/10" />
+      )}
       <div
         onClick={() => onAvatarClick(author.id)}
         className="cursor-pointer flex-shrink-0 flex flex-col items-center"
@@ -220,6 +223,7 @@ const CommentsModal: React.FC<CommentsModalProps> = ({ isOpen, onClose, slideId,
   const { setActiveModal, openPatronProfileModal } = useStore();
   const { addToast } = useToast();
   const [newComment, setNewComment] = useState('');
+  const [sortBy, setSortBy] = useState<'latest' | 'top'>('top');
   const queryClient = useQueryClient();
 
   const {
@@ -230,8 +234,8 @@ const CommentsModal: React.FC<CommentsModalProps> = ({ isOpen, onClose, slideId,
     isLoading,
     isFetchingNextPage,
   } = useInfiniteQuery({
-    queryKey: ['comments', slideId],
-    queryFn: ({ pageParam }) => fetchComments({ pageParam, slideId: slideId! }),
+    queryKey: ['comments', slideId, sortBy],
+    queryFn: ({ pageParam }) => fetchComments({ pageParam, slideId: slideId!, sortBy }),
     initialPageParam: '',
     getNextPageParam: (lastPage) => lastPage.nextCursor,
     enabled: isOpen && !!slideId,
@@ -471,11 +475,27 @@ const CommentsModal: React.FC<CommentsModalProps> = ({ isOpen, onClose, slideId,
             transition={{ type: 'spring', stiffness: 400, damping: 40 }}
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="flex-shrink-0 relative flex items-center justify-center p-4 border-b border-white/10">
-              <h2 className="text-base font-semibold text-white">{t('commentsTitle', { count: (comments.length || initialCommentsCount).toString() })}</h2>
-              <button onClick={onClose} className="absolute right-4 top-1/2 -translate-y-1/2 text-white/60 hover:text-white">
-                <X size={24} />
-              </button>
+            <div className="flex-shrink-0 relative flex flex-col items-center justify-center p-4 border-b border-white/10">
+              <div className="relative w-full flex items-center justify-center">
+                <h2 className="text-base font-semibold text-white">{t('commentsTitle', { count: (comments.length || initialCommentsCount).toString() })}</h2>
+                <button onClick={onClose} className="absolute right-0 top-1/2 -translate-y-1/2 text-white/60 hover:text-white">
+                  <X size={24} />
+                </button>
+              </div>
+              <div className="flex gap-4 mt-2">
+                <button
+                  onClick={() => setSortBy('latest')}
+                  className={`text-sm font-semibold ${sortBy === 'latest' ? 'text-white' : 'text-white/50'}`}
+                >
+                  Najnowsze
+                </button>
+                <button
+                  onClick={() => setSortBy('top')}
+                  className={`text-sm font-semibold ${sortBy === 'top' ? 'text-white' : 'text-white/50'}`}
+                >
+                  Najlepsze
+                </button>
+              </div>
             </div>
 
             <div className="flex-1 overflow-y-auto min-h-0">

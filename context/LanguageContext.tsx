@@ -334,6 +334,18 @@ export const LanguageProvider = ({ children }: { children: ReactNode }) => {
   const [lang, setLangState] = useState<Language>('pl');
   const [isLangSelected, setIsLangSelected] = useState(false);
 
+  useEffect(() => {
+    const savedLang = localStorage.getItem('app_lang') as Language;
+    const langSelected = localStorage.getItem('app_lang_selected') === 'true';
+
+    if (savedLang) {
+      setLangState(savedLang);
+    }
+    if (langSelected) {
+      setIsLangSelected(true);
+    }
+  }, []);
+
   const setLanguage = (newLang: Language) => {
     setLangState(newLang);
     if (typeof window !== 'undefined') {
@@ -344,6 +356,9 @@ export const LanguageProvider = ({ children }: { children: ReactNode }) => {
   const selectInitialLang = (initialLang: Language) => {
     setLanguage(initialLang);
     setIsLangSelected(true);
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('app_lang_selected', 'true');
+    }
   };
 
   const t = (key: string, params?: { [key: string]: string }) => {

@@ -60,7 +60,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         className="
             relative flex flex-col
             w-full h-[100dvh]
-            md:w-[400px] md:h-[85vh] md:max-h-[900px]
+            md:max-w-[400px] md:h-full md:max-h-[85vh] md:mx-auto
             md:rounded-[30px] md:border-[8px] md:border-gray-900 md:shadow-2xl
             md:overflow-hidden md:bg-black
             bg-black

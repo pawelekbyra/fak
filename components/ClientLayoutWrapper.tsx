@@ -19,8 +19,10 @@ export default function ClientLayoutWrapper({
 
   return (
     <Providers>
-      <AppLayout>{children}</AppLayout>
-      <PWAInstallPrompt />
+      <AppLayout>
+        {children}
+        <PWAInstallPrompt />
+      </AppLayout>
       <Script
         data-name="BMC-Widget"
         data-cfasync="false"

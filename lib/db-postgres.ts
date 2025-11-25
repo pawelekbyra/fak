@@ -347,9 +347,13 @@ export async function toggleCommentLike(commentId: string, userId: string): Prom
 
 export async function getComments(
   slideId: string,
-  options: { limit?: number; cursor?: string } = {}
+  options: { limit?: number; cursor?: string; sortBy?: 'latest' | 'top' } = {}
 ): Promise<{ comments: CommentWithRelations[]; nextCursor: string | null }> {
-  const { limit = 20, cursor } = options;
+  const { limit = 20, cursor, sortBy = 'latest' } = options;
+
+  const orderBy = sortBy === 'latest'
+    ? { createdAt: 'desc' as const }
+    : { likes: { _count: 'desc' as const } };
 
   // Use Prisma Client to fetch comments with relations
   const comments = await prisma.comment.findMany({
@@ -360,7 +364,7 @@ export async function getComments(
     take: limit + 1, // Fetch one extra to determine next cursor
     skip: cursor ? 1 : 0, // Skip the cursor itself if present
     cursor: cursor ? { id: cursor } : undefined,
-    orderBy: { createdAt: 'desc' },
+    orderBy,
     include: {
       author: {
         select: { id: true, username: true, displayName: true, avatar: true, role: true }
@@ -375,6 +379,16 @@ export async function getComments(
           },
           likes: {
             select: { userId: true }
+          },
+          replies: {
+            include: {
+              author: {
+                select: { id: true, username: true, displayName: true, avatar: true, role: true }
+              },
+              likes: {
+                select: { userId: true }
+              }
+            }
           }
         },
         orderBy: { createdAt: 'asc' }
@@ -390,16 +404,19 @@ export async function getComments(
 
   // Map Prisma result to DTO
   const mappedComments = comments.map(c => {
-    const mappedReplies = c.replies.map(r => ({
-      ...r,
-      likedBy: r.likes.map(l => l.userId),
-      replies: [], // Max depth 1
-      _count: { likes: r.likes.length }
-    }));
+    const mapRepliesRecursively = (replies: any[]): any[] => {
+      return replies.map(r => ({
+        ...r,
+        likedBy: r.likes.map(l => l.userId),
+        replies: r.replies ? mapRepliesRecursively(r.replies) : [],
+        _count: { likes: r.likes.length }
+      }));
+    };
+
     return {
       ...c,
       likedBy: c.likes.map(l => l.userId),
-      replies: mappedReplies,
+      replies: mapRepliesRecursively(c.replies),
       _count: { likes: c.likes.length },
     };
   });
