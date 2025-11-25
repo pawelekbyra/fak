@@ -1,27 +1,42 @@
-"use client";
+'use client';
 
-import React from 'react';
-import dynamic from 'next/dynamic';
-import {
-  QueryClient,
-  QueryClientProvider,
-} from '@tanstack/react-query';
-import { Skeleton } from '@/components/ui/skeleton';
+import { useChat } from '@ai-sdk/react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
 
-// --- React Query Client ---
-const queryClient = new QueryClient();
+export default function Chat() {
+  const { messages, input, handleInputChange, handleSubmit } = useChat();
 
-// Dynamically import FeedSwiper to ensure it only runs on the client side.
-const DynamicFeedSwiper = dynamic(() => import('@/components/FeedSwiper'), {
-  ssr: false,
-  loading: () => <div className="w-screen h-screen bg-black flex items-center justify-center"><Skeleton className="w-full h-full" /></div>,
-});
-
-// --- Main Page Export ---
-export default function Home() {
   return (
-    <QueryClientProvider client={queryClient}>
-      <DynamicFeedSwiper />
-    </QueryClientProvider>
+    <div className="flex flex-col h-screen">
+      <header className="p-4 border-b">
+        <h1 className="text-xl font-bold">Zordon</h1>
+      </header>
+      <main className="flex-1 overflow-y-auto p-4">
+        <div className="space-y-4">
+          {messages.map(m => (
+            <Card key={m.id} className={m.role === 'user' ? 'bg-secondary' : ''}>
+              <CardHeader>
+                <CardTitle>{m.role === 'user' ? 'You' : 'Zordon'}</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="whitespace-pre-wrap">{m.content}</p>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      </main>
+      <footer className="p-4 border-t">
+        <form onSubmit={handleSubmit} className="flex gap-2">
+          <Input
+            value={input}
+            placeholder="Ask Zordon anything..."
+            onChange={handleInputChange}
+          />
+          <Button type="submit">Send</Button>
+        </form>
+      </footer>
+    </div>
   );
 }

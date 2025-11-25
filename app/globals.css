@@ -4,22 +4,40 @@
 
 @layer base {
   :root {
-    /* Ujednolicone zmienne z prototypu tingtong.txt */
-    --app-height: 100vh;
-    --main-ui-bg-color: #696969;
-    --transition-speed: 0.4s;
-    --transition-timing: cubic-bezier(0.25, 0.46, 0.45, 0.94);
-    --topbar-base-height: 40px;
-    --bottombar-base-height: 110px; /* Zwiększono wysokość bazową, aby pomieścić ikonki */
-    --sidebar-width: 90px;
-    --safe-area-top: env(safe-area-inset-top);
-    --safe-area-bottom: env(safe-area-inset-bottom);
-    --topbar-height: calc(var(--topbar-base-height) + var(--safe-area-top));
-    --bottombar-height: calc(var(--bottombar-base-height) + var(--safe-area-bottom));
+    --background: 0 0% 100%;
+    --foreground: 222.2 84% 4.9%;
 
-    /* Shadcn/ui variables - adapted for the prototype's theme */
-    --background: 0 0% 0%; /* Black background */
-    --foreground: 0 0% 100%; /* White text */
+    --card: 0 0% 100%;
+    --card-foreground: 222.2 84% 4.9%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 222.2 84% 4.9%;
+
+    --primary: 222.2 47.4% 11.2%;
+    --primary-foreground: 210 40% 98%;
+
+    --secondary: 210 40% 96.1%;
+    --secondary-foreground: 222.2 47.4% 11.2%;
+
+    --muted: 210 40% 96.1%;
+    --muted-foreground: 215.4 16.3% 46.9%;
+
+    --accent: 210 40% 96.1%;
+    --accent-foreground: 222.2 47.4% 11.2%;
+
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 210 40% 98%;
+
+    --border: 214.3 31.8% 91.4%;
+    --input: 214.3 31.8% 91.4%;
+    --ring: 222.2 84% 4.9%;
+
+    --radius: 0.5rem;
+  }
+
+  .dark {
+    --background: 222.2 84% 4.9%;
+    --foreground: 210 40% 98%;
 
     --card: 222.2 84% 4.9%;
     --card-foreground: 210 40% 98%;
@@ -27,8 +45,8 @@
     --popover: 222.2 84% 4.9%;
     --popover-foreground: 210 40% 98%;
 
-    --primary: 336 100% 50%; /* Accent color */
-    --primary-foreground: 210 40% 98%;
+    --primary: 210 40% 98%;
+    --primary-foreground: 222.2 47.4% 11.2%;
 
     --secondary: 217.2 32.6% 17.5%;
     --secondary-foreground: 210 40% 98%;
@@ -36,7 +54,7 @@
     --muted: 217.2 32.6% 17.5%;
     --muted-foreground: 215 20.2% 65.1%;
 
-    --accent: 336 100% 50%; /* Accent color */
+    --accent: 217.2 32.6% 17.5%;
     --accent-foreground: 210 40% 98%;
 
     --destructive: 0 62.8% 30.6%;
@@ -44,103 +62,15 @@
 
     --border: 217.2 32.6% 17.5%;
     --input: 217.2 32.6% 17.5%;
-    --ring: 336 100% 50%;
-
-    --radius: 0.5rem;
+    --ring: 212.7 26.8% 83.9%;
   }
 }
 
 @layer base {
   * {
     @apply border-border;
-    margin: 0;
-    padding: 0;
-    box-sizing: border-box;
-    -webkit-tap-highlight-color: transparent;
-    -ms-overflow-style: none;  /* IE and Edge */
-    scrollbar-width: none;  /* Firefox */
   }
-  html, body {
-    height: 100%;
-    width: 100%;
-    overflow: hidden;
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-    @apply text-foreground;
-    overscroll-behavior-y: contain; /* Prevent bounce scroll */
-    user-select: none;
-    -webkit-user-select: none;
-  }
-
-  /*
-    Logic for Body Background:
-    - Default (Mobile): Black (#000000)
-    - Desktop (md:): Light Gray (#f3f4f6) to contrast with the emulator frame
-  */
   body {
-    background-color: #000000;
-  }
-
-  @media (min-width: 768px) {
-    body {
-      background-color: #f3f4f6;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
-  }
-
-  *::-webkit-scrollbar {
-    display: none;
-  }
-}
-
-@layer components {
-  .secret-overlay {
-    @apply absolute left-0 w-full bg-black/40 flex flex-col items-center justify-center text-center p-5;
-    top: var(--topbar-height);
-  height: calc(100% - var(--topbar-height) - var(--bottombar-height));
-    backdrop-filter: blur(12px) saturate(120%);
-    -webkit-backdrop-filter: blur(12px) saturate(120%);
-    z-index: 20;
-  }
-  .secret-overlay .secret-icon {
-    @apply mb-6 text-white/90;
-    filter: drop-shadow(0 4px 12px rgba(0,0,0,0.4));
-  }
-  .secret-overlay .secret-title {
-    @apply text-2xl font-bold text-white mb-1;
-    text-shadow: 0 2px 4px rgba(0,0,0,0.5);
-  }
-  .secret-overlay .secret-subtitle {
-    @apply text-base text-white/80;
-    text-shadow: 0 1px 2px rgba(0,0,0,0.5);
-  }
-  .videoPlayer.secret-active {
-    filter: blur(12px) saturate(120%);
-  }
-  .no-transition {
-    transition: none !important;
-  }
-  .scroll-snap-y-mandatory {
-    scroll-snap-type: y mandatory;
-    scroll-behavior: smooth;
-    overscroll-behavior-y: contain;
-  }
-  .scroll-snap-align-start {
-    scroll-snap-align: start;
-  }
-}
-
-@layer utilities {
-  #bmc-wbtn {
-    display: none !important;
-  }
-}
-
-/* Optional: Additional safeguard for landscape on mobile phones */
-@media (orientation: landscape) and (max-height: 500px) {
-  body {
-    max-width: 800px;
-    margin: 0 auto;
+    @apply bg-background text-foreground;
   }
 }

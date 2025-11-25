@@ -1,0 +1,1 @@
+Inicjalizacja Projektu Zordon. Wyczyszczenie repozytorium.
