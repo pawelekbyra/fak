@@ -461,7 +461,10 @@ const CommentsModal: React.FC<CommentsModalProps> = ({ isOpen, onClose, slideId,
               onDelete={async (id) => { await deleteMutation.mutateAsync(id); }}
               onStartReply={handleStartReply}
               onReport={(id) => addToast(t('reportSubmitted'), 'success')}
-              onAvatarClick={openPatronProfileModal}
+              onAvatarClick={(userId) => {
+                onClose();
+                openPatronProfileModal(userId);
+              }}
               currentUserId={user?.id}
               lang={lang}
             />
@@ -537,8 +540,8 @@ const CommentsModal: React.FC<CommentsModalProps> = ({ isOpen, onClose, slideId,
                     </div>
                   </div>
                    {showEmojiPicker && (
-                      <div className="absolute bottom-16 right-0 z-20">
-                         <EmojiPicker onEmojiClick={onEmojiClick} theme={Theme.DARK} />
+                      <div className="absolute bottom-16 right-2 z-20">
+                         <EmojiPicker onEmojiClick={onEmojiClick} theme={Theme.DARK} previewConfig={{ showPreview: false }} />
                       </div>
                    )}
                    <button type="submit" className="p-2 text-sm font-semibold disabled:opacity-50 flex items-center justify-center transition-colors text-[#FE2C55] disabled:text-[#FE2C55]/50" disabled={(!newComment.trim() && !imageFile) || replyMutation.isPending}>
