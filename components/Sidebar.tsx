@@ -35,17 +35,20 @@ const Sidebar: React.FC<SidebarProps> = ({
     setActiveModal,
     toggleLike,
     likeChanges,
+    commentCountChanges,
     openAuthorProfileModal,
     openTippingModal
   } = useStore(state => ({
     setActiveModal: state.setActiveModal,
     toggleLike: state.toggleLike,
     likeChanges: state.likeChanges,
+    commentCountChanges: state.commentCountChanges,
     openAuthorProfileModal: state.openAuthorProfileModal,
     openTippingModal: state.openTippingModal
   }), shallow);
 
   const likeState = likeChanges[slideId];
+  const currentCommentCount = commentCountChanges[slideId] ?? commentsCount;
   const [liveLikes, setLiveLikes] = React.useState(initialLikes);
   const currentLikes = likeState ? likeState.likes : liveLikes;
   const isLiked = likeState ? likeState.isLiked : initialIsLiked;
@@ -149,7 +152,7 @@ const Sidebar: React.FC<SidebarProps> = ({
         whileTap={{ scale: 0.9 }}
       >
         <MessageSquare size={iconSize} strokeWidth={1.5} className="stroke-white" style={{ filter: 'drop-shadow(0 0 3px rgba(0,0,0,0.5))' }}/>
-        <span className={labelClass}>{formatCount(commentsCount)}</span>
+        <span className={labelClass}>{formatCount(currentCommentCount)}</span>
       </motion.button>
 
       {/* Share */}

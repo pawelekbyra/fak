@@ -3,9 +3,10 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useInfiniteQuery, useQueryClient, useMutation } from '@tanstack/react-query';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Heart, MessageSquare, Loader2, MoreHorizontal, Trash, Flag, Smile, ChevronDown } from 'lucide-react';
+import { X, Heart, MessageSquare, Loader2, MoreHorizontal, Trash, Flag, Smile, ChevronDown, ImageIcon, SendHorizontal } from 'lucide-react';
 import Image from 'next/image';
 import { ably } from '@/lib/ably-client';
+import EmojiPicker, { EmojiClickData } from 'emoji-picker-react';
 import { useTranslation } from '@/context/LanguageContext';
 import { useUser } from '@/context/UserContext';
 import { useToast } from '@/context/ToastContext';
@@ -113,6 +114,11 @@ const CommentItem: React.FC<CommentItemProps> = ({ comment, onLike, onDelete, on
             )}
             {comment.text}
           </p>
+          {comment.imageUrl && (
+            <div className="mt-2">
+              <Image src={comment.imageUrl} alt="Comment image" width={200} height={200} className="rounded-lg object-cover" />
+            </div>
+          )}
         </div>
 
         <div className="flex items-center gap-3 text-xs text-[#808080] mt-1.5">
@@ -157,7 +163,7 @@ const CommentItem: React.FC<CommentItemProps> = ({ comment, onLike, onDelete, on
                 className="space-y-4 overflow-hidden pt-2"
               >
                 {replies.map((reply) => (
-                  <CommentItem key={reply.id} slideId={slideId} comment={reply} onLike={onLike} onDelete={onDelete} onReport={onReport} onAvatarClick={onAvatarClick} onStartReply={onStartReply} currentUserId={currentUserId} lang={lang} level={level + 1} />
+                  <MemoizedCommentItem key={reply.id} slideId={slideId} comment={reply} onLike={onLike} onDelete={onDelete} onReport={onReport} onAvatarClick={onAvatarClick} onStartReply={onStartReply} currentUserId={currentUserId} lang={lang} level={level + 1} />
                 ))}
                 {hasMoreReplies && (
                    <button onClick={() => fetchReplies()} disabled={isLoadingReplies} className="text-xs text-[#8F8F8F] font-semibold flex items-center gap-2">
@@ -180,6 +186,8 @@ const CommentItem: React.FC<CommentItemProps> = ({ comment, onLike, onDelete, on
     </motion.div>
   );
 };
+
+const MemoizedCommentItem = React.memo(CommentItem);
 
 const recursivelyUpdateComment = (comments: CommentWithRelations[], commentId: string, updateFn: (comment: CommentWithRelations) => CommentWithRelations): [CommentWithRelations[], boolean] => {
   let foundAndUpdated = false;
@@ -208,6 +216,9 @@ const CommentsModal: React.FC<CommentsModalProps> = ({ isOpen, onClose, slideId,
   const [newComment, setNewComment] = useState('');
   const [sortBy, setSortBy] = useState<'newest' | 'top'>('top');
   const [replyingTo, setReplyingTo] = useState<CommentWithRelations | null>(null);
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [showEmojiPicker, setShowEmojiPicker] = useState(false);
+  const imageInputRef = useRef<HTMLInputElement>(null);
   const queryClient = useQueryClient();
 
   const {
@@ -271,17 +282,30 @@ const CommentsModal: React.FC<CommentsModalProps> = ({ isOpen, onClose, slideId,
   });
 
   const replyMutation = useMutation({
-    mutationFn: ({ parentId, text }: { parentId: string | null; text: string }) =>
-      fetch('/api/comments', {
+    mutationFn: async ({ parentId, text, imageFile }: { parentId: string | null; text: string; imageFile: File | null }) => {
+      let imageUrl: string | null = null;
+      if (imageFile) {
+        const formData = new FormData();
+        formData.append('file', imageFile);
+        const uploadRes = await fetch('/api/upload', { method: 'POST', body: formData });
+        const uploadData = await uploadRes.json();
+        if (!uploadData.success) {
+          throw new Error('Image upload failed');
+        }
+        imageUrl = uploadData.imageUrl;
+      }
+
+      return fetch('/api/comments', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ slideId, text, parentId }),
-      }).then(res => res.json()),
-    onMutate: async ({ parentId, text }) => {
+        body: JSON.stringify({ slideId, text, parentId, imageUrl }),
+      }).then(res => res.json());
+    },
+    onMutate: async ({ parentId, text, imageFile }) => {
       const optimisticComment: CommentWithRelations = {
         id: `temp-${Date.now()}`,
         text,
-        imageUrl: null,
+        imageUrl: imageFile ? URL.createObjectURL(imageFile) : null,
         authorId: user!.id,
         slideId: slideId!,
         parentId: parentId || null,
@@ -296,6 +320,9 @@ const CommentsModal: React.FC<CommentsModalProps> = ({ isOpen, onClose, slideId,
         },
         likedBy: [],
         _count: { likes: 0, replies: 0 },
+        parentAuthorId: replyingTo ? replyingTo.author.id : null,
+        parentAuthorUsername: replyingTo ? (replyingTo.author.displayName || replyingTo.author.username) : null,
+        replies: [],
       };
 
       if (parentId) {
@@ -303,12 +330,19 @@ const CommentsModal: React.FC<CommentsModalProps> = ({ isOpen, onClose, slideId,
         await queryClient.cancelQueries({ queryKey: ['comments', slideId, 'replies', parentId] });
         const previousReplies = queryClient.getQueryData(['comments', slideId, 'replies', parentId]);
         queryClient.setQueryData(['comments', slideId, 'replies', parentId], (old: any) => {
-          const newPages = old ? [...old.pages] : [];
-          if (newPages.length === 0) {
-            newPages.push({ replies: [] });
-          }
-          newPages[0] = { ...newPages[0], replies: [optimisticComment, ...newPages[0].replies] };
-          return { ...old, pages: newPages };
+            const newPages = old ? [...old.pages] : [{ replies: [], nextCursor: null }];
+
+            const newFirstPageReplies = [optimisticComment, ...(newPages[0]?.replies ?? [])];
+
+            newPages[0] = {
+                ...newPages[0],
+                replies: newFirstPageReplies,
+            };
+
+            return {
+                ...old,
+                pages: newPages,
+            };
         });
         return { previousReplies };
       } else {
@@ -336,6 +370,8 @@ const CommentsModal: React.FC<CommentsModalProps> = ({ isOpen, onClose, slideId,
       queryClient.invalidateQueries({ queryKey: ['comments', slideId, 'replies', variables.parentId] });
       if (!variables.parentId) {
         queryClient.invalidateQueries({ queryKey: ['comments', slideId, sortBy] });
+        // Increment comment count in global state only for root comments
+        useStore.getState().incrementCommentCount(slideId!, initialCommentsCount);
       }
       setNewComment('');
       setReplyingTo(null);
@@ -350,8 +386,9 @@ const CommentsModal: React.FC<CommentsModalProps> = ({ isOpen, onClose, slideId,
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     const trimmedComment = newComment.trim();
-    if (!trimmedComment || !user || !slideId) return;
-    replyMutation.mutate({ parentId: replyingTo?.id || null, text: trimmedComment });
+    if ((!trimmedComment && !imageFile) || !user || !slideId) return;
+    replyMutation.mutate({ parentId: replyingTo?.id || null, text: trimmedComment, imageFile });
+    setImageFile(null);
   };
 
   const handleStartReply = (comment: CommentWithRelations) => {
@@ -363,19 +400,27 @@ const CommentsModal: React.FC<CommentsModalProps> = ({ isOpen, onClose, slideId,
     setReplyingTo(null);
   };
 
+  const onEmojiClick = (emojiObject: EmojiClickData) => {
+    setNewComment(prev => prev + emojiObject.emoji);
+    setShowEmojiPicker(false);
+  };
+
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      const file = e.target.files[0];
+      if (file.size > 2 * 1024 * 1024) { // 2MB limit
+        addToast(t('imageTooLarge'), 'error');
+        return;
+      }
+      setImageFile(file);
+    }
+  };
+
   const renderContent = () => {
     if (isLoading && comments.length === 0) {
       return (
-        <div className="flex-1 px-2 pt-2 space-y-4">
-           {[...Array(5)].map((_, i) => (
-              <div key={i} className="flex items-start gap-3">
-                 <Skeleton className="h-8 w-8 rounded-full bg-white/10" />
-                 <div className="space-y-2 flex-1">
-                    <Skeleton className="h-4 w-[100px] bg-white/10" />
-                    <Skeleton className="h-4 w-[200px] bg-white/10" />
-                 </div>
-              </div>
-           ))}
+        <div className="flex-1 flex items-center justify-center">
+          <Loader2 className="h-8 w-8 animate-spin text-pink-400" />
         </div>
       );
     }
@@ -386,7 +431,7 @@ const CommentsModal: React.FC<CommentsModalProps> = ({ isOpen, onClose, slideId,
       <div className="px-2 pt-2 custom-scrollbar">
         <motion.div layout className="space-y-3">
           {comments.map((comment) => (
-            <CommentItem
+            <MemoizedCommentItem
               key={comment.id}
               slideId={slideId}
               comment={comment}
@@ -445,22 +490,37 @@ const CommentsModal: React.FC<CommentsModalProps> = ({ isOpen, onClose, slideId,
                 </div>
               )}
               {user ? (
-                <form onSubmit={handleSubmit} className="flex items-end gap-2 p-2">
-                  <Image src={user.avatar || DEFAULT_AVATAR_URL} alt={t('yourAvatar')} width={32} height={32} className="w-8 h-8 rounded-full object-cover mb-1" />
-                  <div className="flex-1 relative">
+                <form onSubmit={handleSubmit} className="flex items-center gap-2 p-2">
+                  <Image src={user.avatar || DEFAULT_AVATAR_URL} alt={t('yourAvatar')} width={36} height={36} className="w-9 h-9 rounded-full object-cover" />
+                  <div className="flex-1 relative flex items-center bg-[#282828] rounded-xl">
+                    <input
+                      type="file"
+                      ref={imageInputRef}
+                      onChange={handleImageChange}
+                      className="hidden"
+                      accept="image/*"
+                    />
                     <textarea
                       ref={textareaRef}
                       value={newComment}
                       onChange={(e) => setNewComment(e.target.value)}
                       placeholder={replyingTo ? t('replyTo', { user: replyingTo.author.displayName || replyingTo.author.username || '' }) : t('addCommentPlaceholder')}
-                      className="w-full px-4 py-2 bg-[#282828] text-white rounded-xl focus:outline-none focus:ring-1 focus:ring-[#FE2C55] text-sm resize-none min-h-[38px] max-h-[120px] pr-10"
+                      className="w-full pl-4 pr-20 py-2 bg-transparent text-white focus:outline-none text-sm resize-none min-h-[40px] max-h-[120px]"
                       disabled={replyMutation.isPending}
                       rows={1}
                     />
-                    <button type="button" className="absolute right-2 bottom-2 text-white/40 hover:text-white" title="Emoji"><Smile size={20} /></button>
+                    <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-2">
+                       <button type="button" className="text-white/40 hover:text-white" title="Add image" onClick={() => imageInputRef.current?.click()}><ImageIcon size={20} /></button>
+                       <button type="button" className="text-white/40 hover:text-white" title="Emoji" onClick={() => setShowEmojiPicker(!showEmojiPicker)}><Smile size={20} /></button>
+                    </div>
                   </div>
-                  <button type="submit" className="px-4 py-2 mb-1 text-sm font-semibold disabled:opacity-50 flex items-center justify-center min-w-[70px] transition-colors text-[#FE2C55] disabled:text-[#FE2C55]/50" disabled={!newComment.trim() || replyMutation.isPending}>
-                    {replyMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : t('sendButton')}
+                   {showEmojiPicker && (
+                      <div className="absolute bottom-16 right-0 z-20">
+                         <EmojiPicker onEmojiClick={onEmojiClick} />
+                      </div>
+                   )}
+                   <button type="submit" className="p-2 text-sm font-semibold disabled:opacity-50 flex items-center justify-center transition-colors text-[#FE2C55] disabled:text-[#FE2C55]/50" disabled={!newComment.trim() || replyMutation.isPending}>
+                    {replyMutation.isPending ? <Loader2 className="h-5 w-5 animate-spin" /> : <SendHorizontal size={22} />}
                   </button>
                 </form>
               ) : (

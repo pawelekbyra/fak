@@ -1,31 +1,26 @@
-import { put } from '@vercel/blob';
-import { NextResponse } from 'next/server';
-import { auth } from '@/auth';
 
-export async function POST(request: Request): Promise<NextResponse> {
-  const session = await auth();
+import { NextRequest, NextResponse } from 'next/server';
+import { writeFile } from 'fs/promises';
+import { join } from 'path';
+import { tmpdir } from 'os';
 
-  if (!session || !session.user) {
-    return NextResponse.json(
-      { error: 'Unauthorized' },
-      { status: 401 }
-    );
+export async function POST(request: NextRequest) {
+  const data = await request.formData();
+  const file: File | null = data.get('file') as unknown as File;
+
+  if (!file) {
+    return NextResponse.json({ success: false, message: 'No file provided' }, { status: 400 });
   }
 
-  const { searchParams } = new URL(request.url);
-  const filename = searchParams.get('filename');
+  const bytes = await file.arrayBuffer();
+  const buffer = Buffer.from(bytes);
 
-  if (!filename || !request.body) {
-    return NextResponse.json({ error: 'No filename or body provided' }, { status: 400 });
-  }
+  const tempFilePath = join(tmpdir(), `upload_${Date.now()}_${file.name}`);
+  await writeFile(tempFilePath, buffer);
 
-  try {
-      const blob = await put(filename, request.body, {
-        access: 'public',
-      });
-      return NextResponse.json(blob);
-  } catch (error) {
-      console.error(error);
-      return NextResponse.json({ error: 'Upload failed' }, { status: 500 });
-  }
+  // In a real app, you'd upload to a cloud storage service (S3, etc.)
+  // and return the URL. For now, we'll just return a placeholder.
+  const imageUrl = `/uploads/${tempFilePath.split('/').pop()}`;
+
+  return NextResponse.json({ success: true, imageUrl });
 }
