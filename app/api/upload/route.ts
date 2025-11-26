@@ -1,9 +1,8 @@
 
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { writeFile, mkdir } from 'fs/promises';
 import { join } from 'path';
 import { v4 as uuidv4 } from 'uuid';
-import { NextRequest } from 'next/server';
 
 export async function POST(req: NextRequest) {
   try {
