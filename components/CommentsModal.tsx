@@ -6,7 +6,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { X, Heart, MessageSquare, Loader2, MoreHorizontal, Trash, Flag, Smile, ChevronDown, ImageIcon, SendHorizontal } from 'lucide-react';
 import Image from 'next/image';
 import { ably } from '@/lib/ably-client';
-import EmojiPicker, { EmojiClickData } from 'emoji-picker-react';
+import EmojiPicker, { EmojiClickData, Theme } from 'emoji-picker-react';
 import { useTranslation } from '@/context/LanguageContext';
 import { useUser } from '@/context/UserContext';
 import { useToast } from '@/context/ToastContext';
@@ -360,7 +360,7 @@ const CommentsModal: React.FC<CommentsModalProps> = ({ isOpen, onClose, slideId,
             const newPages = old.pages.map((page: any) => {
                 const [updatedComments] = recursivelyUpdateComment(page.comments, parentId, (comment) => ({
                     ...comment,
-                    _count: { ...comment._count, replies: (comment._count?.replies ?? 0) + 1 },
+                    _count: { ...comment._count, likes: comment._count?.likes ?? 0, replies: (comment._count?.replies ?? 0) + 1 },
                 }));
                 return { ...page, comments: updatedComments };
             });
@@ -538,7 +538,7 @@ const CommentsModal: React.FC<CommentsModalProps> = ({ isOpen, onClose, slideId,
                   </div>
                    {showEmojiPicker && (
                       <div className="absolute bottom-16 right-0 z-20">
-                         <EmojiPicker onEmojiClick={onEmojiClick} theme="dark" />
+                         <EmojiPicker onEmojiClick={onEmojiClick} theme={Theme.DARK} />
                       </div>
                    )}
                    <button type="submit" className="p-2 text-sm font-semibold disabled:opacity-50 flex items-center justify-center transition-colors text-[#FE2C55] disabled:text-[#FE2C55]/50" disabled={(!newComment.trim() && !imageFile) || replyMutation.isPending}>
