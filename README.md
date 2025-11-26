@@ -108,17 +108,28 @@ Utwórz plik `.env` (lub `.env.local`) w głównym katalogu. Poniżej znajduje s
 
 ```env
 # --- DATABASE (Neon / Vercel Postgres) ---
-# Zalecany connection string (Pooling)
-DATABASE_URL="postgresql://neondb_owner:*******@ep-plain-scene-agjwcwk3-pooler.c-2.eu-central-1.aws.neon.tech/neondb?sslmode=require"
+# Recommended for most uses
+DATABASE_URL="postgresql://neondb_owner:YOUR_PASSWORD_HERE@ep-plain-scene-agjwcwk3-pooler.c-2.eu-central-1.aws.neon.tech/neondb?sslmode=require"
 
-# Opcjonalnie: Connection string bez poolingu (do migracji/deploy)
-DATABASE_URL_UNPOOLED="postgresql://neondb_owner:*******@ep-plain-scene-agjwcwk3.c-2.eu-central-1.aws.neon.tech/neondb?sslmode=require"
+# For uses requiring a connection without pgbouncer
+DATABASE_URL_UNPOOLED="postgresql://neondb_owner:YOUR_PASSWORD_HERE@ep-plain-scene-agjwcwk3.c-2.eu-central-1.aws.neon.tech/neondb?sslmode=require"
 
-# Parametry pomocnicze (opcjonalne, zależnie od klienta SQL)
+# Parameters for constructing your own connection string
 PGHOST="ep-plain-scene-agjwcwk3-pooler.c-2.eu-central-1.aws.neon.tech"
+PGHOST_UNPOOLED="ep-plain-scene-agjwcwk3.c-2.eu-central-1.aws.neon.tech"
 PGUSER="neondb_owner"
 PGDATABASE="neondb"
-# PGPASSWORD="***"
+PGPASSWORD="YOUR_PASSWORD_HERE"
+
+# Parameters for Vercel Postgres Templates
+POSTGRES_URL="postgresql://neondb_owner:YOUR_PASSWORD_HERE@ep-plain-scene-agjwcwk3-pooler.c-2.eu-central-1.aws.neon.tech/neondb?sslmode=require"
+POSTGRES_URL_NON_POOLING="postgresql://neondb_owner:YOUR_PASSWORD_HERE@ep-plain-scene-agjwcwk3.c-2.eu-central-1.aws.neon.tech/neondb?sslmode=require"
+POSTGRES_USER="neondb_owner"
+POSTGRES_HOST="ep-plain-scene-agjwcwk3-pooler.c-2.eu-central-1.aws.neon.tech"
+POSTGRES_PASSWORD="YOUR_PASSWORD_HERE"
+POSTGRES_DATABASE="neondb"
+POSTGRES_URL_NO_SSL="postgresql://neondb_owner:YOUR_PASSWORD_HERE@ep-plain-scene-agjwcwk3-pooler.c-2.eu-central-1.aws.neon.tech/neondb"
+POSTGRES_PRISMA_URL="postgresql://neondb_owner:YOUR_PASSWORD_HERE@ep-plain-scene-agjwcwk3-pooler.c-2.eu-central-1.aws.neon.tech/neondb?connect_timeout=15&sslmode=require"
 
 # --- AUTH (NextAuth.js) ---
 AUTH_SECRET="wygeneruj_losowy_string_openssl_rand_base64_32"

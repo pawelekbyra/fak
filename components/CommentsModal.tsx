@@ -1,27 +1,27 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from 'react';
-import { useInfiniteQuery, useQueryClient, useMutation } from '@tanstack/react-query';
-import { motion, AnimatePresence } from 'framer-motion';
-import { X, Heart, MessageSquare, Loader2, MoreHorizontal, Trash, Flag, Smile, ChevronDown, ImageIcon, SendHorizontal } from 'lucide-react';
-import Image from 'next/image';
-import { ably } from '@/lib/ably-client';
-import EmojiPicker, { EmojiClickData } from 'emoji-picker-react';
-import { useTranslation } from '@/context/LanguageContext';
-import { useUser } from '@/context/UserContext';
-import { useToast } from '@/context/ToastContext';
-import { useStore } from '@/store/useStore';
-import { CommentWithRelations } from '@/lib/dto';
-import { formatDistanceToNow } from 'date-fns';
-import { pl, enUS } from 'date-fns/locale';
+import { useInfiniteQuery, useQueryClient, useMutation } from "@tanstack/react-query";
+import { motion, AnimatePresence } from "framer-motion";
+import { X, Heart, MessageSquare, Loader2, MoreHorizontal, Trash, Flag, Smile, ChevronDown, ImageIcon, SendHorizontal } from "lucide-react";
+import Image from "next/image";
+import { ably } from "@/lib/ably-client";
+import EmojiPicker, { EmojiClickData } from "emoji-picker-react";
+import { useTranslation } from "@/context/LanguageContext";
+import { useUser } from "@/context/UserContext";
+import { useToast } from "@/context/ToastContext";
+import { useStore } from "@/store/useStore";
+import { CommentWithRelations } from "@/lib/dto";
+import { formatDistanceToNow } from "date-fns";
+import { pl, enUS } from "date-fns/locale";
 import { Skeleton } from "@/components/ui/skeleton";
-import { DEFAULT_AVATAR_URL } from '@/lib/constants';
-import { UserBadge } from './UserBadge';
-import { fetchComments } from '@/lib/queries';
-import { cn } from '@/lib/utils';
+import { DEFAULT_AVATAR_URL } from "@/lib/constants";
+import { UserBadge } from "./UserBadge";
+import { fetchComments } from "@/lib/queries";
+import { cn } from "@/lib/utils";
 
-import * as DropdownMenu from '@radix-ui/react-dropdown-menu';
-import * as Tooltip from '@radix-ui/react-tooltip';
+import * as DropdownMenu from "@radix-ui/react-dropdown-menu";
+import * as Tooltip from "@radix-ui/react-tooltip";
 
 interface CommentsModalProps {
   isOpen: boolean;
@@ -302,6 +302,7 @@ const CommentsModal: React.FC<CommentsModalProps> = ({ isOpen, onClose, slideId,
       }).then(res => res.json());
     },
     onMutate: async ({ parentId, text, imageFile }) => {
+      // Ensure the optimistic comment matches the expected structure to prevent client-side crashes.
       const optimisticComment: CommentWithRelations = {
         id: `temp-${Date.now()}`,
         text,
@@ -319,10 +320,10 @@ const CommentsModal: React.FC<CommentsModalProps> = ({ isOpen, onClose, slideId,
           role: user!.role || 'user',
         },
         likedBy: [],
+        replies: [], // Initialize replies array
         _count: { likes: 0, replies: 0 },
         parentAuthorId: replyingTo ? replyingTo.author.id : null,
         parentAuthorUsername: replyingTo ? (replyingTo.author.displayName || replyingTo.author.username) : null,
-        replies: [],
       };
 
       if (parentId) {
@@ -419,7 +420,7 @@ const CommentsModal: React.FC<CommentsModalProps> = ({ isOpen, onClose, slideId,
   const renderContent = () => {
     if (isLoading && comments.length === 0) {
       return (
-        <div className="flex-1 flex items-center justify-center">
+        <div className="flex-1 flex items-center justify-center flex-grow">
           <Loader2 className="h-8 w-8 animate-spin text-pink-400" />
         </div>
       );
@@ -457,10 +458,22 @@ const CommentsModal: React.FC<CommentsModalProps> = ({ isOpen, onClose, slideId,
     );
   };
 
+  const handleSafeClose = () => {
+    // Prevents closing while emoji picker is open and interacting
+    if (showEmojiPicker) {
+      setShowEmojiPicker(false);
+      return;
+    }
+    // Introduce a small delay to prevent state conflicts on close
+    setTimeout(() => {
+        onClose();
+    }, 50);
+  };
+
   return (
     <AnimatePresence>
       {isOpen && (
-        <motion.div className="absolute inset-0 bg-black/60 z-50 flex items-end" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.3 }} onClick={onClose}>
+        <motion.div className="absolute inset-0 bg-black/60 z-50 flex items-end" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.3 }} onClick={handleSafeClose}>
           <motion.div
             className="w-full bg-[#1C1C1E] backdrop-blur-md rounded-t-2xl flex flex-col border-t border-white/10"
             style={{ height: '75dvh' }}
@@ -480,7 +493,7 @@ const CommentsModal: React.FC<CommentsModalProps> = ({ isOpen, onClose, slideId,
                 <button onClick={() => setSortBy('newest')} className={cn("font-semibold", sortBy === 'newest' ? 'text-white' : 'text-white/40')}>{t('newest')}</button>
             </div>
 
-            <div className="flex-1 overflow-y-auto min-h-0">{renderContent()}</div>
+            <div className="flex-1 overflow-y-auto min-h-0 flex flex-col">{renderContent()}</div>
 
             <div className="flex-shrink-0 border-t border-white/10 bg-[#121212] pb-[calc(0.5rem+env(safe-area-inset-bottom))] z-10">
               {replyingTo && (
@@ -516,7 +529,7 @@ const CommentsModal: React.FC<CommentsModalProps> = ({ isOpen, onClose, slideId,
                   </div>
                    {showEmojiPicker && (
                       <div className="absolute bottom-16 right-0 z-20">
-                         <EmojiPicker onEmojiClick={onEmojiClick} />
+                         <EmojiPicker onEmojiClick={onEmojiClick} theme="dark" searchDisabled />
                       </div>
                    )}
                    <button type="submit" className="p-2 text-sm font-semibold disabled:opacity-50 flex items-center justify-center transition-colors text-[#FE2C55] disabled:text-[#FE2C55]/50" disabled={!newComment.trim() || replyMutation.isPending}>
