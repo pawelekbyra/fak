@@ -54,6 +54,7 @@ const CommentItem: React.FC<CommentItemProps> = ({ comment, onLike, onDelete, on
   } = useInfiniteQuery({
     queryKey: ['comments', slideId, 'replies', comment.id],
     queryFn: ({ pageParam }) => fetch(`/api/comments/replies?parentId=${comment.id}&cursor=${pageParam || ''}`).then(res => res.json()),
+    initialPageParam: '',
     getNextPageParam: (lastPage) => lastPage.nextCursor,
     enabled: areRepliesVisible, // Only fetch when the accordion is open
   });
