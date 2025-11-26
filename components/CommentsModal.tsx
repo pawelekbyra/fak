@@ -465,7 +465,7 @@ const CommentsModal: React.FC<CommentsModalProps> = ({ isOpen, onClose, slideId,
                 </form>
               ) : (
                 <div className="text-center p-2">
-                  <button onClick={() => { setActiveModal('login'); onClose(); }} className="w-full py-3 bg-white/10 text-white/80 rounded-xl text-sm font-semibold hover:bg-white/20">Zaloguj się, aby skomentować</button>
+                  <button onClick={() => { setActiveModal('login'); }} className="w-full py-3 bg-white/10 text-white/80 rounded-xl text-sm font-semibold hover:bg-white/20">Zaloguj się, aby skomentować</button>
                 </div>
               )}
             </div>
