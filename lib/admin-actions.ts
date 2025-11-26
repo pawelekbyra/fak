@@ -2,7 +2,7 @@
 
 import { auth } from '@/auth';
 import { prisma } from '@/lib/prisma';
-import * as bcrypt from '@node-rs/bcrypt';
+import * as bcrypt from 'bcryptjs';
 import { sendWelcomeEmail } from '@/lib/email';
 import { revalidatePath } from 'next/cache';
 

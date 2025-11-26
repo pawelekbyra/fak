@@ -2,7 +2,7 @@
 
 import { auth } from '@/auth';
 import { prisma } from '@/lib/prisma';
-import * as bcrypt from '@node-rs/bcrypt';
+import * as bcrypt from 'bcryptjs';
 import { z } from 'zod';
 import { revalidatePath } from 'next/cache';
 import { setSessionCookie } from '@/lib/auth'; // We might need this if we manually update session, but revalidating path might be enough if session is refreshed.

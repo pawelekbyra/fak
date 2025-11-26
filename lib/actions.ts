@@ -3,7 +3,7 @@
 import { db } from '@/lib/db';
 import { auth, signIn, signOut } from '@/auth';
 import { revalidatePath } from 'next/cache';
-import * as bcrypt from '@node-rs/bcrypt';
+import * as bcrypt from 'bcryptjs';
 import { AuthError } from 'next-auth';
 import { put, del } from '@vercel/blob';
 import { DEFAULT_AVATAR_URL } from '@/lib/constants';

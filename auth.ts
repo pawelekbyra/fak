@@ -2,7 +2,7 @@ import NextAuth from "next-auth"
 import { PrismaAdapter } from "@auth/prisma-adapter"
 import { prisma } from "@/lib/prisma"
 import Credentials from "next-auth/providers/credentials"
-import * as bcrypt from "@node-rs/bcrypt"
+import * as bcrypt from "bcryptjs"
 import { authConfig } from "./auth.config"
 import { z } from "zod"
 import { Adapter } from "next-auth/adapters"
@@ -14,25 +14,32 @@ export const { auth, handlers, signIn, signOut } = NextAuth({
   adapter: PrismaAdapter(prisma) as Adapter,
   session: { strategy: "jwt" },
   callbacks: {
-    async jwt({ token, user }) {
-        if (user) {
-            token.id = user.id;
-            token.role = user.role;
-            token.username = user.username;
-            token.displayName = user.displayName;
-            token.avatar = user.avatar;
-        }
+    async jwt({ token, user, trigger, session }) {
+      if (trigger === "update" && session?.user) {
+        token.displayName = session.user.displayName;
+        token.isFirstLogin = session.user.isFirstLogin;
         return token;
+      }
+      if (user) {
+        token.id = user.id;
+        token.role = user.role;
+        token.username = user.username;
+        token.displayName = user.displayName;
+        token.avatar = user.avatar;
+        token.isFirstLogin = user.isFirstLogin;
+      }
+      return token;
     },
     async session({ session, token }) {
-        if (token && session.user) {
-            session.user.id = token.id;
-            session.user.role = token.role;
-            session.user.username = token.username;
-            session.user.displayName = token.displayName;
-            session.user.avatar = token.avatar;
-        }
-        return session;
+      if (token && session.user) {
+        session.user.id = token.id;
+        session.user.role = token.role;
+        session.user.username = token.username;
+        session.user.displayName = token.displayName;
+        session.user.avatar = token.avatar;
+        session.user.isFirstLogin = token.isFirstLogin;
+      }
+      return session;
     }
   },
   providers: [
