@@ -2,7 +2,7 @@
 // app/api/create-patron/route.ts
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
-import * as bcrypt from '@node-rs/bcrypt';
+import * as bcrypt from 'bcryptjs';
 import { sendPasswordResetLinkEmail } from '@/lib/email';
 import { randomBytes } from 'crypto';
 
