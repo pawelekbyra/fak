@@ -4,7 +4,7 @@ import { cookies } from 'next/headers';
 export const dynamic = 'force-dynamic';
 import { db } from '@/lib/db';
 import { verifySession } from '@/lib/auth';
-import * as bcrypt from '@node-rs/bcrypt';
+import * as bcrypt from 'bcryptjs';
 import { SignJWT } from 'jose';
 
 const FALLBACK_SECRET = 'a_very_long_insecure_key_for_testing_1234567890abcdef';

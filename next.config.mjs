@@ -1,7 +1,7 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   experimental: {
-    serverComponentsExternalPackages: ['@node-rs/bcrypt'],
+    serverComponentsExternalPackages: [],
   },
   images: {
     remotePatterns: [
