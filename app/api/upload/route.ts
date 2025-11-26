@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { writeFile, mkdir } from 'fs/promises';
-import { join } from 'path';
+import { join, basename } from 'path';
 
 export async function POST(request: NextRequest) {
   const data = await request.formData();
@@ -13,8 +13,11 @@ export async function POST(request: NextRequest) {
   const bytes = await file.arrayBuffer();
   const buffer = Buffer.from(bytes);
 
+  // Sanitize the filename to prevent path traversal
+  const sanitizedFilename = basename(file.name.replace(/\s+/g, '_'));
+
   // Create a unique filename
-  const filename = `${Date.now()}_${file.name.replace(/\s+/g, '_')}`;
+  const filename = `${Date.now()}_${sanitizedFilename}`;
 
   // Define the path to the public/uploads directory
   const uploadDir = join(process.cwd(), 'public', 'uploads');

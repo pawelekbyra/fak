@@ -360,7 +360,7 @@ const CommentsModal: React.FC<CommentsModalProps> = ({ isOpen, onClose, slideId,
             const newPages = old.pages.map((page: any) => {
                 const [updatedComments] = recursivelyUpdateComment(page.comments, parentId, (comment) => ({
                     ...comment,
-                    _count: { ...comment._count, replies: (comment._count?.replies ?? 0) + 1 },
+                    _count: { ...comment._count, likes: comment._count?.likes ?? 0, replies: (comment._count?.replies ?? 0) + 1 },
                 }));
                 return { ...page, comments: updatedComments };
             });
