@@ -372,23 +372,7 @@ export async function getComments(
         select: { userId: true },
       },
       _count: {
-        select: { likes: true },
-      },
-      replies: { // L1
-        include: {
-          author: { select: { id: true, username: true, displayName: true, avatar: true, role: true } },
-          likes: { select: { userId: true } },
-          _count: { select: { likes: true } },
-          replies: { // L2
-            include: {
-              author: { select: { id: true, username: true, displayName: true, avatar: true, role: true } },
-              likes: { select: { userId: true } },
-              _count: { select: { likes: true } },
-            },
-            orderBy: { createdAt: 'asc' },
-          },
-        },
-        orderBy: { createdAt: 'asc' },
+        select: { likes: true, replies: true },
       },
     },
   });
@@ -399,20 +383,78 @@ export async function getComments(
     nextCursor = nextItem?.id || null;
   }
 
-  // Helper function to recursively map comments to DTO
   const mapComment = (comment: any): CommentWithRelations => {
-    const replies = comment.replies?.map(mapComment) || [];
     return {
       ...comment,
       likedBy: comment.likes.map((l: any) => l.userId),
-      replies: replies,
-      _count: { likes: comment._count.likes },
+      replies: [], // Replies are now loaded lazily
+      _count: {
+        likes: comment._count.likes,
+        replies: comment._count.replies,
+      },
     };
   };
 
   const mappedComments = comments.map(mapComment);
 
   return { comments: mappedComments, nextCursor };
+}
+
+export async function getCommentReplies(
+  parentId: string,
+  options: { limit?: number; cursor?: string } = {}
+): Promise<{ comments: CommentWithRelations[]; nextCursor: string | null }> {
+  const { limit = 10, cursor } = options;
+
+  const replies = await prisma.comment.findMany({
+    where: {
+      parentId,
+    },
+    take: limit + 1,
+    skip: cursor ? 1 : 0,
+    cursor: cursor ? { id: cursor } : undefined,
+    orderBy: { createdAt: 'asc' },
+    include: {
+      author: {
+        select: { id: true, username: true, displayName: true, avatar: true, role: true },
+      },
+      likes: {
+        select: { userId: true },
+      },
+      _count: {
+        select: { likes: true, replies: true },
+      },
+      parent: {
+        select: {
+          author: {
+            select: { id: true, username: true, displayName: true }
+          }
+        }
+      }
+    },
+  });
+
+  let nextCursor: string | null = null;
+  if (replies.length > limit) {
+    const nextItem = replies.pop();
+    nextCursor = nextItem?.id || null;
+  }
+
+  const mapComment = (comment: any): CommentWithRelations => ({
+    ...comment,
+    likedBy: comment.likes.map((l: any) => l.userId),
+    replies: [], // Deeper replies can be handled similarly if needed
+    _count: {
+      likes: comment._count.likes,
+      replies: comment._count.replies,
+    },
+    // Include parent author username for "@" mentions
+    parentAuthorUsername: comment.parent?.author?.username || comment.parent?.author?.displayName || null
+  });
+
+  const mappedReplies = replies.map(mapComment);
+
+  return { comments: mappedReplies, nextCursor };
 }
 
 export async function addComment(
