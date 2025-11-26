@@ -21,7 +21,7 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    const { comments, nextCursor } = await db.getComments(slideId, { limit, cursor });
+    const { comments, nextCursor } = await db.getComments(slideId, { limit, cursor, sortBy: sortBy || 'top' });
     return NextResponse.json({ success: true, comments, nextCursor });
   } catch (error) {
     console.error('Error fetching comments:', error);
@@ -43,10 +43,10 @@ export async function POST(request: NextRequest) {
   }
 
   try {
-    const { slideId, text, parentId } = await request.json();
+    const { slideId, text, parentId, imageUrl } = await request.json();
 
-    if (!slideId || !text) {
-      return NextResponse.json({ success: false, message: 'slideId and text are required' }, { status: 400 });
+    if (!slideId || (!text && !imageUrl)) {
+      return NextResponse.json({ success: false, message: 'slideId and text or imageUrl are required' }, { status: 400 });
     }
 
     if (typeof text !== 'string' || text.trim().length === 0) {
@@ -63,8 +63,8 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ success: false, message: 'Comment text cannot be empty after sanitization.' }, { status: 400 });
     }
 
-    // Pass parentId to db.addComment
-    const newComment = await db.addComment(slideId, currentUser.id!, sanitizedText, parentId || null);
+    // Pass parentId and imageUrl to db.addComment
+    const newComment = await db.addComment(slideId, currentUser.id!, sanitizedText, parentId || null, imageUrl || null);
 
     const channel = ably.channels.get(`comments:${slideId}`);
     await channel.publish('new-comment', newComment);
