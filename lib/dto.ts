@@ -21,9 +21,11 @@ export type CommentWithRelations = Prisma.CommentGetPayload<{
   };
 }> & {
   likedBy: string[]; // IDs of users who liked this comment
-  replies?: CommentWithRelations[]; // Recursive structure
+  replies?: CommentWithRelations[]; // Recursive structure for client-side state
+  parentAuthorUsername?: string | null; // For displaying "@username" in nested replies
   _count?: {
     likes: number;
+    replies?: number; // Add reply count
   };
 };
 
