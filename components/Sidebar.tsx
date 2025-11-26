@@ -1,4 +1,5 @@
 import React, { memo, useEffect } from 'react';
+import Image from 'next/image';
 import { Heart, MessageSquare, User, Share2 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import Ably from 'ably';
@@ -110,7 +111,7 @@ const Sidebar: React.FC<SidebarProps> = ({
       <div className="relative w-12 h-12 mb-1.5">
         <button onClick={handleOpenAuthorProfile} className="w-full h-full flex items-center justify-center text-white bg-gray-600 rounded-full overflow-hidden border-2 border-yellow-400 shadow-[0_0_10px_rgba(250,204,21,0.5)]">
            {authorAvatar ? (
-             <img src={authorAvatar} alt="Author" className="w-full h-full object-cover" />
+             <Image src={authorAvatar} alt="Author" width={48} height={48} className="w-full h-full object-cover" />
            ) : (
              <User size={32} strokeWidth={1.4} />
            )}

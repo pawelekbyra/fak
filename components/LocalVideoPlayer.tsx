@@ -60,7 +60,7 @@ const LocalVideoPlayer = ({ slide, isActive, shouldLoad = false }: LocalVideoPla
              video.src = mp4Url;
              setIsReadyToPlay(true);
         }
-    }, [slide.data.hlsUrl, slide.data.mp4Url]);
+    }, [slide.data]);
 
     // 2. Logika Preloadingu (Smart Loading)
     useEffect(() => {

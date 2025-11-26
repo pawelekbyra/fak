@@ -22,6 +22,13 @@ import { cn } from '@/lib/utils';
 import * as DropdownMenu from '@radix-ui/react-dropdown-menu';
 import * as Tooltip from '@radix-ui/react-tooltip';
 
+interface CommentsModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  slideId: string | null;
+  initialCommentsCount: number;
+}
+
 interface CommentItemProps {
   comment: CommentWithRelations;
   onLike: (id: string) => void;
@@ -139,7 +146,7 @@ const CommentItem: React.FC<CommentItemProps> = ({ comment, onLike, onReplySubmi
           <div className="mt-2">
             <button onClick={() => setAreRepliesVisible(!areRepliesVisible)} className="flex items-center gap-1 text-xs text-white/60 font-semibold mb-2">
               <ChevronDown size={14} className={cn("transition-transform", !areRepliesVisible && "-rotate-90")} />
-              {areRepliesVisible ? t('hideReplies') : t('showReplies', { count: comment.replies.length.toString() })}
+              {areRepliesVisible ? t('hideReplies') : t('showReplies', { count: (comment.replies || []).length.toString() })}
             </button>
             <AnimatePresence>
             {areRepliesVisible && (
@@ -304,8 +311,12 @@ const CommentsModal: React.FC<CommentsModalProps> = ({ isOpen, onClose, slideId,
               key={comment.id}
               comment={comment}
               onLike={likeMutation.mutate}
-              onReplySubmit={(parentId, text) => replyMutation.mutateAsync({ parentId, text })}
-              onDelete={deleteMutation.mutate}
+              onReplySubmit={async (parentId, text) => {
+                await replyMutation.mutateAsync({ parentId, text });
+              }}
+              onDelete={async (id) => {
+                await deleteMutation.mutateAsync(id);
+              }}
               onReport={(id) => addToast(t('reportSubmitted'), 'success')}
               onAvatarClick={openPatronProfileModal}
               currentUserId={user?.id}

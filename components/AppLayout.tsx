@@ -97,7 +97,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
       <CommentsModal
         isOpen={activeModal === 'comments'}
         onClose={() => setActiveModal(null)}
-        slideId={activeSlide?.id}
+        slideId={activeSlide?.id || null}
         initialCommentsCount={activeSlide?.initialComments || 0}
       />
       <NotificationPopup

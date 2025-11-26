@@ -15,27 +15,27 @@ export const PublicUserSchema = z.object({
 export interface CommentSchemaType {
   id: string;
   text: string;
-  imageUrl?: string | null;
-  createdAt: string;
-  updatedAt?: string;
+  imageUrl: string | null;
+  createdAt: Date;
+  updatedAt: Date;
   authorId: string;
   slideId: string;
-  author?: {
+  author: {
     id: string;
     username: string | null;
     displayName: string | null;
     avatar: string | null;
-    role?: string;
+    role: string;
   };
   likedBy: string[];
   _count?: {
-    likes?: number;
+    likes: number;
   };
   user?: {
     displayName: string | null;
     avatar: string | null;
   };
-  parentId?: string | null | undefined;
+  parentId: string | null;
   replies: CommentSchemaType[];
 }
 
@@ -44,15 +44,9 @@ export const CommentSchema: z.ZodType<CommentSchemaType> = z.lazy(() =>
   z.object({
     id: z.string(),
     text: z.string(),
-    imageUrl: z.string().nullable().optional(),
-    createdAt: z.union([z.string(), z.date()]).transform((val) => {
-        if (val instanceof Date) return val.toISOString();
-        return val;
-    }),
-    updatedAt: z.union([z.string(), z.date()]).transform((val) => {
-        if (val instanceof Date) return val.toISOString();
-        return val;
-    }).optional(),
+    imageUrl: z.string().nullable(),
+    createdAt: z.coerce.date(),
+    updatedAt: z.coerce.date(),
     authorId: z.string(),
     slideId: z.string(),
     author: z.object({
@@ -61,16 +55,16 @@ export const CommentSchema: z.ZodType<CommentSchemaType> = z.lazy(() =>
       displayName: z.string().nullable(),
       avatar: z.string().nullable(),
       role: z.string().default('user'),
-    }).optional(),
+    }),
     likedBy: z.array(z.string()).default([]),
     _count: z.object({
-      likes: z.number().optional(),
+      likes: z.number(),
     }).optional(),
     user: z.object({
       displayName: z.string().nullable(),
       avatar: z.string().nullable(),
     }).optional(),
-    parentId: z.string().nullable().optional(),
+    parentId: z.string().nullable(),
     replies: z.array(CommentSchema).default([]),
   })
 );

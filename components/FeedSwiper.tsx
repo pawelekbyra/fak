@@ -77,8 +77,9 @@ const FeedSwiper = () => {
     slidesRef.current = slides;
   }, [slides]);
 
+  const hasSlides = slides.length > 0;
   useEffect(() => {
-    if (slides.length > 0 && swiperRef.current && !swiperInstance.current) {
+    if (hasSlides && swiperRef.current && !swiperInstance.current) {
       swiperInstance.current = new Swiper(swiperRef.current, {
         modules: [Mousewheel, Keyboard],
         direction: 'vertical',
@@ -129,7 +130,7 @@ const FeedSwiper = () => {
         },
       });
     }
-  }, [slides.length > 0, queryClient]);
+  }, [hasSlides, queryClient, playVideo, setActiveSlide, setNextSlide]);
 
   useEffect(() => {
     if (swiperInstance.current) {
