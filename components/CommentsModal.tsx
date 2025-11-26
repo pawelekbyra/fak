@@ -54,6 +54,7 @@ const CommentItem: React.FC<CommentItemProps> = ({ comment, onLike, onDelete, on
   } = useInfiniteQuery({
     queryKey: ['comments', slideId, 'replies', comment.id],
     queryFn: ({ pageParam }) => fetch(`/api/comments/replies?parentId=${comment.id}&cursor=${pageParam || ''}`).then(res => res.json()),
+    initialPageParam: '',
     getNextPageParam: (lastPage) => lastPage.nextCursor,
     enabled: areRepliesVisible, // Only fetch when the accordion is open
   });
@@ -105,7 +106,7 @@ const CommentItem: React.FC<CommentItemProps> = ({ comment, onLike, onDelete, on
             {isL1Plus && comment.parentAuthorUsername && (
                 <span
                   className="text-pink-400 font-semibold mr-1 cursor-pointer"
-                  onClick={() => onAvatarClick(comment.parent!.authorId)}
+                  onClick={() => onAvatarClick(comment.parentAuthorId!)}
                 >
                   @{comment.parentAuthorUsername}
                 </span>
@@ -280,17 +281,18 @@ const CommentsModal: React.FC<CommentsModalProps> = ({ isOpen, onClose, slideId,
       const optimisticComment: CommentWithRelations = {
         id: `temp-${Date.now()}`,
         text,
+        imageUrl: null,
         authorId: user!.id,
         slideId: slideId!,
         parentId: parentId || null,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
+        createdAt: new Date(),
+        updatedAt: new Date(),
         author: {
           id: user!.id,
           username: user!.username,
-          displayName: user!.displayName,
-          avatar: user!.avatar,
-          role: user!.role,
+          displayName: user!.displayName || null,
+          avatar: user!.avatar || null,
+          role: user!.role || 'user',
         },
         likedBy: [],
         _count: { likes: 0, replies: 0 },
@@ -389,7 +391,7 @@ const CommentsModal: React.FC<CommentsModalProps> = ({ isOpen, onClose, slideId,
               slideId={slideId}
               comment={comment}
               onLike={likeMutation.mutate}
-              onDelete={async (id) => await deleteMutation.mutateAsync(id)}
+              onDelete={async (id) => { await deleteMutation.mutateAsync(id); }}
               onStartReply={handleStartReply}
               onReport={(id) => addToast(t('reportSubmitted'), 'success')}
               onAvatarClick={openPatronProfileModal}
@@ -438,7 +440,7 @@ const CommentsModal: React.FC<CommentsModalProps> = ({ isOpen, onClose, slideId,
             <div className="flex-shrink-0 border-t border-white/10 bg-[#121212] pb-[calc(0.5rem+env(safe-area-inset-bottom))] z-10">
               {replyingTo && (
                 <div className="bg-[#282828] px-4 py-1.5 text-xs text-[#A6A6A6] flex justify-between items-center">
-                  <span>{t('replyingTo', { user: replyingTo.author.displayName || replyingTo.author.username })}</span>
+                  <span>{t('replyingTo', { user: replyingTo.author.displayName || replyingTo.author.username || '' })}</span>
                   <button onClick={handleCancelReply}><X size={14} /></button>
                 </div>
               )}
@@ -450,7 +452,7 @@ const CommentsModal: React.FC<CommentsModalProps> = ({ isOpen, onClose, slideId,
                       ref={textareaRef}
                       value={newComment}
                       onChange={(e) => setNewComment(e.target.value)}
-                      placeholder={replyingTo ? t('replyTo', { user: replyingTo.author.displayName || replyingTo.author.username }) : t('addCommentPlaceholder')}
+                      placeholder={replyingTo ? t('replyTo', { user: replyingTo.author.displayName || replyingTo.author.username || '' }) : t('addCommentPlaceholder')}
                       className="w-full px-4 py-2 bg-[#282828] text-white rounded-xl focus:outline-none focus:ring-1 focus:ring-[#FE2C55] text-sm resize-none min-h-[38px] max-h-[120px] pr-10"
                       disabled={replyMutation.isPending}
                       rows={1}

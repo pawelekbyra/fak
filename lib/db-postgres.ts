@@ -388,6 +388,7 @@ export async function getComments(
       ...comment,
       likedBy: comment.likes.map((l: any) => l.userId),
       replies: [], // Replies are now loaded lazily
+      parentAuthorId: null, // Root comments have no parent author
       _count: {
         likes: comment._count.likes,
         replies: comment._count.replies,
@@ -449,7 +450,8 @@ export async function getCommentReplies(
       replies: comment._count.replies,
     },
     // Include parent author username for "@" mentions
-    parentAuthorUsername: comment.parent?.author?.username || comment.parent?.author?.displayName || null
+    parentAuthorUsername: comment.parent?.author?.username || comment.parent?.author?.displayName || null,
+    parentAuthorId: comment.parent?.author?.id || null,
   });
 
   const mappedReplies = replies.map(mapComment);

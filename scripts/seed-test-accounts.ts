@@ -1,5 +1,5 @@
 import { config } from 'dotenv';
-import * as bcrypt from '@node-rs/bcrypt';
+import * as bcrypt from 'bcryptjs';
 import { prisma } from '../lib/prisma';
 
 config({ path: '.env.local' });
