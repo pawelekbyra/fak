@@ -2,7 +2,7 @@
   "compilerOptions": {
     "target": "es2015",
     "lib": ["dom", "dom.iterable", "esnext", "webworker"],
-    "types": ["@serwist/next/typings"],
+    "types": ["@serwist/next/typings", "node"],
     "allowJs": true,
     "skipLibCheck": true,
     "strict": true,
