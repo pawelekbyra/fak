@@ -1,9 +1,9 @@
 'use client';
 
-import React from 'react';
+import React, { useState, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { AnimatePresence, motion } from 'framer-motion';
-import { X } from 'lucide-react';
+import { motion } from 'framer-motion';
+import { ChevronLeft, Instagram, Grid, Heart, Lock } from 'lucide-react';
 import { useStore } from '@/store/useStore';
 import { Skeleton } from '@/components/ui/skeleton';
 import Image from 'next/image';
@@ -11,6 +11,7 @@ import { DEFAULT_AVATAR_URL } from '@/lib/constants';
 import { UserBadge } from './UserBadge';
 import { fetchAuthorProfile } from '@/lib/queries';
 import { AuthorProfile } from '@/types';
+import { formatCount } from '@/lib/utils';
 
 interface AuthorProfileModalProps {
     authorId: string;
@@ -19,112 +20,279 @@ interface AuthorProfileModalProps {
 
 export function AuthorProfileModal({ authorId, onClose }: AuthorProfileModalProps) {
     const { jumpToSlide } = useStore();
+    const [activeTab, setActiveTab] = useState<'videos' | 'liked' | 'private'>('videos');
+    const [isPatron, setIsPatron] = useState(false); // Mock state for "Become a Patron"
+
     const { data: profile, isLoading, isError } = useQuery<AuthorProfile>({
         queryKey: ['author', authorId],
         queryFn: () => fetchAuthorProfile(authorId),
         enabled: !!authorId,
     });
 
+    // Mock stats generation based on authorId (deterministic for specific user, random otherwise)
+    const stats = useMemo(() => {
+        if (!profile) return { followers: 0, likes: 0 };
+        // Use authorId chars to seed a pseudo-random number
+        const seed = authorId.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
+        return {
+            followers: 10 + (seed * 123) % 1000, // Mock "Patrons" count
+            likes: 5000 + (seed * 456) % 5000000
+        };
+    }, [profile, authorId]);
+
     const handleSlideClick = (slideId: string) => {
         jumpToSlide(slideId);
         onClose();
     };
 
+    const togglePatron = () => {
+        setIsPatron(!isPatron);
+    };
+
+    if (!authorId) return null;
+
     return (
         <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="absolute inset-0 z-[70] flex items-center justify-center bg-black/60 backdrop-blur-sm"
-            onClick={onClose}
+            initial={{ x: '100%' }}
+            animate={{ x: '0%' }}
+            exit={{ x: '100%' }}
+            transition={{ type: 'spring', damping: 30, stiffness: 300 }}
+            className="absolute inset-0 z-[70] bg-[#121212] flex flex-col overflow-hidden"
+            style={{
+                height: '100%',
+                width: '100%',
+            }}
         >
-            <motion.div
-                initial={{ scale: 0.9, opacity: 0 }}
-                animate={{ scale: 1, opacity: 1 }}
-                exit={{ scale: 0.9, opacity: 0 }}
-                transition={{ type: 'spring', damping: 20, stiffness: 250 }}
-                className="relative flex flex-col w-full max-w-md bg-neutral-900 text-white rounded-2xl shadow-lg border border-neutral-700 mx-4 max-h-[80vh] overflow-hidden"
-                onClick={(e) => e.stopPropagation()}
+            {/* Top Bar - Matches global TopBar styling */}
+            <div
+                className="flex items-center justify-between px-1 bg-black text-white border-b border-white/10 shrink-0 z-10 sticky top-0"
+                style={{
+                  height: 'var(--topbar-height)',
+                  paddingTop: 'var(--safe-area-top)',
+                }}
             >
-                    <header className="relative flex items-center justify-center p-4 border-b border-neutral-800 shrink-0">
-                        <h2 className="text-lg font-semibold">Author Profile</h2>
-                        <button onClick={onClose} className="absolute p-1 right-3 top-3 rounded-full hover:bg-neutral-700">
-                            <X size={20} />
-                        </button>
-                    </header>
+                <div className="flex justify-start w-12">
+                    <button onClick={onClose} className="p-2 text-white/80 hover:text-white transition-colors">
+                        <ChevronLeft size={28} />
+                    </button>
+                </div>
+                <div className="flex justify-center flex-1">
+                    <span className="font-bold text-base truncate max-w-[200px] text-white">
+                        {profile?.username || '...'}
+                    </span>
+                </div>
+                <div className="w-12" /> {/* Spacer to balance the back button */}
+            </div>
 
-                    <main className="flex-1 p-6 overflow-y-auto">
-                        {isLoading ? (
-                            <AuthorProfileSkeleton />
-                        ) : isError ? (
-                            <div className="flex flex-col items-center justify-center h-full space-y-4">
-                                <p>Could not load profile.</p>
+            {/* Scrollable Content */}
+            <div className="flex-1 overflow-y-auto custom-scrollbar">
+                {isLoading ? (
+                    <AuthorProfileSkeleton />
+                ) : isError ? (
+                    <div className="flex flex-col items-center justify-center h-full space-y-4 text-white/50">
+                        <p>Nie udało się załadować profilu.</p>
+                        <button onClick={onClose} className="text-white underline">Zamknij</button>
+                    </div>
+                ) : profile ? (
+                    <div className="pb-20">
+                        {/* Profile Header */}
+                        <div className="flex flex-col items-center pt-6 px-4">
+                            {/* Avatar */}
+                            <div className="relative mb-3">
+                                <Image
+                                    src={profile.avatarUrl || DEFAULT_AVATAR_URL}
+                                    alt={profile.username}
+                                    width={96}
+                                    height={96}
+                                    className="rounded-full object-cover w-24 h-24 border border-white/10"
+                                />
                             </div>
-                        ) : profile ? (
-                            <>
-                                <div className="flex items-center space-x-4 mb-4">
-                                    <Image
-                                      src={profile.avatarUrl || DEFAULT_AVATAR_URL}
-                                      alt={profile.username}
-                                      width={80}
-                                      height={80}
-                                      className="rounded-full border-2 border-yellow-400 shadow-[0_0_15px_rgba(250,204,21,0.5)] object-cover"
-                                    />
-                                    <div>
-                                        <h3 className="text-2xl font-bold">{profile.username}</h3>
-                                        <UserBadge role={profile.role} />
-                                    </div>
+
+                            {/* Name */}
+                            <h1 className="text-lg font-bold text-white mb-1">@{profile.username}</h1>
+
+                            {/* Badge */}
+                            <div className="mb-3">
+                                <UserBadge role={profile.role} />
+                            </div>
+
+                            {/* Bio (Description) */}
+                            {profile.bio ? (
+                                <p className="text-sm text-center text-white/90 whitespace-pre-wrap mb-4 px-2 leading-tight max-w-sm">
+                                    {profile.bio}
+                                </p>
+                            ) : (
+                                <p className="text-sm text-center text-white/40 mb-4 italic">Brak opisu</p>
+                            )}
+
+                            {/* Stats */}
+                            <div className="flex items-center gap-6 mt-2 mb-6">
+                                <div className="flex flex-col items-center">
+                                    <span className="font-bold text-white text-lg">{formatCount(profile.slides.length)}</span>
+                                    <span className="text-xs text-white/60">Filmików</span>
                                 </div>
-                                {profile.bio && (
-                                    <p className="text-neutral-400 text-sm mb-6">{profile.bio}</p>
+                                <div className="flex flex-col items-center">
+                                    <span className="font-bold text-white text-lg">{formatCount(stats.followers)}</span>
+                                    <span className="text-xs text-white/60">Patronów</span>
+                                </div>
+                                <div className="flex flex-col items-center">
+                                    <span className="font-bold text-white text-lg">{formatCount(stats.likes)}</span>
+                                    <span className="text-xs text-white/60">Polubień</span>
+                                </div>
+                            </div>
+
+                            {/* Actions */}
+                            <div className="flex gap-2 w-full max-w-xs mb-6">
+                                <button
+                                    onClick={togglePatron}
+                                    className={`flex-1 py-2.5 rounded text-sm font-semibold transition-colors flex items-center justify-center gap-2
+                                        ${isPatron
+                                            ? 'bg-[#3A3A3A] text-white hover:bg-[#4A4A4A]'
+                                            : 'bg-[#FE2C55] text-white hover:bg-[#E0274B]'
+                                        }`}
+                                >
+                                    {isPatron ? (
+                                        <>Jesteś Patronem</>
+                                    ) : (
+                                        <>Zostań Patronem</>
+                                    )}
+                                </button>
+                                <button className="px-3 py-2.5 bg-[#3A3A3A] rounded hover:bg-[#4A4A4A] text-white transition-colors">
+                                    <Instagram size={20} />
+                                </button>
+                                <button className="px-3 py-2.5 bg-[#3A3A3A] rounded hover:bg-[#4A4A4A] text-white transition-colors">
+                                    <ChevronLeft className="rotate-180" size={20} />
+                                </button>
+                            </div>
+                        </div>
+
+                        {/* Tabs */}
+                        <div className="flex border-b border-white/10 mt-2 sticky top-0 bg-[#121212] z-10" style={{ top: 0 }}>
+                             {/* Note: sticky top-0 might conflict with the modal scrolling if not careful, but usually works in this structure.
+                                Actually, the scrollable container is the div above. The sticky parent needs to be inside that scroll container.
+                                Wait, `sticky` works relative to scroll container. The scroll container starts after the top bar.
+                                So `top: 0` is correct relative to the scroll view.
+                             */}
+                            <button
+                                onClick={() => setActiveTab('videos')}
+                                className={`flex-1 flex justify-center items-center py-3 relative ${activeTab === 'videos' ? 'text-white' : 'text-white/40'}`}
+                            >
+                                <Grid size={20} />
+                                {activeTab === 'videos' && (
+                                    <motion.div layoutId="activeTab" className="absolute bottom-0 w-8 h-[2px] bg-white" />
                                 )}
-                                <h4 className="text-lg font-semibold mb-4 text-neutral-300">Slides</h4>
-                                <div className="grid grid-cols-3 gap-2">
-                                    {profile.slides.map(slide => (
-                                        <motion.div
+                            </button>
+                            <button
+                                onClick={() => setActiveTab('liked')}
+                                className={`flex-1 flex justify-center items-center py-3 relative ${activeTab === 'liked' ? 'text-white' : 'text-white/40'}`}
+                            >
+                                <Heart size={20} />
+                                {activeTab === 'liked' && (
+                                    <motion.div layoutId="activeTab" className="absolute bottom-0 w-8 h-[2px] bg-white" />
+                                )}
+                            </button>
+                            <button
+                                onClick={() => setActiveTab('private')}
+                                className={`flex-1 flex justify-center items-center py-3 relative ${activeTab === 'private' ? 'text-white' : 'text-white/40'}`}
+                            >
+                                <Lock size={20} />
+                                {activeTab === 'private' && (
+                                    <motion.div layoutId="activeTab" className="absolute bottom-0 w-8 h-[2px] bg-white" />
+                                )}
+                            </button>
+                        </div>
+
+                        {/* Content Grid */}
+                        <div className="min-h-[300px]">
+                            {activeTab === 'videos' ? (
+                                <div className="grid grid-cols-3 gap-[1px]">
+                                    {profile.slides && profile.slides.length > 0 ? profile.slides.map(slide => (
+                                        <div
                                             key={slide.id}
-                                            className="aspect-video bg-neutral-800 rounded-md overflow-hidden cursor-pointer relative"
+                                            className="aspect-[3/4] bg-neutral-800 relative cursor-pointer overflow-hidden group"
                                             onClick={() => handleSlideClick(slide.id)}
-                                            whileHover={{ scale: 1.05 }}
-                                            transition={{ type: 'spring', stiffness: 300 }}
                                         >
                                             <Image
-                                                src={slide.thumbnailUrl || 'https://placehold.co/600x400?text=No+Cover'}
+                                                src={slide.thumbnailUrl || 'https://placehold.co/600x800/222/FFF?text=Video'}
                                                 alt={slide.title}
-                                                layout="fill"
-                                                objectFit="cover"
+                                                fill
+                                                className="object-cover group-hover:scale-105 transition-transform duration-300"
+                                                sizes="(max-width: 768px) 33vw, 150px"
                                             />
-                                            <div className="absolute inset-0 bg-black/30 flex items-end p-2">
-                                                <p className="text-xs text-white font-semibold truncate">{slide.title}</p>
+                                            <div className="absolute inset-0 bg-black/10 group-hover:bg-black/0 transition-colors" />
+                                            <div className="absolute bottom-1 left-1 flex items-center gap-1 text-white drop-shadow-md">
+                                                <div className="flex items-center gap-1">
+                                                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
+                                                    <span className="text-[10px] font-bold">
+                                                        {formatCount(Math.floor(Math.random() * 50000))}
+                                                    </span>
+                                                </div>
                                             </div>
-                                        </motion.div>
-                                    ))}
+                                        </div>
+                                    )) : (
+                                        <div className="col-span-3 py-20 flex flex-col items-center text-white/40">
+                                            <p className="text-sm">Użytkownik nie dodał jeszcze żadnych filmów.</p>
+                                        </div>
+                                    )}
                                 </div>
-                            </>
-                        ) : null}
-                    </main>
-                </motion.div>
+                            ) : activeTab === 'liked' ? (
+                                <div className="py-20 flex flex-col items-center text-white/40 space-y-2">
+                                    <div className="w-16 h-16 rounded-full bg-white/5 flex items-center justify-center mb-2">
+                                        <Heart size={32} />
+                                    </div>
+                                    <h3 className="font-bold text-white">Polubione filmy tego użytkownika są prywatne</h3>
+                                    <p className="text-xs text-center px-8">Filmy polubione przez użytkownika @{profile.username} są widoczne tylko dla niego.</p>
+                                </div>
+                            ) : (
+                                <div className="py-20 flex flex-col items-center text-white/40 space-y-2">
+                                    <div className="w-16 h-16 rounded-full bg-white/5 flex items-center justify-center mb-2">
+                                        <Lock size={32} />
+                                    </div>
+                                    <h3 className="font-bold text-white">Te filmy są prywatne</h3>
+                                    <p className="text-xs text-center px-8">Tylko użytkownik @{profile.username} może je zobaczyć.</p>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                ) : null}
+            </div>
         </motion.div>
     );
 }
 
 const AuthorProfileSkeleton = () => (
-    <div>
-        <div className="flex items-center space-x-4 mb-6">
-            <Skeleton className="w-20 h-20 rounded-full" />
-            <div className="space-y-2">
-                <Skeleton className="h-8 w-40" />
-                <Skeleton className="h-4 w-60" />
+    <div className="w-full h-full p-4 flex flex-col items-center pt-10">
+        <Skeleton className="w-24 h-24 rounded-full mb-4 bg-white/10" />
+        <Skeleton className="h-6 w-32 mb-2 bg-white/10" />
+        <Skeleton className="h-4 w-20 mb-6 bg-white/10" />
+
+        <div className="flex gap-8 mb-6">
+            <div className="flex flex-col items-center gap-1">
+                <Skeleton className="h-5 w-10 bg-white/10" />
+                <Skeleton className="h-3 w-16 bg-white/10" />
+            </div>
+            <div className="flex flex-col items-center gap-1">
+                <Skeleton className="h-5 w-10 bg-white/10" />
+                <Skeleton className="h-3 w-16 bg-white/10" />
+            </div>
+            <div className="flex flex-col items-center gap-1">
+                <Skeleton className="h-5 w-10 bg-white/10" />
+                <Skeleton className="h-3 w-16 bg-white/10" />
             </div>
         </div>
-        <Skeleton className="h-6 w-32 mb-4" />
-        <div className="grid grid-cols-3 gap-2">
-            <Skeleton className="aspect-video w-full rounded-md" />
-            <Skeleton className="aspect-video w-full rounded-md" />
-            <Skeleton className="aspect-video w-full rounded-md" />
-            <Skeleton className="aspect-video w-full rounded-md" />
-            <Skeleton className="aspect-video w-full rounded-md" />
-            <Skeleton className="aspect-video w-full rounded-md" />
+
+        <div className="flex gap-2 w-full max-w-xs mb-8">
+            <Skeleton className="flex-1 h-10 rounded bg-white/10" />
+            <Skeleton className="w-10 h-10 rounded bg-white/10" />
+        </div>
+
+        <div className="w-full grid grid-cols-3 gap-1">
+            <Skeleton className="aspect-[3/4] bg-white/10" />
+            <Skeleton className="aspect-[3/4] bg-white/10" />
+            <Skeleton className="aspect-[3/4] bg-white/10" />
+            <Skeleton className="aspect-[3/4] bg-white/10" />
+            <Skeleton className="aspect-[3/4] bg-white/10" />
+            <Skeleton className="aspect-[3/4] bg-white/10" />
         </div>
     </div>
 )
