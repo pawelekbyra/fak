@@ -51,13 +51,11 @@ const TopBar = () => {
   const unreadCount = 0;
 
   const handleLoggedOutMenuClick = () => {
-    setActiveModal('account');
+    addToast(t('loginRequired') || 'Musisz się zalogować', 'error');
   };
 
   const handleLoggedOutNotificationClick = () => {
-    // For testing mocks, we allow opening the modal.
-    // In production, this might need to revert or check a specific flag.
-    setActiveModal('notifications');
+    addToast(t('loginRequired') || 'Musisz się zalogować', 'error');
   };
 
   const handleLoggedInNotificationClick = () => {
