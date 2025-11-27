@@ -46,8 +46,7 @@ export function AuthorProfileModal({ authorId, onClose }: AuthorProfileModalProp
     };
 
     const togglePatron = () => {
-        closeAuthorProfileModal();
-        openTippingModal({ fromLeft: true });
+        openTippingModal({ fromLeft: false }); // Slide from right
     };
 
     if (!authorId) return null;

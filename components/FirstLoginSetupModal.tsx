@@ -53,6 +53,17 @@ export default function FirstLoginSetupModal() {
   const watchedPassword = watch('newPassword');
   const watchedDisplayName = watch('displayName');
 
+  useEffect(() => {
+    console.log('User status in FirstLoginSetupModal:', user);
+
+    // Kluczowy warunek:
+    if (user && user.isLoggedIn && user.isFirstLogin) {
+      console.log('WARUNEK SPEŁNIONY: Pokazuję modal pierwszego logowania.');
+    } else {
+      console.log('WARUNEK NIESPEŁNIONY: isFirstLogin jest FAŁSZ lub brakuje obiektu user.');
+    }
+  }, [user]);
+
   // Check Password Strength
   useEffect(() => {
     if (!watchedPassword) {
