@@ -5,7 +5,6 @@ import { prisma } from '@/lib/prisma';
 import * as bcrypt from 'bcryptjs';
 import { z } from 'zod';
 import { revalidatePath } from 'next/cache';
-import { setSessionCookie } from '@/lib/auth'; // We might need this if we manually update session, but revalidating path might be enough if session is refreshed.
 
 // Validation Schemas
 const PasswordSchema = z.string()
@@ -22,6 +21,8 @@ const FirstLoginSetupSchema = z.object({
   newPassword: PasswordSchema,
   newPasswordConfirm: z.string(),
   displayName: DisplayNameSchema,
+  emailConsent: z.boolean().optional(),
+  emailLanguage: z.enum(['pl', 'en']).optional(),
 }).refine((data) => data.newPassword === data.newPasswordConfirm, {
   message: "Hasła muszą być identyczne.",
   path: ["newPasswordConfirm"],
@@ -68,11 +69,10 @@ export async function completeFirstLoginSetup(data: z.infer<typeof FirstLoginSet
         // Validate Inputs
         const validation = FirstLoginSetupSchema.safeParse(data);
         if (!validation.success) {
-            // safeParse returns a discriminated union. If success is false, validation.error exists.
             return { success: false, message: validation.error.issues[0].message };
         }
 
-        const { newPassword, displayName } = validation.data;
+        const { newPassword, displayName, emailConsent, emailLanguage } = validation.data;
 
         // Validate Uniqueness again (Race condition check)
         const isAvailable = await checkDisplayNameAvailability(displayName);
@@ -90,9 +90,9 @@ export async function completeFirstLoginSetup(data: z.infer<typeof FirstLoginSet
                 password: hashedPassword,
                 displayName: displayName,
                 isFirstLogin: false,
-                emailVerified: new Date(), // Implicit verification since they logged in and set it up
-                // We might also want to update sessionVersion to invalidate other potential sessions,
-                // but keeping current session alive is preferred here.
+                emailVerified: new Date(),
+                emailConsent: emailConsent ?? false,
+                emailLanguage: emailLanguage ?? 'pl',
             }
         });
 

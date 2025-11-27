@@ -8,224 +8,412 @@ import { useUser } from '@/context/UserContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { checkDisplayNameAvailability, completeFirstLoginSetup } from '@/lib/setup-actions';
-import { Loader2, Check, X, ShieldCheck } from 'lucide-react';
+import { Loader2, Check, X, ShieldCheck, Mail, ChevronRight, Lock } from 'lucide-react';
 import { useToast } from '@/context/ToastContext';
-import { motion } from 'framer-motion';
-import { useRouter } from 'next/navigation';
+import { motion, AnimatePresence } from 'framer-motion';
+import ToggleSwitch from '@/components/ui/ToggleSwitch';
 
-// Schema duplication for client-side feedback (matching server-side)
+// Zod Schemas for individual steps
 const PasswordSchema = z.string()
   .min(8, 'Hasło musi mieć min. 8 znaków')
   .regex(/[A-Z]/, 'Wymagana duża litera')
   .regex(/[0-9]/, 'Wymagana cyfra');
 
-const SetupSchema = z.object({
+const Step1Schema = z.object({
   newPassword: PasswordSchema,
   newPasswordConfirm: z.string(),
-  displayName: z.string().min(3, 'Min. 3 znaki').max(30, 'Max. 30 znaków'),
 }).refine((data) => data.newPassword === data.newPasswordConfirm, {
   message: "Hasła muszą być identyczne",
   path: ["newPasswordConfirm"],
 });
 
-type SetupFormValues = z.infer<typeof SetupSchema>;
+const Step2Schema = z.object({
+  displayName: z.string().min(3, 'Min. 3 znaki').max(30, 'Max. 30 znaków'),
+});
+
+const Step3Schema = z.object({
+  emailConsent: z.boolean(),
+  emailLanguage: z.enum(['pl', 'en']),
+});
+
+// Combined schema for final submission
+const FinalSchema = Step1Schema.merge(Step2Schema).merge(Step3Schema);
+type FinalFormValues = z.infer<typeof FinalSchema>;
 
 export default function SetupPage() {
   const { user, setUser } = useUser();
   const { addToast } = useToast();
-  const router = useRouter();
+  const [currentStep, setCurrentStep] = useState(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Form State
+  const [formData, setFormData] = useState<Partial<FinalFormValues>>({
+    emailConsent: false,
+    emailLanguage: 'pl'
+  });
+
+  // Step 2 Specifics
   const [displayNameAvailable, setDisplayNameAvailable] = useState<boolean | null>(null);
   const [isCheckingName, setIsCheckingName] = useState(false);
 
-  // Password Strength Visuals
-  const [passwordStrength, setPasswordStrength] = useState<'weak' | 'medium' | 'strong'>('weak');
+  const updateFormData = (data: Partial<FinalFormValues>) => {
+    setFormData(prev => ({ ...prev, ...data }));
+  };
 
-  const {
-    register,
-    handleSubmit,
-    watch,
-    formState: { errors, isValid },
-  } = useForm<SetupFormValues>({
-    resolver: zodResolver(SetupSchema),
-    mode: 'onChange'
-  });
-
-  const watchedPassword = watch('newPassword');
-  const watchedDisplayName = watch('displayName');
-
-  // Check Password Strength
-  useEffect(() => {
-    if (!watchedPassword) {
-      setPasswordStrength('weak');
-      return;
-    }
-    let score = 0;
-    if (watchedPassword.length >= 8) score++;
-    if (/[A-Z]/.test(watchedPassword)) score++;
-    if (/[0-9]/.test(watchedPassword)) score++;
-    if (watchedPassword.length >= 12) score++;
-
-    if (score <= 2) setPasswordStrength('weak');
-    else if (score === 3) setPasswordStrength('medium');
-    else setPasswordStrength('strong');
-  }, [watchedPassword]);
-
-  // Debounce Display Name Check
-  useEffect(() => {
-    const checkName = async () => {
-      if (!watchedDisplayName || watchedDisplayName.length < 3) {
-        setDisplayNameAvailable(null);
-        return;
-      }
-      setIsCheckingName(true);
-      try {
-        const available = await checkDisplayNameAvailability(watchedDisplayName);
-        setDisplayNameAvailable(available);
-      } catch (e) {
-        setDisplayNameAvailable(null);
-      } finally {
-        setIsCheckingName(false);
-      }
-    };
-
-    const timer = setTimeout(checkName, 500);
-    return () => clearTimeout(timer);
-  }, [watchedDisplayName]);
-
-  const onSubmit = async (data: SetupFormValues) => {
-    if (displayNameAvailable === false) return;
-
+  const handleFinalSubmit = async () => {
     setIsSubmitting(true);
-    const result = await completeFirstLoginSetup(data);
+    // Combine all data
+    const finalData = { ...formData } as FinalFormValues;
+
+    const result = await completeFirstLoginSetup(finalData);
 
     if (result.success) {
-      addToast(result.message || 'Konfiguracja zakończona!', 'success');
-      // Update local user context to update flags
+      addToast('Konfiguracja zakończona!', 'success');
       if (user) {
-        setUser({ ...user, isFirstLogin: false, displayName: data.displayName });
+        // Optimistic update
+        setUser({
+            ...user,
+            isFirstLogin: false,
+            displayName: finalData.displayName,
+            emailConsent: finalData.emailConsent,
+            emailLanguage: finalData.emailLanguage
+        });
       }
-      // Navigate to home which will now be accessible
+      // Hard redirect to clear any stuck states
       window.location.href = '/';
     } else {
       addToast(result.message || 'Błąd konfiguracji.', 'error');
+      setIsSubmitting(false);
     }
-    setIsSubmitting(false);
   };
 
   return (
-    <div className="min-h-screen w-full flex items-center justify-center bg-black p-4 relative overflow-hidden">
-        {/* Decorative background elements */}
-        <div className="absolute top-0 right-0 w-96 h-96 bg-pink-500/10 rounded-full blur-3xl -mr-32 -mt-32 pointer-events-none" />
-        <div className="absolute bottom-0 left-0 w-96 h-96 bg-blue-500/10 rounded-full blur-3xl -ml-32 -mb-32 pointer-events-none" />
+    <div className="min-h-screen w-full flex items-center justify-center bg-black p-4 relative overflow-hidden font-sans text-white">
+        {/* Background Atmosphere */}
+        <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-pink-600/20 rounded-full blur-[120px] -mr-32 -mt-32 pointer-events-none opacity-50" />
+        <div className="absolute bottom-0 left-0 w-[500px] h-[500px] bg-blue-600/10 rounded-full blur-[120px] -ml-32 -mb-32 pointer-events-none opacity-50" />
 
-        <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="w-full max-w-md relative z-10"
-        >
-            <div className="bg-[#121212] border border-white/10 rounded-2xl p-8 shadow-2xl">
-                <div className="text-center mb-8">
-                    <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-white/5 mb-6 border border-white/10 shadow-lg shadow-pink-500/20">
-                    <ShieldCheck className="w-8 h-8 text-pink-500" />
-                    </div>
-                    <h1 className="text-3xl font-bold text-white mb-3">Witaj w Polutek!</h1>
-                    <p className="text-white/60 leading-relaxed">
-                    Zalogowałeś/aś się po raz pierwszy. Dla bezpieczeństwa ustaw nowe hasło i wybierz unikalną nazwę wyświetlaną.
-                    </p>
-                </div>
+        <div className="w-full max-w-md relative z-10">
+            <AnimatePresence mode="wait">
+                {currentStep === 1 && (
+                    <Step1
+                        key="step1"
+                        onNext={(data) => {
+                            updateFormData(data);
+                            setCurrentStep(2);
+                        }}
+                        initialData={formData}
+                    />
+                )}
+                {currentStep === 2 && (
+                    <Step2
+                        key="step2"
+                        onNext={(data) => {
+                            updateFormData(data);
+                            setCurrentStep(3);
+                        }}
+                        initialData={formData}
+                        displayNameAvailable={displayNameAvailable}
+                        setDisplayNameAvailable={setDisplayNameAvailable}
+                        isCheckingName={isCheckingName}
+                        setIsCheckingName={setIsCheckingName}
+                    />
+                )}
+                {currentStep === 3 && (
+                    <Step3
+                        key="step3"
+                        onNext={async (data) => {
+                            updateFormData(data);
+                            setIsSubmitting(true);
+                            const finalData = { ...formData, ...data } as FinalFormValues;
+                            const result = await completeFirstLoginSetup(finalData);
+                            if (result.success) {
+                                addToast('Witamy w Polutku!', 'success');
+                                window.location.href = '/';
+                            } else {
+                                addToast(result.message || 'Błąd.', 'error');
+                                setIsSubmitting(false);
+                            }
+                        }}
+                        initialData={formData}
+                        isSubmitting={isSubmitting}
+                    />
+                )}
+            </AnimatePresence>
 
-                <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
-
-                    {/* Password Fields */}
-                    <div className="space-y-5">
-                        <div className="space-y-2">
-                            <label className="text-xs uppercase tracking-wider font-semibold text-white/50 ml-1">Nowe Hasło</label>
-                            <div className="relative">
-                                <Input
-                                    type="password"
-                                    {...register('newPassword')}
-                                    className={`bg-black/40 border-white/10 text-white h-12 pr-10 ${errors.newPassword ? 'border-red-500 focus:ring-red-500' : 'focus:border-pink-500 focus:ring-pink-500'}`}
-                                    placeholder="Min. 8 znaków, duża litera, cyfra"
-                                />
-                                {/* Strength Indicator Dot */}
-                                <div className="absolute right-3 top-1/2 -translate-y-1/2 flex gap-1">
-                                    <div className={`w-2 h-2 rounded-full transition-colors ${watchedPassword ? (passwordStrength === 'weak' ? 'bg-red-500' : (passwordStrength === 'medium' ? 'bg-yellow-500' : 'bg-green-500')) : 'bg-white/20'}`} />
-                                </div>
-                            </div>
-                            {errors.newPassword && <p className="text-xs text-red-400 ml-1">{errors.newPassword.message}</p>}
-
-                            {/* Visual Strength Bar */}
-                            <div className="flex gap-1 h-1 mt-1 px-1">
-                                <div className={`flex-1 rounded-full transition-all duration-300 ${watchedPassword && ['weak','medium','strong'].includes(passwordStrength) ? (passwordStrength === 'weak' ? 'bg-red-500' : passwordStrength === 'medium' ? 'bg-yellow-500' : 'bg-green-500') : 'bg-white/5'}`}></div>
-                                <div className={`flex-1 rounded-full transition-all duration-300 ${watchedPassword && ['medium','strong'].includes(passwordStrength) ? (passwordStrength === 'medium' ? 'bg-yellow-500' : 'bg-green-500') : 'bg-white/5'}`}></div>
-                                <div className={`flex-1 rounded-full transition-all duration-300 ${watchedPassword && ['strong'].includes(passwordStrength) ? 'bg-green-500' : 'bg-white/5'}`}></div>
-                            </div>
-                        </div>
-
-                        <div className="space-y-2">
-                            <label className="text-xs uppercase tracking-wider font-semibold text-white/50 ml-1">Potwierdź Hasło</label>
-                            <Input
-                                type="password"
-                                {...register('newPasswordConfirm')}
-                                className={`bg-black/40 border-white/10 text-white h-12 ${errors.newPasswordConfirm ? 'border-red-500 focus:ring-red-500' : 'focus:border-pink-500 focus:ring-pink-500'}`}
-                                placeholder="Powtórz nowe hasło"
-                            />
-                            {errors.newPasswordConfirm && <p className="text-xs text-red-400 ml-1">{errors.newPasswordConfirm.message}</p>}
-                        </div>
-                    </div>
-
-                    {/* Display Name Field */}
-                    <div className="space-y-2">
-                    <label className="text-xs uppercase tracking-wider font-semibold text-white/50 ml-1">Nazwa Wyświetlana</label>
-                    <div className="relative">
-                        <Input
-                        type="text"
-                        {...register('displayName')}
-                        className={`bg-black/40 border-white/10 text-white h-12 pr-10 ${displayNameAvailable === false ? 'border-red-500' : (displayNameAvailable === true ? 'border-green-500' : '')}`}
-                        placeholder="Np. JanKowalski"
-                        autoComplete="off"
-                        />
-                        <div className="absolute right-3 top-1/2 -translate-y-1/2">
-                        {isCheckingName ? (
-                            <Loader2 className="w-4 h-4 text-white/40 animate-spin" />
-                        ) : displayNameAvailable === true ? (
-                            <Check className="w-4 h-4 text-green-500" />
-                        ) : displayNameAvailable === false ? (
-                            <X className="w-4 h-4 text-red-500" />
-                        ) : null}
-                        </div>
-                    </div>
-
-                    {errors.displayName ? (
-                        <p className="text-xs text-red-400 ml-1">{errors.displayName.message}</p>
-                    ) : displayNameAvailable === false ? (
-                        <p className="text-xs text-red-400 ml-1">Nazwa zajęta.</p>
-                    ) : (
-                        <p className="text-[10px] text-white/30 ml-1">
-                        Służy tylko do wyświetlania w aplikacji. Loginem pozostaje email.
-                        </p>
-                    )}
-                    </div>
-
-                    <Button
-                        type="submit"
-                        className="w-full bg-gradient-to-r from-pink-600 to-rose-600 hover:from-pink-500 hover:to-rose-500 text-white font-bold py-6 rounded-xl mt-4 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-pink-900/20 active:scale-[0.98] transition-all"
-                        disabled={!isValid || isSubmitting || displayNameAvailable === false || isCheckingName}
-                    >
-                    {isSubmitting ? (
-                        <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Zapisywanie...</>
-                    ) : (
-                        'Zapisz i Przejdź do Aplikacji'
-                    )}
-                    </Button>
-
-                </form>
+            {/* Step Indicators */}
+            <div className="flex justify-center gap-2 mt-8">
+                {[1, 2, 3].map(step => (
+                    <div
+                        key={step}
+                        className={`h-1 rounded-full transition-all duration-300 ${step === currentStep ? 'w-8 bg-pink-500' : 'w-2 bg-white/20'}`}
+                    />
+                ))}
             </div>
-            <div className="text-center mt-6">
-                <p className="text-xs text-white/20">Polutek © 2024</p>
-            </div>
-        </motion.div>
+        </div>
     </div>
   );
+}
+
+// --- Step Components ---
+
+function Step1({ onNext, initialData }: { onNext: (data: any) => void, initialData: any }) {
+    const [passwordStrength, setPasswordStrength] = useState<'weak' | 'medium' | 'strong'>('weak');
+
+    const {
+        register,
+        handleSubmit,
+        watch,
+        formState: { errors, isValid },
+    } = useForm<z.infer<typeof Step1Schema>>({
+        resolver: zodResolver(Step1Schema),
+        defaultValues: {
+            newPassword: initialData.newPassword || '',
+            newPasswordConfirm: initialData.newPasswordConfirm || ''
+        },
+        mode: 'onChange'
+    });
+
+    const watchedPassword = watch('newPassword');
+
+    useEffect(() => {
+        if (!watchedPassword) { setPasswordStrength('weak'); return; }
+        let score = 0;
+        if (watchedPassword.length >= 8) score++;
+        if (/[A-Z]/.test(watchedPassword)) score++;
+        if (/[0-9]/.test(watchedPassword)) score++;
+        if (watchedPassword.length >= 12) score++;
+        if (score <= 2) setPasswordStrength('weak');
+        else if (score === 3) setPasswordStrength('medium');
+        else setPasswordStrength('strong');
+    }, [watchedPassword]);
+
+    return (
+        <motion.div
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: -20 }}
+            className="bg-[#121212] border border-white/10 rounded-3xl p-8 shadow-2xl"
+        >
+             <div className="text-center mb-8">
+                <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-white/5 mb-4 border border-white/10 text-pink-500">
+                    <Lock size={32} />
+                </div>
+                <h2 className="text-2xl font-bold mb-2">Bezpieczeństwo</h2>
+                <p className="text-white/60 text-sm">
+                    Do logowania będziesz używać adresu email, na który założono konto. Ustal teraz nowe, bezpieczne hasło.
+                </p>
+            </div>
+
+            <form onSubmit={handleSubmit(onNext)} className="space-y-6">
+                 <div className="space-y-2">
+                    <div className="relative">
+                        <Input
+                            type="password"
+                            {...register('newPassword')}
+                            className={`bg-black/40 border-white/10 text-white h-14 px-4 text-lg rounded-xl focus:border-pink-500 focus:ring-0 transition-all ${errors.newPassword ? 'border-red-500' : ''}`}
+                            placeholder="Nowe hasło"
+                        />
+                         <div className="absolute right-3 top-1/2 -translate-y-1/2 flex gap-1 pointer-events-none">
+                             <div className={`w-2 h-2 rounded-full transition-colors ${watchedPassword ? (passwordStrength === 'weak' ? 'bg-red-500' : (passwordStrength === 'medium' ? 'bg-yellow-500' : 'bg-green-500')) : 'bg-white/10'}`} />
+                        </div>
+                    </div>
+
+                    {/* Visual Strength Bar */}
+                    <div className="flex gap-1 h-1 px-1 opacity-70">
+                        <div className={`flex-1 rounded-full transition-all duration-500 ${watchedPassword && ['weak','medium','strong'].includes(passwordStrength) ? (passwordStrength === 'weak' ? 'bg-red-500' : passwordStrength === 'medium' ? 'bg-yellow-500' : 'bg-green-500') : 'bg-white/10'}`}></div>
+                        <div className={`flex-1 rounded-full transition-all duration-500 ${watchedPassword && ['medium','strong'].includes(passwordStrength) ? (passwordStrength === 'medium' ? 'bg-yellow-500' : 'bg-green-500') : 'bg-white/10'}`}></div>
+                        <div className={`flex-1 rounded-full transition-all duration-500 ${watchedPassword && ['strong'].includes(passwordStrength) ? 'bg-green-500' : 'bg-white/10'}`}></div>
+                    </div>
+                    {errors.newPassword && <p className="text-xs text-red-400 pl-1">{errors.newPassword.message}</p>}
+                </div>
+
+                <div className="space-y-2">
+                    <Input
+                        type="password"
+                        {...register('newPasswordConfirm')}
+                        className={`bg-black/40 border-white/10 text-white h-14 px-4 text-lg rounded-xl focus:border-pink-500 focus:ring-0 transition-all ${errors.newPasswordConfirm ? 'border-red-500' : ''}`}
+                        placeholder="Potwierdź hasło"
+                    />
+                    {errors.newPasswordConfirm && <p className="text-xs text-red-400 pl-1">{errors.newPasswordConfirm.message}</p>}
+                </div>
+
+                <Button
+                    type="submit"
+                    disabled={!isValid}
+                    className="w-full h-14 bg-white text-black hover:bg-gray-200 font-bold text-lg rounded-xl flex items-center justify-center gap-2 group"
+                >
+                    Dalej <ChevronRight className="group-hover:translate-x-1 transition-transform" />
+                </Button>
+            </form>
+        </motion.div>
+    );
+}
+
+
+function Step2({
+    onNext, initialData, displayNameAvailable, setDisplayNameAvailable, isCheckingName, setIsCheckingName
+}: {
+    onNext: (data: any) => void, initialData: any,
+    displayNameAvailable: boolean | null, setDisplayNameAvailable: any,
+    isCheckingName: boolean, setIsCheckingName: any
+}) {
+    const {
+        register,
+        handleSubmit,
+        watch,
+        formState: { errors, isValid },
+    } = useForm<z.infer<typeof Step2Schema>>({
+        resolver: zodResolver(Step2Schema),
+        defaultValues: { displayName: initialData.displayName || '' },
+        mode: 'onChange'
+    });
+
+    const watchedDisplayName = watch('displayName');
+
+    useEffect(() => {
+        const checkName = async () => {
+            if (!watchedDisplayName || watchedDisplayName.length < 3) {
+                setDisplayNameAvailable(null);
+                return;
+            }
+            setIsCheckingName(true);
+            try {
+                const available = await checkDisplayNameAvailability(watchedDisplayName);
+                setDisplayNameAvailable(available);
+            } catch (e) {
+                setDisplayNameAvailable(null);
+            } finally {
+                setIsCheckingName(false);
+            }
+        };
+        const timer = setTimeout(checkName, 500);
+        return () => clearTimeout(timer);
+    }, [watchedDisplayName, setDisplayNameAvailable, setIsCheckingName]);
+
+    return (
+        <motion.div
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: -20 }}
+            className="bg-[#121212] border border-white/10 rounded-3xl p-8 shadow-2xl"
+        >
+             <div className="text-center mb-8">
+                <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-white/5 mb-4 border border-white/10 text-pink-500">
+                    <ShieldCheck size={32} />
+                </div>
+                <h2 className="text-2xl font-bold mb-2">Tożsamość</h2>
+                <p className="text-white/60 text-sm">
+                    Nazwa użytkownika jest tylko wyświetlana w aplikacji. Możesz wpisać co chcesz.
+                </p>
+            </div>
+
+            <form onSubmit={handleSubmit(onNext)} className="space-y-8">
+                <div className="space-y-2">
+                    <label className="text-xs uppercase font-bold text-white/30 pl-1">Twoja ksywka</label>
+                    <div className="relative">
+                        <Input
+                            type="text"
+                            {...register('displayName')}
+                            className={`bg-black/40 border-white/10 text-white h-14 px-4 text-lg rounded-xl pr-12 focus:border-pink-500 focus:ring-0 transition-all ${displayNameAvailable === false ? 'border-red-500' : (displayNameAvailable === true ? 'border-green-500' : '')}`}
+                            placeholder="Np. PolutekMaster"
+                            autoComplete="off"
+                        />
+                        <div className="absolute right-4 top-1/2 -translate-y-1/2">
+                            {isCheckingName ? (
+                                <Loader2 className="w-5 h-5 text-white/40 animate-spin" />
+                            ) : displayNameAvailable === true ? (
+                                <Check className="w-5 h-5 text-green-500" />
+                            ) : displayNameAvailable === false ? (
+                                <X className="w-5 h-5 text-red-500" />
+                            ) : null}
+                        </div>
+                    </div>
+                    {errors.displayName ? (
+                        <p className="text-xs text-red-400 pl-1">{errors.displayName.message}</p>
+                    ) : displayNameAvailable === false ? (
+                        <p className="text-xs text-red-400 pl-1">Ta nazwa jest już zajęta.</p>
+                    ) : null}
+                </div>
+
+                <Button
+                    type="submit"
+                    disabled={!isValid || displayNameAvailable === false || isCheckingName}
+                    className="w-full h-14 bg-white text-black hover:bg-gray-200 font-bold text-lg rounded-xl flex items-center justify-center gap-2 group"
+                >
+                    Dalej <ChevronRight className="group-hover:translate-x-1 transition-transform" />
+                </Button>
+            </form>
+        </motion.div>
+    );
+}
+
+function Step3({ onNext, initialData, isSubmitting }: { onNext: (data: any) => void, initialData: any, isSubmitting: boolean }) {
+    const [emailConsent, setEmailConsent] = useState(initialData.emailConsent || false);
+    const [emailLanguage, setEmailLanguage] = useState(initialData.emailLanguage || 'pl');
+
+    const handleEnter = () => {
+        onNext({ emailConsent, emailLanguage });
+    }
+
+    return (
+        <motion.div
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: -20 }}
+            className="bg-[#121212] border border-white/10 rounded-3xl p-8 shadow-2xl"
+        >
+             <div className="text-center mb-8">
+                <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-white/5 mb-4 border border-white/10 text-pink-500">
+                    <Mail size={32} />
+                </div>
+                <h2 className="text-2xl font-bold mb-2">Kontakt</h2>
+                <p className="text-white/60 text-sm">
+                    Czy chcesz otrzymywać powiadomienia o nowościach i statusie konta na maila?
+                </p>
+            </div>
+
+            <div className="space-y-8">
+                <div className="bg-white/5 rounded-2xl p-4 border border-white/5 flex items-center justify-between">
+                    <span className="font-medium">Zgoda na mailing</span>
+                    <ToggleSwitch isActive={emailConsent} onToggle={() => setEmailConsent(!emailConsent)} />
+                </div>
+
+                <AnimatePresence>
+                    {emailConsent && (
+                        <motion.div
+                            initial={{ height: 0, opacity: 0 }}
+                            animate={{ height: 'auto', opacity: 1 }}
+                            exit={{ height: 0, opacity: 0 }}
+                            className="overflow-hidden"
+                        >
+                            <label className="text-xs uppercase font-bold text-white/30 pl-1 mb-2 block">Język wiadomości</label>
+                            <div className="flex gap-3">
+                                <button
+                                    onClick={() => setEmailLanguage('pl')}
+                                    className={`flex-1 h-12 rounded-xl border font-bold transition-all ${emailLanguage === 'pl' ? 'bg-pink-600/20 border-pink-500 text-pink-400' : 'bg-black/20 border-white/10 text-white/40 hover:bg-white/5'}`}
+                                >
+                                    Polski 🇵🇱
+                                </button>
+                                <button
+                                    onClick={() => setEmailLanguage('en')}
+                                    className={`flex-1 h-12 rounded-xl border font-bold transition-all ${emailLanguage === 'en' ? 'bg-pink-600/20 border-pink-500 text-pink-400' : 'bg-black/20 border-white/10 text-white/40 hover:bg-white/5'}`}
+                                >
+                                    English 🇬🇧
+                                </button>
+                            </div>
+                        </motion.div>
+                    )}
+                </AnimatePresence>
+
+                <Button
+                    onClick={handleEnter}
+                    disabled={isSubmitting}
+                    className="w-full h-16 bg-gradient-to-r from-pink-600 to-rose-600 hover:from-pink-500 hover:to-rose-500 text-white font-black text-2xl tracking-widest rounded-xl shadow-lg shadow-pink-900/30 active:scale-[0.98] transition-all"
+                >
+                    {isSubmitting ? <Loader2 className="animate-spin" /> : 'ENTER'}
+                </Button>
+            </div>
+        </motion.div>
+    );
 }

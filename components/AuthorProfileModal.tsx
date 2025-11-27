@@ -12,6 +12,7 @@ import { UserBadge } from './UserBadge';
 import { fetchAuthorProfile } from '@/lib/queries';
 import { AuthorProfile } from '@/types';
 import { formatCount } from '@/lib/utils';
+import { SafeLock } from './SafeLock';
 
 interface AuthorProfileModalProps {
     authorId: string;
@@ -239,13 +240,7 @@ export function AuthorProfileModal({ authorId, onClose }: AuthorProfileModalProp
                                     <p className="text-xs text-center px-8">Filmy polubione przez użytkownika @{profile.username} są widoczne tylko dla niego.</p>
                                 </div>
                             ) : (
-                                <div className="flex flex-col items-center justify-center min-h-[300px] text-white/40 space-y-2 py-10">
-                                    <div className="w-16 h-16 rounded-full bg-white/5 flex items-center justify-center mb-2">
-                                        <Lock size={32} />
-                                    </div>
-                                    <h3 className="font-bold text-white">Te filmy są prywatne</h3>
-                                    <p className="text-xs text-center px-8">Tylko użytkownik @{profile.username} może je zobaczyć.</p>
-                                </div>
+                                <SafeLock />
                             )}
                         </div>
                     </div>
