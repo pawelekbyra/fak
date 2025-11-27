@@ -185,7 +185,18 @@ export async function createUser(userData: Omit<User, 'id' | 'sessionVersion' | 
         VALUES (${username}, ${displayName}, ${email}, ${password}, ${avatarValue}, ${role || 'user'}, true)
         RETURNING *;
     `;
-    return result[0] as User;
+    const newUser = result[0] as User;
+
+    // Create a welcome notification
+    await createNotification({
+        userId: newUser.id,
+        type: 'system',
+        text: 'Witaj w Zordon! Cieszymy się, że jesteś z nami.',
+        link: null,
+        fromUserId: null, // System notification
+    });
+
+    return newUser;
 }
 export async function updateUser(userId: string, updates: Partial<User>): Promise<User | null> {
     const sql = getDb();
@@ -570,14 +581,53 @@ export async function getUnreadNotificationCount(userId: string): Promise<number
 }
 
 // --- Push Subscription Functions ---
-export async function savePushSubscription(userId: string, subscription: object, isPwaInstalled: boolean): Promise<void> {
+export async function savePushSubscription(userId: string | null, subscription: object, isPwaInstalled: boolean): Promise<void> {
     const sql = getDb();
-    await sql`
-        INSERT INTO push_subscriptions ("userId", subscription, is_pwa_installed)
-        VALUES (${userId}, ${JSON.stringify(subscription)}, ${isPwaInstalled})
-        ON CONFLICT ("userId") DO UPDATE
-        SET subscription = EXCLUDED.subscription, is_pwa_installed = EXCLUDED.is_pwa_installed;
+    const subJson = JSON.stringify(subscription);
+
+    // Check for existing subscription with the same endpoint to prevent duplicates
+    // Extract endpoint from subscription object (assuming WebPush standard)
+    const endpoint = (subscription as any).endpoint;
+
+    if (!endpoint) {
+       console.error("No endpoint found in subscription object");
+       return;
+    }
+
+    // Since we can't easily query JSONB for existence efficiently without specific operators or extracting endpoint
+    // We will do a check first. Ideally we should have a unique constraint on an extracted column.
+    // For now, we query.
+
+    // Note: Postgres JSONB containment operator @>
+    const existing = await sql`
+        SELECT id FROM push_subscriptions
+        WHERE subscription->>'endpoint' = ${endpoint}
     `;
+
+    if (existing.length > 0) {
+        // Update existing
+        // If userId is provided, we should link it if it wasn't linked (e.g. login after subscribing)
+        // If it was already linked to another user... that's tricky. Let's assume re-link to current.
+        if (userId) {
+             await sql`
+                UPDATE push_subscriptions
+                SET "userId" = ${userId}, is_pwa_installed = ${isPwaInstalled}, subscription = ${subJson}
+                WHERE id = ${existing[0].id}
+            `;
+        } else {
+             await sql`
+                UPDATE push_subscriptions
+                SET is_pwa_installed = ${isPwaInstalled}, subscription = ${subJson}
+                WHERE id = ${existing[0].id}
+            `;
+        }
+    } else {
+        // Insert new
+        await sql`
+            INSERT INTO push_subscriptions ("userId", subscription, is_pwa_installed)
+            VALUES (${userId}, ${subJson}, ${isPwaInstalled})
+        `;
+    }
 }
 
 export async function getPushSubscriptions(options: { userId?: string, role?: string, isPwaInstalled?: boolean }): Promise<any[]> {

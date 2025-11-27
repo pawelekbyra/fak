@@ -13,6 +13,7 @@ import BellIcon from './icons/BellIcon';
 import PwaDesktopModal from './PwaDesktopModal';
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { User, LogOut, ChevronDown, Settings } from 'lucide-react';
+import { usePushSubscription } from '@/hooks/usePushSubscription';
 
 const TopBar = () => {
   const { user, logout } = useUser();
@@ -23,6 +24,9 @@ const TopBar = () => {
   const [showPwaModal, setShowPwaModal] = useState(false);
   const [isDesktop, setIsDesktop] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+
+  // Hook for push subscription
+  const { permission, subscribe } = usePushSubscription();
 
   useEffect(() => {
     if (activeModal === 'login') {
@@ -54,12 +58,31 @@ const TopBar = () => {
     addToast(t('loginRequired') || 'Musisz się zalogować', 'locked');
   };
 
-  const handleLoggedOutNotificationClick = () => {
-    addToast(t('loginRequired') || 'Musisz się zalogować', 'locked');
-  };
-
-  const handleLoggedInNotificationClick = () => {
-    setActiveModal('notifications');
+  const handleBellClick = async () => {
+    // 'prompt' is sometimes used in older APIs or specific contexts, but Notification.permission is 'default'
+    if (permission === 'default') {
+      const granted = await subscribe();
+      if (granted) {
+          addToast(t('notificationsEnabled') || 'Powiadomienia włączone', 'success');
+      } else {
+          // If denied or failed, we might want to guide user or just do nothing for now
+          // If they just dismissed, permission remains default/prompt usually
+      }
+    } else if (permission === 'granted') {
+        if (!user) {
+            addToast(t('loginRequired') || 'Musisz się zalogować', 'locked');
+        } else {
+            setActiveModal('notifications');
+        }
+    } else {
+       // Denied
+       // Optionally show instruction how to enable
+       if (!user) {
+            addToast(t('loginRequired') || 'Musisz się zalogować', 'locked');
+        } else {
+            setActiveModal('notifications');
+        }
+    }
   };
 
   const handleShowPwaModal = () => {
@@ -133,7 +156,7 @@ const TopBar = () => {
               <motion.button
                  whileTap={{ scale: 0.9 }}
                  className="p-2 text-white hover:text-white transition-colors active:bg-white/10 rounded-md outline-none"
-                 onClick={handleLoggedOutNotificationClick}
+                 onClick={handleBellClick}
                  aria-label={t('notificationAriaLabel')}
               >
                 <BellIcon className="w-6 h-6" />
@@ -195,7 +218,7 @@ const TopBar = () => {
                 </Button>
               )}
               <div className="relative">
-                <Button variant="ghost" size="icon" onClick={handleLoggedInNotificationClick} aria-label={t('notificationAriaLabel')}>
+                <Button variant="ghost" size="icon" onClick={handleBellClick} aria-label={t('notificationAriaLabel')}>
                   <BellIcon className="w-6 h-6" />
                   {unreadCount > 0 && (
                     <span className="absolute top-1 right-1 block h-2 w-2 rounded-full ring-2 ring-black bg-pink-500" />

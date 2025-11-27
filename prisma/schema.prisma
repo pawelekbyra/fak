@@ -36,7 +36,7 @@ model User {
   // Relations added for completeness and to satisfy Prisma validation
   notificationsReceived Notification[] @relation("UserNotifications")
   notificationsSent     Notification[] @relation("NotificationSender")
-  pushSubscription      PushSubscription?
+  pushSubscriptions     PushSubscription[]
 
   @@map("users")
   // Index for admin listing or search could be added, but username/email are already unique/indexed.
@@ -176,8 +176,8 @@ model Notification {
 
 model PushSubscription {
   id               String  @id @default(uuid())
-  userId           String  @unique
-  user             User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId           String?
+  user             User?   @relation(fields: [userId], references: [id], onDelete: Cascade)
   subscription     Json
   is_pwa_installed Boolean @default(false)
 

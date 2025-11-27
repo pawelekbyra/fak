@@ -1,12 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Bell, Mail, User, Tag, ChevronDown, Loader2, Heart, MessageSquare, UserPlus } from 'lucide-react';
+import { X, Bell, Mail, User, Tag, ChevronDown, Loader2, Heart, MessageSquare, UserPlus, Info } from 'lucide-react';
 import { useTranslation } from '@/context/LanguageContext';
 import { formatDistanceToNow } from 'date-fns';
 import { pl } from 'date-fns/locale';
 import Image from 'next/image';
 
-type NotificationType = 'like' | 'comment' | 'follow' | 'message';
+type NotificationType = 'like' | 'comment' | 'follow' | 'message' | 'system';
 
 // This type is now aligned with the mock data
 interface Notification {
@@ -20,14 +20,15 @@ interface Notification {
   user: {
     displayName: string;
     avatar: string;
-  };
+  } | null;
 }
 
 const iconMap: Record<NotificationType, React.ReactNode> = {
   like: <Heart size={20} className="text-red-500 fill-current" />,
   comment: <MessageSquare size={20} className="text-white/80" />,
   follow: <UserPlus size={20} className="text-white/80" />,
-  message: <Mail size={20} className="text-white/80" />
+  message: <Mail size={20} className="text-white/80" />,
+  system: <Info size={20} className="text-blue-400" />
 };
 
 const NotificationItem: React.FC<{ notification: Notification; onToggle: (id: string) => void }> = ({ notification, onToggle }) => {
@@ -58,7 +59,7 @@ const NotificationItem: React.FC<{ notification: Notification; onToggle: (id: st
   const getFullText = () => {
       // If it looks like a translation key (no spaces, camelCase), try translate, else return as is
       if (notification.full && !notification.full.includes(' ')) {
-          return t(notification.full, { name: notification.user.displayName });
+          return t(notification.full, { name: notification.user?.displayName || 'System' });
       }
       return notification.full || notification.preview;
   }
@@ -72,10 +73,16 @@ const NotificationItem: React.FC<{ notification: Notification; onToggle: (id: st
       className={`rounded-lg cursor-pointer transition-colors hover:bg-white/10 mb-1 ${isExpanded ? 'expanded' : ''}`}
     >
       <div className="flex items-start gap-3 p-3" onClick={handleToggle}>
-        <Image src={notification.user.avatar} alt={t('userAvatar', { user: notification.user.displayName })} width={40} height={40} className="w-10 h-10 rounded-full mt-1" />
+        {notification.type === 'system' ? (
+           <div className="w-10 h-10 rounded-full mt-1 bg-white/10 flex items-center justify-center">
+             <Info size={20} className="text-white" />
+           </div>
+        ) : (
+           <Image src={notification.user?.avatar || '/default-avatar.png'} alt={t('userAvatar', { user: notification.user?.displayName || 'User' })} width={40} height={40} className="w-10 h-10 rounded-full mt-1" />
+        )}
         <div className="flex-1 flex flex-col">
           <p className="text-sm">
-            <span className="font-bold">{notification.user.displayName}</span> {notification.preview}
+            {notification.type !== 'system' && <span className="font-bold">{notification.user?.displayName}</span>} {notification.preview}
           </p>
           <span className="text-xs text-white/60 mt-1">{notification.time}</span>
         </div>
