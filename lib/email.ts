@@ -71,3 +71,38 @@ export async function sendWelcomeEmail(email: string, tempPassword: string) {
     return { success: false, error };
   }
 }
+
+export async function sendAccountDeletedEmail(email: string) {
+  if (!process.env.RESEND_API_KEY) {
+    console.warn('Skipping email send because RESEND_API_KEY is missing.');
+    return { success: true, message: 'Email skipped (missing API key)' };
+  }
+
+  try {
+    const { data, error } = await resend.emails.send({
+      from: 'Wsparcie <noreply@polutek.pl>',
+      to: [email],
+      subject: 'Twoje konto Ting Tong zostało usunięte',
+      html: `
+        <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; color: #333;">
+          <h2>Konto usunięte</h2>
+          <p>Twoje konto w serwisie Ting Tong zostało trwale usunięte zgodnie z Twoją dyspozycją.</p>
+          <p>Wszystkie Twoje dane zostały skasowane.</p>
+          <p>Jeśli to była pomyłka, niestety nie możemy przywrócić Twoich danych, ale zawsze możesz założyć nowe konto.</p>
+          <p>Dziękujemy, że byłeś/aś z nami.</p>
+          <p>Pozdrawiamy,<br>Zespół Ting Tong</p>
+        </div>
+      `,
+    });
+
+    if (error) {
+      console.error('Error sending account deleted email:', error);
+      return { success: false, error };
+    }
+
+    return { success: true, data };
+  } catch (error) {
+    console.error('Exception sending account deleted email:', error);
+    return { success: false, error };
+  }
+}

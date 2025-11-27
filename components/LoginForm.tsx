@@ -92,7 +92,7 @@ const LoginForm: React.FC<LoginFormProps> = ({ onLoginSuccess }) => {
         type="submit"
         variant="default"
         disabled={isLoading}
-        className="font-bold uppercase tracking-wider bg-black hover:bg-zinc-800 flex items-center justify-center gap-2"
+        className="font-bold uppercase tracking-wider bg-pink-600 hover:bg-pink-700 flex items-center justify-center gap-2"
       >
         {isLoading && <Loader2 className="h-4 w-4 animate-spin" />}
         {isLoading ? t('loggingIn') : 'ENTER'}
