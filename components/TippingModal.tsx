@@ -207,13 +207,14 @@ const TippingModal = () => {
   const currencies = ['PLN', 'EUR', 'USD', 'GBP'];
 
   return (
-    <AnimatePresence>
+    <AnimatePresence mode="wait">
       {isTippingModalOpen && (
         <div className="absolute inset-0 z-[10200] flex items-center justify-center pointer-events-none">
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
+            transition={{ duration: 0.3 }}
             className="absolute inset-0 z-[-1] pointer-events-auto"
             onClick={closeTippingModal}
           />

@@ -18,7 +18,7 @@ const SecretOverlay: React.FC = () => {
             </svg>
             <h2 className="text-2xl font-bold text-white mb-1 drop-shadow-md">Top Secret</h2>
             <p className="text-base text-white/80 drop-shadow-sm">
-                <button onClick={openLoginModal} className="underline decoration-2 underline-offset-2 border-white cursor-pointer">{t('loginText') || 'Zaloguj się'}</button>, aby odblokować
+                <button onClick={openLoginModal} className="underline decoration-2 underline-offset-2 border-white cursor-pointer font-semibold text-white">Zaloguj się</button> <span className="text-white/80">aby odblokować</span>
             </p>
         </div>
     );

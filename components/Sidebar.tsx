@@ -1,6 +1,6 @@
 import React, { memo, useEffect } from 'react';
 import Image from 'next/image';
-import { Heart, MessageSquare, User, ArrowRight } from 'lucide-react';
+import { Heart, MessageSquare, User, CornerUpRight } from 'lucide-react';
 import { motion } from 'framer-motion';
 import Ably from 'ably';
 import { ably } from '@/lib/ably-client';
@@ -157,7 +157,7 @@ const Sidebar: React.FC<SidebarProps> = ({
 
       {/* Share */}
       <button onClick={handleShare} data-action="share" className={buttonClass}>
-        <ArrowRight size={iconSize} strokeWidth={1.5} className="stroke-white" style={{ filter: 'drop-shadow(0 0 3px rgba(0,0,0,0.5))' }}/>
+        <CornerUpRight size={iconSize} strokeWidth={1.5} className="stroke-white" style={{ filter: 'drop-shadow(0 0 3px rgba(0,0,0,0.5))' }}/>
         <span className={labelClass}>{t('shareText') || 'Udostępnij'}</span>
       </button>
 

@@ -57,36 +57,36 @@ export function AuthorProfileModal({ authorId, onClose }: AuthorProfileModalProp
             initial={{ x: '100%' }}
             animate={{ x: '0%' }}
             exit={{ x: '100%' }}
-            transition={{ type: 'spring', damping: 30, stiffness: 300 }}
+            transition={{ type: 'spring', damping: 30, stiffness: 200 }}
             className="absolute inset-0 z-[70] bg-[#121212] flex flex-col overflow-hidden"
             style={{
                 height: '100%',
                 width: '100%',
             }}
         >
-            {/* Top Bar - Matches global TopBar styling */}
-            <div
-                className="flex items-center justify-between px-1 bg-black text-white border-b border-white/10 shrink-0 z-10 sticky top-0"
-                style={{
-                  height: 'var(--topbar-height)',
-                  paddingTop: 'var(--safe-area-top)',
-                }}
-            >
-                <div className="flex justify-start w-12">
-                    <button onClick={onClose} className="p-2 text-white/80 hover:text-white transition-colors">
-                        <ChevronLeft size={28} />
-                    </button>
-                </div>
-                <div className="flex justify-center flex-1">
-                    <span className="font-bold text-base truncate max-w-[200px] text-white">
-                        {profile?.username || '...'}
-                    </span>
-                </div>
-                <div className="w-12" /> {/* Spacer to balance the back button */}
-            </div>
+            {/* Scrollable Content Container */}
+            <div className="flex-1 overflow-y-auto custom-scrollbar relative">
 
-            {/* Scrollable Content */}
-            <div className="flex-1 overflow-y-auto custom-scrollbar">
+                {/* Top Bar - Now inside scroll view and relative (not sticky/fixed to viewport) */}
+                <div
+                    className="flex items-center justify-between px-1 bg-black text-white border-b border-white/10 z-10 relative"
+                    style={{
+                      height: 'var(--topbar-height)',
+                      paddingTop: 'var(--safe-area-top)',
+                    }}
+                >
+                    <div className="flex justify-start w-12 pl-0">
+                        <button onClick={onClose} className="p-2 text-white/80 hover:text-white transition-colors">
+                            <ChevronLeft size={28} />
+                        </button>
+                    </div>
+                    <div className="flex justify-center flex-1">
+                        <span className="font-bold text-base truncate max-w-[200px] text-white">
+                            {profile?.username || '...'}
+                        </span>
+                    </div>
+                    <div className="w-12" /> {/* Spacer to balance the back button */}
+                </div>
                 {isLoading ? (
                     <AuthorProfileSkeleton />
                 ) : isError ? (
@@ -169,36 +169,31 @@ export function AuthorProfileModal({ authorId, onClose }: AuthorProfileModalProp
 
                         {/* Tabs */}
                         <div className="flex border-b border-white/10 mt-2 sticky top-0 bg-[#121212] z-10" style={{ top: 0 }}>
-                             {/* Note: sticky top-0 might conflict with the modal scrolling if not careful, but usually works in this structure.
-                                Actually, the scrollable container is the div above. The sticky parent needs to be inside that scroll container.
-                                Wait, `sticky` works relative to scroll container. The scroll container starts after the top bar.
-                                So `top: 0` is correct relative to the scroll view.
-                             */}
                             <button
                                 onClick={() => setActiveTab('videos')}
-                                className={`flex-1 flex justify-center items-center py-3 relative ${activeTab === 'videos' ? 'text-white' : 'text-white/40'}`}
+                                className={`flex-1 flex justify-center items-center py-3 relative transition-colors ${activeTab === 'videos' ? 'bg-[#1a1a1a] text-pink-500' : 'bg-[#121212] text-white/40 hover:bg-[#1a1a1a]/50'}`}
                             >
                                 <Grid size={20} />
                                 {activeTab === 'videos' && (
-                                    <motion.div layoutId="activeTab" className="absolute bottom-0 w-8 h-[2px] bg-white" />
+                                    <motion.div layoutId="activeTab" className="absolute bottom-0 w-full h-[2px] bg-pink-500" />
                                 )}
                             </button>
                             <button
                                 onClick={() => setActiveTab('liked')}
-                                className={`flex-1 flex justify-center items-center py-3 relative ${activeTab === 'liked' ? 'text-white' : 'text-white/40'}`}
+                                className={`flex-1 flex justify-center items-center py-3 relative transition-colors ${activeTab === 'liked' ? 'bg-[#1a1a1a] text-pink-500' : 'bg-[#121212] text-white/40 hover:bg-[#1a1a1a]/50'}`}
                             >
                                 <Heart size={20} />
                                 {activeTab === 'liked' && (
-                                    <motion.div layoutId="activeTab" className="absolute bottom-0 w-8 h-[2px] bg-white" />
+                                    <motion.div layoutId="activeTab" className="absolute bottom-0 w-full h-[2px] bg-pink-500" />
                                 )}
                             </button>
                             <button
                                 onClick={() => setActiveTab('private')}
-                                className={`flex-1 flex justify-center items-center py-3 relative ${activeTab === 'private' ? 'text-white' : 'text-white/40'}`}
+                                className={`flex-1 flex justify-center items-center py-3 relative transition-colors ${activeTab === 'private' ? 'bg-[#1a1a1a] text-pink-500' : 'bg-[#121212] text-white/40 hover:bg-[#1a1a1a]/50'}`}
                             >
                                 <Lock size={20} />
                                 {activeTab === 'private' && (
-                                    <motion.div layoutId="activeTab" className="absolute bottom-0 w-8 h-[2px] bg-white" />
+                                    <motion.div layoutId="activeTab" className="absolute bottom-0 w-full h-[2px] bg-pink-500" />
                                 )}
                             </button>
                         </div>

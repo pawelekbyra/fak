@@ -217,7 +217,9 @@ const TopBar = () => {
             animate={{ y: '0%', transition: { type: 'spring', stiffness: 200, damping: 30 } }}
             exit={{ y: '-100%', transition: { ease: 'easeInOut', duration: 0.5 } }}
           >
-            <div className="relative z-[70]">
+            {/* Spacer to match bottom empty space if needed, or just container style */}
+            <div className="relative z-[70] pt-4"> {/* Added pt-4 to give some space above */}
+                <div className="h-4 bg-transparent w-full" /> {/* Explicit spacer if needed */}
                 <LoginForm onLoginSuccess={() => {
                   setIsLoginPanelOpen(false);
                   if (activeModal === 'login') setActiveModal(null);
