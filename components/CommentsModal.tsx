@@ -79,7 +79,6 @@ const CommentItem: React.FC<CommentItemProps> = ({ comment, onLike, onDelete, on
 
   return (
     <motion.div
-      layout="position"
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -10 }}
@@ -451,7 +450,7 @@ const CommentsModal: React.FC<CommentsModalProps> = ({ isOpen, onClose, slideId,
 
     return (
       <div className="px-2 pt-2 custom-scrollbar">
-        <motion.div layout className="space-y-3">
+        <div className="space-y-3">
           {comments.map((comment) => (
             <MemoizedCommentItem
               key={comment.id}
@@ -477,7 +476,7 @@ const CommentsModal: React.FC<CommentsModalProps> = ({ isOpen, onClose, slideId,
               </button>
             </div>
           )}
-        </motion.div>
+        </div>
       </div>
     );
   };
