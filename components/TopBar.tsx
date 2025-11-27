@@ -16,13 +16,29 @@ import { User, LogOut, ChevronDown, Settings } from 'lucide-react';
 
 const TopBar = () => {
   const { user, logout } = useUser();
-  const { setActiveModal, openAdminModal } = useStore();
+  const { activeModal, setActiveModal, openAdminModal } = useStore();
   const { t, lang } = useTranslation();
   const { addToast } = useToast();
   const [isLoginPanelOpen, setIsLoginPanelOpen] = useState(false);
   const [showPwaModal, setShowPwaModal] = useState(false);
   const [isDesktop, setIsDesktop] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+
+  useEffect(() => {
+    if (activeModal === 'login') {
+      setIsLoginPanelOpen(true);
+    }
+  }, [activeModal]);
+
+  const handleToggleLoginPanel = () => {
+    setIsLoginPanelOpen(prev => {
+      const newState = !prev;
+      if (!newState && activeModal === 'login') {
+        setActiveModal(null);
+      }
+      return newState;
+    });
+  };
 
   useEffect(() => {
     const checkIsDesktop = () => setIsDesktop(window.innerWidth >= 768);
@@ -98,7 +114,7 @@ const TopBar = () => {
             </div>
             <div className="flex justify-center flex-1 text-center">
               <button
-                onClick={() => setIsLoginPanelOpen(panel => !panel)}
+                onClick={handleToggleLoginPanel}
                 className="relative flex items-center justify-center font-semibold text-sm text-white transition-all duration-300 focus:outline-none whitespace-nowrap outline-none"
               >
                 <span>{loggedOutTitle}</span>
@@ -204,7 +220,10 @@ const TopBar = () => {
             exit={{ y: '-100%', transition: { ease: 'easeInOut', duration: 0.5 } }}
           >
             <div className="relative z-[70]">
-                <LoginForm onLoginSuccess={() => setIsLoginPanelOpen(false)} />
+                <LoginForm onLoginSuccess={() => {
+                  setIsLoginPanelOpen(false);
+                  if (activeModal === 'login') setActiveModal(null);
+                }} />
             </div>
           </motion.div>
         )}

@@ -19,7 +19,7 @@ interface AuthorProfileModalProps {
 }
 
 export function AuthorProfileModal({ authorId, onClose }: AuthorProfileModalProps) {
-    const { jumpToSlide } = useStore();
+    const { jumpToSlide, openTippingModal, closeAuthorProfileModal } = useStore();
     const [activeTab, setActiveTab] = useState<'videos' | 'liked' | 'private'>('videos');
     const [isPatron, setIsPatron] = useState(false); // Mock state for "Become a Patron"
 
@@ -46,7 +46,8 @@ export function AuthorProfileModal({ authorId, onClose }: AuthorProfileModalProp
     };
 
     const togglePatron = () => {
-        setIsPatron(!isPatron);
+        closeAuthorProfileModal();
+        openTippingModal();
     };
 
     if (!authorId) return null;

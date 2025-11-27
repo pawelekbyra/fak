@@ -551,7 +551,7 @@ const CommentsModal: React.FC<CommentsModalProps> = ({ isOpen, onClose, slideId,
                 <div className="text-center p-4 text-[#8F8F8F] text-sm">
                   <button
                     onClick={() => { setActiveModal('login'); }}
-                    className="text-[#FE2C55] font-semibold hover:underline active:opacity-70 transition-opacity"
+                    className="text-[#8F8F8F] font-semibold hover:underline active:opacity-70 transition-opacity"
                   >
                     Zaloguj się
                   </button>

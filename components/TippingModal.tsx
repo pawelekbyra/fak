@@ -218,10 +218,10 @@ const TippingModal = () => {
             onClick={closeTippingModal}
           />
           <motion.div
-            initial={{ scale: 0.9, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-            exit={{ scale: 0.9, opacity: 0 }}
-            transition={{ type: "spring", damping: 25, stiffness: 300 }}
+            initial={{ x: '100%' }}
+            animate={{ x: '0%' }}
+            exit={{ x: '100%' }}
+            transition={{ type: "spring", damping: 30, stiffness: 300 }}
             className="relative w-[90%] max-w-[420px] max-h-[85vh] flex flex-col rounded-[20px] shadow-[0_0_100px_-20px_rgba(255,255,255,0.4)] overflow-hidden bg-gradient-to-br from-gray-200 via-gray-400 to-gray-600 border-[3px] border-black pointer-events-auto"
           >
         <div className="absolute inset-0 border-[6px] border-transparent rounded-[21px] pointer-events-none overflow-hidden z-[50]">
