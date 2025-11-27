@@ -413,6 +413,10 @@ const CommentsModal: React.FC<CommentsModalProps> = ({ isOpen, onClose, slideId,
   };
 
   const handleStartReply = (comment: CommentWithRelations) => {
+    if (!user) {
+        setActiveModal('login');
+        return;
+    }
     setReplyingTo(comment);
     textareaRef.current?.focus();
   };
@@ -551,7 +555,7 @@ const CommentsModal: React.FC<CommentsModalProps> = ({ isOpen, onClose, slideId,
                 <div className="text-center p-4 text-[#8F8F8F] text-sm">
                   <button
                     onClick={() => { setActiveModal('login'); }}
-                    className="text-[#8F8F8F] font-semibold hover:underline active:opacity-70 transition-opacity"
+                    className="text-[#8F8F8F] font-semibold underline active:opacity-70 transition-opacity"
                   >
                     Zaloguj się
                   </button>

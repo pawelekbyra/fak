@@ -108,7 +108,7 @@ const SlideUI = ({ slide, isLocked = false }: SlideUIProps) => {
         </AnimatePresence>
 
         {/* UI Controls Container */}
-        <div className="relative z-20 pointer-events-none">
+        <div className="relative z-20 pointer-events-none w-full max-w-[calc(100%-60px)]">
             <div className="flex items-center gap-2 mb-2 pointer-events-auto">
                 <Image 
                     src={slide.avatar || DEFAULT_AVATAR_URL} 
@@ -117,11 +117,11 @@ const SlideUI = ({ slide, isLocked = false }: SlideUIProps) => {
                     height={40} 
                     className="rounded-full border-2 border-yellow-400 shadow-[0_0_10px_rgba(250,204,21,0.5)]"
                 />
-                <p className="font-bold text-lg">{slide.username}</p>
+                <p className="font-bold text-lg truncate">{slide.username}</p>
             </div>
 
-            {slide.data && 'title' in slide.data && <h2 className="text-xl font-semibold mb-1">{slide.data.title}</h2>}
-            {slide.data && 'description' in slide.data && <p className="text-sm opacity-90">{slide.data.description}</p>}
+            {slide.data && 'title' in slide.data && <h2 className="text-xl font-semibold mb-1 truncate">{slide.data.title}</h2>}
+            {slide.data && 'description' in slide.data && <p className="text-sm opacity-90 truncate">{slide.data.description}</p>}
         </div>
 
         <Sidebar
@@ -135,7 +135,7 @@ const SlideUI = ({ slide, isLocked = false }: SlideUIProps) => {
 
         {/* Hide video controls if locked? Usually yes. */}
         {isVideoSlide && !isLocked && (
-            <div className="pointer-events-auto">
+            <div className="pointer-events-auto w-full max-w-[calc(100%-60px)]">
                 <VideoControls
                     isPlaying={isPlaying}
                     isMuted={isMuted}
