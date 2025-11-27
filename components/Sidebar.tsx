@@ -70,7 +70,7 @@ const Sidebar: React.FC<SidebarProps> = ({
 
   const handleLike = () => {
     if (!isLoggedIn) {
-      addToast(t('loginRequired') || 'Musisz się zalogować', 'error');
+      addToast(t('loginRequired') || 'Musisz się zalogować', 'locked');
       return;
     }
     toggleLike(slideId, initialLikes, initialIsLiked);

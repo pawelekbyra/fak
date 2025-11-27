@@ -51,11 +51,11 @@ const TopBar = () => {
   const unreadCount = 0;
 
   const handleLoggedOutMenuClick = () => {
-    addToast(t('loginRequired') || 'Musisz się zalogować', 'error');
+    addToast(t('loginRequired') || 'Musisz się zalogować', 'locked');
   };
 
   const handleLoggedOutNotificationClick = () => {
-    addToast(t('loginRequired') || 'Musisz się zalogować', 'error');
+    addToast(t('loginRequired') || 'Musisz się zalogować', 'locked');
   };
 
   const handleLoggedInNotificationClick = () => {

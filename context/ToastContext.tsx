@@ -5,7 +5,7 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { CheckCircle, XCircle, Info, AlertTriangle, MessageSquare, Heart, Mail, UserPlus } from 'lucide-react';
 import { useTranslation } from './LanguageContext';
 
-type ToastType = 'success' | 'error' | 'info' | 'warning' | 'like' | 'comment' | 'follow' | 'message';
+type ToastType = 'success' | 'error' | 'info' | 'warning' | 'like' | 'comment' | 'follow' | 'message' | 'locked';
 
 interface Toast {
   id: number;
@@ -27,6 +27,8 @@ export const useToast = () => {
   return context;
 };
 
+import { Lock } from 'lucide-react';
+
 const ToastIcons = {
   success: <CheckCircle className="text-green-500" />,
   error: <XCircle className="text-red-500" />,
@@ -36,6 +38,7 @@ const ToastIcons = {
   comment: <MessageSquare className="text-white" />,
   follow: <UserPlus className="text-white" />,
   message: <Mail className="text-white" />,
+  locked: <Lock className="text-white" />,
 };
 
 export const ToastProvider = ({ children }: { children: ReactNode }) => {
