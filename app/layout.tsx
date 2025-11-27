@@ -7,8 +7,8 @@ import ClientLayoutWrapper from "@/components/ClientLayoutWrapper";
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "Ting Tong",
-  description: "Ting Tong — pionowy feed wideo z prefetchingiem i trybem HLS/CDN-ready.",
+  title: "Polutek",
+  description: "Polutek — pionowy feed wideo z prefetchingiem i trybem HLS/CDN-ready.",
 };
 
 export default function RootLayout({

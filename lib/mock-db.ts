@@ -3,7 +3,7 @@ export const mockNotifications = [
     id: 'mock-1',
     userId: 'current-user',
     type: 'system',
-    text: 'Witaj w Ting Tong! 🎥 To jest przykładowe powiadomienie.',
+    text: 'Witaj w Polutek! 🎥 To jest przykładowe powiadomienie.',
     link: null,
     createdAt: new Date().toISOString(),
     read: false,

@@ -14,6 +14,7 @@ import { updateUserProfile } from '@/lib/actions';
 import { DEFAULT_AVATAR_URL } from '@/lib/constants';
 import CropModal from './CropModal';
 import { UserBadge } from './UserBadge';
+import { useQueryClient } from '@tanstack/react-query';
 
 interface ProfileTabProps {
     onClose: () => void;
@@ -28,6 +29,7 @@ const ProfileTab: React.FC<ProfileTabProps> = ({ onClose }) => {
   const { user: profile, checkUserStatus } = useUser();
   const { t } = useTranslation();
   const { addToast } = useToast();
+  const queryClient = useQueryClient();
 
   // State for fields
   const [emailConsent, setEmailConsent] = useState(false);
@@ -51,17 +53,33 @@ const ProfileTab: React.FC<ProfileTabProps> = ({ onClose }) => {
   const [state, formAction] = useFormState(updateUserProfile, initialState);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  // Track the last handled message to prevent duplicate toasts
+  const lastMessageRef = useRef<string>('');
+
   // Handle state updates from server action
   useEffect(() => {
-    if (state.message) {
+    // Only proceed if there is a message and it's different from the last one
+    // OR if it's the same message but sufficient time has passed (simple dedupe by value here is usually enough for form submissions)
+    // Actually, useFormState might return the same object reference if it hasn't changed, but if it changes, it's a new submission.
+    // However, to be safe against re-renders triggered by other things (like checkUserStatus updating context),
+    // we strictly check against a ref.
+
+    if (state.message && state.message !== lastMessageRef.current) {
+      lastMessageRef.current = state.message;
+
       if (state.success) {
         addToast(state.message, 'success');
         checkUserStatus(); // Refresh user data context
+
+        // Invalidate author profile query to update the modal if it's open for this user
+        if (profile?.id) {
+            queryClient.invalidateQueries({ queryKey: ['author', profile.id] });
+        }
       } else {
         addToast(state.message, 'error');
       }
     }
-  }, [state, addToast, checkUserStatus]);
+  }, [state, addToast, checkUserStatus, profile?.id, queryClient]);
 
   const handleAvatarEditClick = () => {
     fileInputRef.current?.click();
@@ -96,6 +114,10 @@ const ProfileTab: React.FC<ProfileTabProps> = ({ onClose }) => {
     if (croppedFile) {
       formData.set('avatar', croppedFile);
     }
+    // Clear the last message ref so if the server returns the EXACT same message again (rare but possible), it still shows.
+    // However, usually success messages might be identical.
+    // If we want to allow identical messages on subsequent submits, we should clear the ref on submit.
+    lastMessageRef.current = '';
     formAction(formData);
   };
 

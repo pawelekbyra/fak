@@ -1,7 +1,7 @@
-# FAK / Ting Tong (Next-Gen) 🚀
+# Polutek (Next-Gen) 🚀
 Next-Gen Vertical Video Platform with Direct Creator Monetization.
 
-Witaj w dokumentacji produkcyjnej wersji Ting Tong (FAK). To nie jest zwykły klon TikToka. To platforma, która oddaje władzę twórcom, eliminując pośredników i algorytmy. Projekt łączy wirusowość krótkich form wideo z modelem subskrypcyjnym (Patronite/OnlyFans), ale we własnym, kontrolowanym ekosystemie.
+Witaj w dokumentacji produkcyjnej wersji Polutek. To nie jest zwykły klon TikToka. To platforma, która oddaje władzę twórcom, eliminując pośredników i algorytmy. Projekt łączy wirusowość krótkich form wideo z modelem subskrypcyjnym (Patronite/OnlyFans), ale we własnym, kontrolowanym ekosystemie.
 
 📚 **Spis Treści**
 1. [💡 Filozofia: O co tu chodzi?](#-filozofia-o-co-tu-chodzi)
@@ -68,7 +68,7 @@ Standardowa procedura startowa dla dewelopera.
 1.  **Pobierz kod:**
     ```bash
     git clone <adres_repozytorium>
-    cd ting-tong-next
+    cd polutek
     ```
 
 2.  **Zainstaluj zależności:**

@@ -13,7 +13,6 @@ import CommentsModal from './CommentsModal';
 import AccountPanel from './AccountPanel';
 import NotificationPopup from './NotificationPopup';
 import { AnimatePresence } from 'framer-motion';
-import FirstLoginSetupModal from './FirstLoginSetupModal';
 import { useUser } from '@/context/UserContext';
 import PWAInstallPrompt from './PWAInstallPrompt';
 
@@ -108,10 +107,6 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         {activeModal === 'account' && <AccountPanel key="account-panel" onClose={() => setActiveModal(null)} />}
       </AnimatePresence>
 
-      {/* Mandatory First Login Setup Modal */}
-      {user?.isFirstLogin && (
-        <FirstLoginSetupModal />
-      )}
       <PWAInstallPrompt />
     </div>
   );

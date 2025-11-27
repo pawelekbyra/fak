@@ -44,10 +44,10 @@ export async function sendWelcomeEmail(email: string, tempPassword: string) {
     const { data, error } = await resend.emails.send({
       from: 'Wsparcie <noreply@polutek.pl>',
       to: [email],
-      subject: 'Witaj w Ting Tong!',
+      subject: 'Witaj w Polutek!',
       html: `
         <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; color: #333;">
-          <h2>Witaj w Ting Tong!</h2>
+          <h2>Witaj w Polutek!</h2>
           <p>Twoje konto zostało pomyślnie utworzone.</p>
           <p>Poniżej znajdują się Twoje dane logowania:</p>
           <div style="background: #f4f4f5; padding: 15px; border-radius: 8px; margin: 20px 0;">
@@ -55,7 +55,7 @@ export async function sendWelcomeEmail(email: string, tempPassword: string) {
             <p style="margin: 5px 0;"><strong>Hasło tymczasowe:</strong> ${tempPassword}</p>
           </div>
           <p>Zaloguj się i zmień hasło w ustawieniach profilu, aby zachować bezpieczeństwo konta.</p>
-          <p>Pozdrawiamy,<br>Zespół Ting Tong</p>
+          <p>Pozdrawiamy,<br>Zespół Polutek</p>
         </div>
       `,
     });
@@ -82,15 +82,15 @@ export async function sendAccountDeletedEmail(email: string) {
     const { data, error } = await resend.emails.send({
       from: 'Wsparcie <noreply@polutek.pl>',
       to: [email],
-      subject: 'Twoje konto Ting Tong zostało usunięte',
+      subject: 'Twoje konto Polutek zostało usunięte',
       html: `
         <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; color: #333;">
           <h2>Konto usunięte</h2>
-          <p>Twoje konto w serwisie Ting Tong zostało trwale usunięte zgodnie z Twoją dyspozycją.</p>
+          <p>Twoje konto w serwisie Polutek zostało trwale usunięte zgodnie z Twoją dyspozycją.</p>
           <p>Wszystkie Twoje dane zostały skasowane.</p>
           <p>Jeśli to była pomyłka, niestety nie możemy przywrócić Twoich danych, ale zawsze możesz założyć nowe konto.</p>
           <p>Dziękujemy, że byłeś/aś z nami.</p>
-          <p>Pozdrawiamy,<br>Zespół Ting Tong</p>
+          <p>Pozdrawiamy,<br>Zespół Polutek</p>
         </div>
       `,
     });
