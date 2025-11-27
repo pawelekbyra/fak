@@ -2,7 +2,7 @@
 
 import React, { useState, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { ChevronLeft, Instagram, Grid, Heart, Lock } from 'lucide-react';
 import { useStore } from '@/store/useStore';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -21,7 +21,7 @@ interface AuthorProfileModalProps {
 export function AuthorProfileModal({ authorId, onClose }: AuthorProfileModalProps) {
     const { jumpToSlide } = useStore();
     const [activeTab, setActiveTab] = useState<'videos' | 'liked' | 'private'>('videos');
-    const [isPatron, setIsPatron] = useState(false); // Mock state for "Become a Patron"
+    const [isFollowing, setIsFollowing] = useState(false); // Mock state
 
     const { data: profile, isLoading, isError } = useQuery<AuthorProfile>({
         queryKey: ['author', authorId],
@@ -31,11 +31,12 @@ export function AuthorProfileModal({ authorId, onClose }: AuthorProfileModalProp
 
     // Mock stats generation based on authorId (deterministic for specific user, random otherwise)
     const stats = useMemo(() => {
-        if (!profile) return { followers: 0, likes: 0 };
+        if (!profile) return { following: 0, followers: 0, likes: 0 };
         // Use authorId chars to seed a pseudo-random number
         const seed = authorId.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
         return {
-            followers: 10 + (seed * 123) % 1000, // Mock "Patrons" count
+            following: 10 + (seed % 500),
+            followers: 1000 + (seed * 123) % 1000000,
             likes: 5000 + (seed * 456) % 5000000
         };
     }, [profile, authorId]);
@@ -45,43 +46,33 @@ export function AuthorProfileModal({ authorId, onClose }: AuthorProfileModalProp
         onClose();
     };
 
-    const togglePatron = () => {
-        setIsPatron(!isPatron);
+    const toggleFollow = () => {
+        setIsFollowing(!isFollowing);
     };
 
     if (!authorId) return null;
 
     return (
         <motion.div
-            initial={{ x: '100%' }}
-            animate={{ x: '0%' }}
-            exit={{ x: '100%' }}
+            initial={{ y: '100%' }}
+            animate={{ y: '0%' }}
+            exit={{ y: '100%' }}
             transition={{ type: 'spring', damping: 30, stiffness: 300 }}
             className="absolute inset-0 z-[70] bg-[#121212] flex flex-col overflow-hidden"
             style={{
-                height: '100%',
+                height: '100%', // Match parent container height
                 width: '100%',
             }}
         >
-            {/* Top Bar - Matches global TopBar styling */}
-            <div
-                className="flex items-center justify-between px-1 bg-black text-white border-b border-white/10 shrink-0 z-10 sticky top-0"
-                style={{
-                  height: 'var(--topbar-height)',
-                  paddingTop: 'var(--safe-area-top)',
-                }}
-            >
-                <div className="flex justify-start w-12">
-                    <button onClick={onClose} className="p-2 text-white/80 hover:text-white transition-colors">
-                        <ChevronLeft size={28} />
-                    </button>
+            {/* Top Bar */}
+            <div className="flex items-center justify-between px-4 py-2 border-b border-white/5 bg-[#121212] shrink-0 z-10 sticky top-0">
+                <button onClick={onClose} className="p-2 -ml-2 text-white">
+                    <ChevronLeft size={28} />
+                </button>
+                <div className="font-bold text-base truncate max-w-[200px] text-white">
+                    {profile?.username || '...'}
                 </div>
-                <div className="flex justify-center flex-1">
-                    <span className="font-bold text-base truncate max-w-[200px] text-white">
-                        {profile?.username || '...'}
-                    </span>
-                </div>
-                <div className="w-12" /> {/* Spacer to balance the back button */}
+                <div className="w-10" /> {/* Spacer for centering */}
             </div>
 
             {/* Scrollable Content */}
@@ -97,7 +88,6 @@ export function AuthorProfileModal({ authorId, onClose }: AuthorProfileModalProp
                     <div className="pb-20">
                         {/* Profile Header */}
                         <div className="flex flex-col items-center pt-6 px-4">
-                            {/* Avatar */}
                             <div className="relative mb-3">
                                 <Image
                                     src={profile.avatarUrl || DEFAULT_AVATAR_URL}
@@ -108,53 +98,41 @@ export function AuthorProfileModal({ authorId, onClose }: AuthorProfileModalProp
                                 />
                             </div>
 
-                            {/* Name */}
-                            <h1 className="text-lg font-bold text-white mb-1">@{profile.username}</h1>
-
-                            {/* Badge */}
-                            <div className="mb-3">
+                            <div className="flex items-center gap-1 mb-1">
+                                <h1 className="text-lg font-bold text-white">@{profile.username}</h1>
                                 <UserBadge role={profile.role} />
                             </div>
 
-                            {/* Bio (Description) */}
-                            {profile.bio ? (
-                                <p className="text-sm text-center text-white/90 whitespace-pre-wrap mb-4 px-2 leading-tight max-w-sm">
-                                    {profile.bio}
-                                </p>
-                            ) : (
-                                <p className="text-sm text-center text-white/40 mb-4 italic">Brak opisu</p>
-                            )}
-
                             {/* Stats */}
-                            <div className="flex items-center gap-6 mt-2 mb-6">
+                            <div className="flex items-center gap-6 mt-4 mb-4">
                                 <div className="flex flex-col items-center">
-                                    <span className="font-bold text-white text-lg">{formatCount(profile.slides.length)}</span>
-                                    <span className="text-xs text-white/60">Filmików</span>
+                                    <span className="font-bold text-white text-lg">{formatCount(stats.following)}</span>
+                                    <span className="text-xs text-white/60">Obserwuje</span>
                                 </div>
                                 <div className="flex flex-col items-center">
                                     <span className="font-bold text-white text-lg">{formatCount(stats.followers)}</span>
-                                    <span className="text-xs text-white/60">Patronów</span>
+                                    <span className="text-xs text-white/60">Obserwujący</span>
                                 </div>
                                 <div className="flex flex-col items-center">
                                     <span className="font-bold text-white text-lg">{formatCount(stats.likes)}</span>
-                                    <span className="text-xs text-white/60">Polubień</span>
+                                    <span className="text-xs text-white/60">Polubienia</span>
                                 </div>
                             </div>
 
                             {/* Actions */}
                             <div className="flex gap-2 w-full max-w-xs mb-6">
                                 <button
-                                    onClick={togglePatron}
+                                    onClick={toggleFollow}
                                     className={`flex-1 py-2.5 rounded text-sm font-semibold transition-colors flex items-center justify-center gap-2
-                                        ${isPatron
+                                        ${isFollowing
                                             ? 'bg-[#3A3A3A] text-white hover:bg-[#4A4A4A]'
                                             : 'bg-[#FE2C55] text-white hover:bg-[#E0274B]'
                                         }`}
                                 >
-                                    {isPatron ? (
-                                        <>Jesteś Patronem</>
+                                    {isFollowing ? (
+                                        <>Obserwujesz</>
                                     ) : (
-                                        <>Zostań Patronem</>
+                                        <>Obserwuj</>
                                     )}
                                 </button>
                                 <button className="px-3 py-2.5 bg-[#3A3A3A] rounded hover:bg-[#4A4A4A] text-white transition-colors">
@@ -164,15 +142,19 @@ export function AuthorProfileModal({ authorId, onClose }: AuthorProfileModalProp
                                     <ChevronLeft className="rotate-180" size={20} />
                                 </button>
                             </div>
+
+                            {/* Bio */}
+                            {profile.bio ? (
+                                <p className="text-sm text-center text-white/90 whitespace-pre-wrap mb-4 px-2 leading-tight">
+                                    {profile.bio}
+                                </p>
+                            ) : (
+                                <p className="text-sm text-center text-white/40 mb-4 italic">Brak opisu</p>
+                            )}
                         </div>
 
                         {/* Tabs */}
-                        <div className="flex border-b border-white/10 mt-2 sticky top-0 bg-[#121212] z-10" style={{ top: 0 }}>
-                             {/* Note: sticky top-0 might conflict with the modal scrolling if not careful, but usually works in this structure.
-                                Actually, the scrollable container is the div above. The sticky parent needs to be inside that scroll container.
-                                Wait, `sticky` works relative to scroll container. The scroll container starts after the top bar.
-                                So `top: 0` is correct relative to the scroll view.
-                             */}
+                        <div className="flex border-b border-white/10 mt-2 sticky top-[53px] bg-[#121212] z-10">
                             <button
                                 onClick={() => setActiveTab('videos')}
                                 className={`flex-1 flex justify-center items-center py-3 relative ${activeTab === 'videos' ? 'text-white' : 'text-white/40'}`}
