@@ -1,6 +1,6 @@
 import React, { memo, useEffect } from 'react';
 import Image from 'next/image';
-import { Heart, MessageSquare, User, Share2 } from 'lucide-react';
+import { Heart, MessageSquare, User, ArrowRight } from 'lucide-react';
 import { motion } from 'framer-motion';
 import Ably from 'ably';
 import { ably } from '@/lib/ably-client';
@@ -70,7 +70,7 @@ const Sidebar: React.FC<SidebarProps> = ({
 
   const handleLike = () => {
     if (!isLoggedIn) {
-      setActiveModal('login');
+      addToast(t('loginRequired') || 'Musisz się zalogować', 'locked');
       return;
     }
     toggleLike(slideId, initialLikes, initialIsLiked);
@@ -137,7 +137,7 @@ const Sidebar: React.FC<SidebarProps> = ({
         <Heart
           size={iconSize}
           strokeWidth={1.5}
-          className={`transition-colors duration-200 ${isLiked ? 'fill-[var(--accent-color,theme(colors.rose.500))] stroke-white' : 'fill-transparent stroke-white'}`}
+          className={`transition-colors duration-200 ${(isLiked && isLoggedIn) ? 'fill-[var(--accent-color,theme(colors.rose.500))] stroke-white' : 'fill-transparent stroke-white'}`}
           style={{ filter: 'drop-shadow(0 0 3px rgba(0,0,0,0.5))' }}
         />
         <span className={labelClass}>{formatCount(currentLikes)}</span>
@@ -157,12 +157,12 @@ const Sidebar: React.FC<SidebarProps> = ({
 
       {/* Share */}
       <button onClick={handleShare} data-action="share" className={buttonClass}>
-        <Share2 size={iconSize} strokeWidth={1.5} className="stroke-white" style={{ filter: 'drop-shadow(0 0 3px rgba(0,0,0,0.5))' }}/>
+        <ArrowRight size={iconSize} strokeWidth={1.5} className="stroke-white" style={{ filter: 'drop-shadow(0 0 3px rgba(0,0,0,0.5))' }}/>
         <span className={labelClass}>{t('shareText') || 'Udostępnij'}</span>
       </button>
 
       {/* Tip Jar (Custom SVG) */}
-      <button onClick={openTippingModal} data-action="show-tip-jar" className={buttonClass + " mt-2"}>
+      <button onClick={() => openTippingModal()} data-action="show-tip-jar" className={buttonClass + " mt-2"}>
         <svg viewBox="0 0 24 24" className="text-white drop-shadow-md" style={{ width: iconSize, height: iconSize }} fill="none" stroke="currentColor" strokeWidth="1.5">
            <rect x="2" y="7" width="20" height="12" rx="2" ry="2" />
            <path d="M2 10h20" />

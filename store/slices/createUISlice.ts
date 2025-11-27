@@ -22,7 +22,8 @@ export interface UISlice {
   closeAdminModal: () => void;
 
   isTippingModalOpen: boolean;
-  openTippingModal: () => void;
+  tippingModalOptions: { fromLeft?: boolean };
+  openTippingModal: (options?: { fromLeft?: boolean }) => void;
   closeTippingModal: () => void;
 }
 
@@ -37,6 +38,7 @@ export const createUISlice: StateCreator<UISlice> = (set, get) => ({
   isAdminModalOpen: false,
 
   isTippingModalOpen: false,
+  tippingModalOptions: {},
 
   setActiveModal: (modal) => set({ activeModal: modal }),
   isAnyModalOpen: () => get().activeModal !== null,
@@ -50,6 +52,6 @@ export const createUISlice: StateCreator<UISlice> = (set, get) => ({
   openAdminModal: () => set({ isAdminModalOpen: true }),
   closeAdminModal: () => set({ isAdminModalOpen: false }),
 
-  openTippingModal: () => set({ isTippingModalOpen: true }),
-  closeTippingModal: () => set({ isTippingModalOpen: false }),
+  openTippingModal: (options = {}) => set({ isTippingModalOpen: true, tippingModalOptions: options }),
+  closeTippingModal: () => set({ isTippingModalOpen: false, tippingModalOptions: {} }),
 });

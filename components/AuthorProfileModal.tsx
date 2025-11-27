@@ -47,7 +47,7 @@ export function AuthorProfileModal({ authorId, onClose }: AuthorProfileModalProp
 
     const togglePatron = () => {
         closeAuthorProfileModal();
-        openTippingModal();
+        openTippingModal({ fromLeft: true });
     };
 
     if (!authorId) return null;
@@ -97,9 +97,9 @@ export function AuthorProfileModal({ authorId, onClose }: AuthorProfileModalProp
                 ) : profile ? (
                     <div className="pb-20">
                         {/* Profile Header */}
-                        <div className="flex flex-col items-center pt-6 px-4">
+                        <div className="flex flex-col items-center pt-4 px-4">
                             {/* Avatar */}
-                            <div className="relative mb-3">
+                            <div className="relative mb-2">
                                 <Image
                                     src={profile.avatarUrl || DEFAULT_AVATAR_URL}
                                     alt={profile.username}
@@ -113,21 +113,21 @@ export function AuthorProfileModal({ authorId, onClose }: AuthorProfileModalProp
                             <h1 className="text-lg font-bold text-white mb-1">@{profile.username}</h1>
 
                             {/* Badge */}
-                            <div className="mb-3">
+                            <div className="mb-2">
                                 <UserBadge role={profile.role} />
                             </div>
 
                             {/* Bio (Description) */}
                             {profile.bio ? (
-                                <p className="text-sm text-center text-white/90 whitespace-pre-wrap mb-4 px-2 leading-tight max-w-sm">
+                                <p className="text-sm text-center text-white/90 whitespace-pre-wrap mb-3 px-2 leading-tight max-w-sm">
                                     {profile.bio}
                                 </p>
                             ) : (
-                                <p className="text-sm text-center text-white/40 mb-4 italic">Brak opisu</p>
+                                <p className="text-sm text-center text-white/40 mb-3 italic">Brak opisu</p>
                             )}
 
                             {/* Stats */}
-                            <div className="flex items-center gap-6 mt-2 mb-6">
+                            <div className="flex items-center gap-6 mt-1 mb-4">
                                 <div className="flex flex-col items-center">
                                     <span className="font-bold text-white text-lg">{formatCount(profile.slides.length)}</span>
                                     <span className="text-xs text-white/60">Filmików</span>
@@ -143,7 +143,7 @@ export function AuthorProfileModal({ authorId, onClose }: AuthorProfileModalProp
                             </div>
 
                             {/* Actions */}
-                            <div className="flex gap-2 w-full max-w-xs mb-6">
+                            <div className="flex gap-2 w-full max-w-xs mb-4">
                                 <button
                                     onClick={togglePatron}
                                     className={`flex-1 py-2.5 rounded text-sm font-semibold transition-colors flex items-center justify-center gap-2

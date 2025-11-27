@@ -74,7 +74,7 @@ const TippingModal = () => {
   const { isLoggedIn, user } = useUser();
   const { addToast } = useToast();
   const { t } = useTranslation();
-  const { isTippingModalOpen, closeTippingModal } = useStore();
+  const { isTippingModalOpen, closeTippingModal, tippingModalOptions } = useStore();
 
   const [currentStep, setCurrentStep] = useState(0);
   const [formData, setFormData] = useState({
@@ -218,10 +218,10 @@ const TippingModal = () => {
             onClick={closeTippingModal}
           />
           <motion.div
-            initial={{ x: '100%' }}
+            initial={{ x: tippingModalOptions.fromLeft ? '-100%' : '100%' }}
             animate={{ x: '0%' }}
-            exit={{ x: '100%' }}
-            transition={{ type: "spring", damping: 30, stiffness: 300 }}
+            exit={{ x: tippingModalOptions.fromLeft ? '-100%' : '100%' }}
+            transition={{ type: "spring", stiffness: 200, damping: 30 }}
             className="relative w-[90%] max-w-[420px] max-h-[85vh] flex flex-col rounded-[20px] shadow-[0_0_100px_-20px_rgba(255,255,255,0.4)] overflow-hidden bg-gradient-to-br from-gray-200 via-gray-400 to-gray-600 border-[3px] border-black pointer-events-auto"
           >
         <div className="absolute inset-0 border-[6px] border-transparent rounded-[21px] pointer-events-none overflow-hidden z-[50]">
@@ -440,7 +440,7 @@ const TippingModal = () => {
                                             transition={{ duration: 0.2, ease: "easeInOut" }}
                                             style={{ originY: 0, originX: 1 }} // Rozwijanie z prawego górnego rogu
                                             // ZMIANA STYLU: Solidny szary kolor (bg-[#eeeeee]), brak rozmycia, wysoki z-index
-                                            className="absolute top-0 right-0 min-w-[120px] bg-[#eeeeee] border border-black/10 rounded-xl shadow-[0_10px_30px_-10px_rgba(0,0,0,0.25)] overflow-hidden z-[70]"
+                                            className="absolute top-0 right-0 min-w-[120px] bg-[#d1d5db] border border-black/10 rounded-xl shadow-[0_10px_30px_-10px_rgba(0,0,0,0.25)] overflow-hidden z-[100]"
                                         >
                                             <div className="py-1">
                                                 {currencies.map((currency) => (

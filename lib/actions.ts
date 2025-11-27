@@ -158,18 +158,26 @@ export async function changePassword(prevState: ActionResponse | any, formData: 
     }
 }
 
+import { sendAccountDeletedEmail } from '@/lib/email';
+
 export async function deleteAccount(prevState: ActionResponse | any, formData: FormData): Promise<ActionResponse> {
     const session = await auth();
     if (!session || !session.user || !session.user.id) {
         return { success: false, message: 'Not authenticated' };
     }
     const userId = session.user.id!;
+    const userEmail = session.user.email;
 
     try {
         await db.deleteUser(userId);
+
+        if (userEmail) {
+            sendAccountDeletedEmail(userEmail).catch(err => console.error('Failed to send deletion email', err));
+        }
+
         await signOut({ redirect: false });
         revalidatePath('/');
-        return { success: true, message: 'Account deleted successfully.' };
+        return { success: true, message: 'Twoje konto zostało usunięte. Zostałeś wylogowany.' };
     } catch (error: any) {
         return { success: false, message: error.message || 'Failed to delete account.' };
     }

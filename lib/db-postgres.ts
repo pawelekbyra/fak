@@ -181,8 +181,8 @@ export async function createUser(userData: Omit<User, 'id' | 'sessionVersion' | 
     // Ensure avatar is NULL if undefined or empty string to differentiate from default URL logic in UI
     const avatarValue = avatar || null;
     const result = await sql`
-        INSERT INTO users (username, "displayName", email, password, avatar, "role")
-        VALUES (${username}, ${displayName}, ${email}, ${password}, ${avatarValue}, ${role || 'user'})
+        INSERT INTO users (username, "displayName", email, password, avatar, "role", "isFirstLogin")
+        VALUES (${username}, ${displayName}, ${email}, ${password}, ${avatarValue}, ${role || 'user'}, true)
         RETURNING *;
     `;
     return result[0] as User;
