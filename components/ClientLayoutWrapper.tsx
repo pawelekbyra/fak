@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect } from "react";
 import { usePathname } from "next/navigation";
 import { Providers } from "@/components/Providers";
 import AppLayout from "@/components/AppLayout";
@@ -12,6 +13,20 @@ export default function ClientLayoutWrapper({
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
+
+  useEffect(() => {
+    // Sprawdzenie, czy API jest dostępne i czy jesteśmy w przeglądarce
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('/sw.js', { scope: '/' })
+        .then(() => {
+          // Opcjonalne logowanie
+          console.log('Service Worker registered successfully.');
+        })
+        .catch(err => {
+          console.error('Service Worker registration failed:', err);
+        });
+    }
+  }, []);
 
   if (pathname?.startsWith("/robert") || pathname?.startsWith("/setup")) {
     return (
