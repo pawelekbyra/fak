@@ -339,7 +339,7 @@ const CommentsModal: React.FC<CommentsModalProps> = ({ isOpen, onClose, slideId,
         likedBy: [],
         _count: { likes: 0, replies: 0 },
         parentAuthorId: replyingTo ? replyingTo.author?.id : null,
-        parentAuthorUsername: replyingTo ? (replyingTo.author?.displayName || replyingTo.author?.username) : null,
+        parentAuthorUsername: replyingTo ? (replyingTo.author?.displayName || replyingTo.author?.username || 'Unknown') : null,
         replies: [],
       };
 
