@@ -96,6 +96,16 @@ export async function completeFirstLoginSetup(data: z.infer<typeof FirstLoginSet
             }
         });
 
+        // Create Welcome Notification
+        await prisma.notification.create({
+            data: {
+                userId: userId,
+                type: 'system',
+                text: 'setupCompleted', // Translation key or direct text
+                read: false,
+            }
+        });
+
         // Revalidate to update UI
         revalidatePath('/');
 

@@ -77,6 +77,15 @@ const CommentItem: React.FC<CommentItemProps> = ({ comment, onLike, onDelete, on
   const isL0 = level === 0;
   const isL1Plus = level >= 1;
 
+  // Safe access to author, handling potential undefined/null
+  const safeAuthor = author || {
+      id: 'unknown',
+      displayName: 'Unknown',
+      username: 'unknown',
+      avatar: DEFAULT_AVATAR_URL,
+      role: 'user'
+  };
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 10 }}
@@ -85,12 +94,12 @@ const CommentItem: React.FC<CommentItemProps> = ({ comment, onLike, onDelete, on
       className={cn("flex items-start gap-2 group", isL1Plus && "pl-8")}
     >
       <div
-        onClick={() => onAvatarClick(author.id)}
+        onClick={() => onAvatarClick(safeAuthor.id)}
         className="cursor-pointer flex-shrink-0"
       >
         <Image
-          src={author.avatar || DEFAULT_AVATAR_URL}
-          alt={t('userAvatar', { user: author.displayName || 'User' })}
+          src={safeAuthor.avatar || DEFAULT_AVATAR_URL}
+          alt={t('userAvatar', { user: safeAuthor.displayName || 'User' })}
           width={isL0 ? 36 : 28}
           height={isL0 ? 36 : 28}
           className="rounded-full object-cover mt-1"
@@ -99,14 +108,14 @@ const CommentItem: React.FC<CommentItemProps> = ({ comment, onLike, onDelete, on
 
       <div className="flex-1 min-w-0">
         <div className="bg-transparent rounded-lg">
-           <p className="text-xs font-semibold text-[#A6A6A6] cursor-pointer hover:underline" onClick={() => onAvatarClick(author.id)}>
-              @{author.displayName || author.username || 'User'}
+           <p className="text-xs font-semibold text-[#A6A6A6] cursor-pointer hover:underline" onClick={() => onAvatarClick(safeAuthor.id)}>
+              @{safeAuthor.displayName || safeAuthor.username || 'User'}
             </p>
           <p className="text-[13px] text-white whitespace-pre-wrap break-words">
             {isL1Plus && comment.parentAuthorUsername && (
                 <span
                   className="text-pink-400 font-semibold mr-1 cursor-pointer"
-                  onClick={() => onAvatarClick(comment.parentAuthorId!)}
+                  onClick={() => comment.parentAuthorId && onAvatarClick(comment.parentAuthorId)}
                 >
                   @{comment.parentAuthorUsername}
                 </span>
@@ -329,8 +338,8 @@ const CommentsModal: React.FC<CommentsModalProps> = ({ isOpen, onClose, slideId,
         },
         likedBy: [],
         _count: { likes: 0, replies: 0 },
-        parentAuthorId: replyingTo ? replyingTo.author.id : null,
-        parentAuthorUsername: replyingTo ? (replyingTo.author.displayName || replyingTo.author.username) : null,
+        parentAuthorId: replyingTo ? replyingTo.author?.id : null,
+        parentAuthorUsername: replyingTo ? (replyingTo.author?.displayName || replyingTo.author?.username) : null,
         replies: [],
       };
 

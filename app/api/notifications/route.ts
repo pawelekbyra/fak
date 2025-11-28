@@ -14,47 +14,50 @@ export async function GET(req: Request) {
     const forceMock = url.searchParams.get('mock') === 'true';
 
     // Helper to return success wrapper
-    const successResponse = (data: any[]) => NextResponse.json({ success: true, notifications: data });
+    const successResponse = (data: any[], unreadCount: number) => NextResponse.json({ success: true, notifications: data, unreadCount });
 
     if (forceMock || !session?.user) {
       console.log("🔔 API: Returning mock notifications (Force Mock or Guest)");
-      return successResponse(mockNotifications);
+      // For mock/guest, we can say 0 unread or calc from mock
+      return successResponse(mockNotifications, 1);
     }
 
     try {
       if (!prisma) throw new Error("Prisma client is undefined");
 
-      const notifications = await prisma.notification.findMany({
-        where: { userId: session.user.id },
-        orderBy: { createdAt: 'desc' },
-        take: 20,
-        include: {
-          fromUser: {
-            select: {
-              id: true,
-              displayName: true,
-              avatar: true
+      const [notifications, unreadCount] = await Promise.all([
+        prisma.notification.findMany({
+          where: { userId: session.user.id },
+          orderBy: { createdAt: 'desc' },
+          take: 20,
+          include: {
+            fromUser: {
+              select: {
+                id: true,
+                displayName: true,
+                avatar: true
+              }
             }
           }
-        }
-      });
+        }),
+        prisma.notification.count({
+          where: {
+            userId: session.user.id,
+            read: false
+          }
+        })
+      ]);
 
-      if (notifications.length === 0) {
-         // Return mocks if no real notifications exist, for better DX
-         return successResponse(mockNotifications);
-      }
-
-      return successResponse(notifications);
+      return successResponse(notifications, unreadCount);
 
     } catch (dbError) {
-      console.error("⚠️ API: Database error, falling back to mocks:", dbError);
-      return successResponse(mockNotifications);
+      console.error("⚠️ API: Database error:", dbError);
+      return NextResponse.json({ success: false, message: 'Database error' }, { status: 500 });
     }
 
   } catch (error) {
     console.error("🔥 API: Critical Error:", error);
-    // Always return mock data in correct format on error
-    return NextResponse.json({ success: true, notifications: mockNotifications });
+    return NextResponse.json({ success: false, message: 'Internal Server Error' }, { status: 500 });
   }
 }
 
