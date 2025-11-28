@@ -353,7 +353,6 @@ export const LanguageProvider = ({ children }: { children: ReactNode }) => {
     const storedLang = localStorage.getItem('app_lang') as Language;
     if (storedLang && ['pl', 'en'].includes(storedLang)) {
       setLangState(storedLang);
-      setIsLangSelected(true);
     }
   }, []);
 
