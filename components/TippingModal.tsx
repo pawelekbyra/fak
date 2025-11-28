@@ -90,6 +90,9 @@ const TippingModal = () => {
 
   // NOWY STAN DLA WŁASNEGO DROPDOWNA WALUTY
   const [isCurrencyDropdownOpen, setIsCurrencyDropdownOpen] = useState(false);
+  // STAN DLA WIDOKU REGULAMINU
+  const [showTerms, setShowTerms] = useState(false);
+
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -100,6 +103,7 @@ const TippingModal = () => {
             setCurrentStep(0);
             setFormData(prev => ({ ...prev, create_account: false, terms_accepted: false, recipient: '' }));
             setIsCurrencyDropdownOpen(false); // Reset dropdown state
+            setShowTerms(false); // Reset terms view
         }
     }
   }, [isLoggedIn, user, isTippingModalOpen]);
@@ -148,13 +152,16 @@ const TippingModal = () => {
     }
     else if (currentStep === 2) {
         if (!formData.terms_accepted) {
-            addToast('Musisz zaakceptować regulamin, aby kontynuować.', 'error');
+            addToast('Musisz zaakceptować regulamin i Politykę Prywatności, aby kontynuować.', 'error');
             return;
         }
-        if (formData.amount <= 0) {
-            addToast(t('errorMinTipAmount', { minAmount: '0', currency: formData.currency }) || 'Kwota musi być większa od 0', 'error');
+
+        const minAmount = formData.currency === 'PLN' ? 5.00 : 1.00;
+        if (formData.amount < minAmount) {
+            addToast(t('errorMinTipAmount', { minAmount: minAmount.toFixed(2), currency: formData.currency }) || `Minimalna kwota to ${minAmount.toFixed(2)} ${formData.currency}`, 'error');
             return;
         }
+
         setIsProcessing(true);
         try {
             const res = await fetch('/api/payments/create-intent', {
@@ -376,118 +383,149 @@ const TippingModal = () => {
 
                 {currentStep === 2 && (
                     <motion.div
-                        key="step2"
+                        key={showTerms ? "terms" : "step2"}
                         initial={{ opacity: 0, x: 20 }}
                         animate={{ opacity: 1, x: 0 }}
                         exit={{ opacity: 0, x: -20 }}
-                        className="space-y-3 flex-1 relative z-10"
+                        className="space-y-3 flex-1 relative z-10 h-full flex flex-col"
                     >
-                        {/* ZMIANA: Usunięto text-center, aby wyrównać do lewej */}
-                        <div>
-                            <h3 className="text-lg font-bold text-black">Wybierz lub wpisz kwotę napiwku</h3>
-                        </div>
+                        {showTerms ? (
+                             <div className="flex flex-col h-full overflow-hidden">
+                                <div className="mb-2">
+                                    <h3 className="text-lg font-bold text-black">Regulamin i Polityka Prywatności</h3>
+                                </div>
+                                <div className="flex-1 overflow-y-auto bg-black/5 border border-black/10 rounded-xl p-4 text-sm text-black/80 space-y-3 custom-scrollbar">
+                                    <p className="font-bold">1. Postanowienia ogólne</p>
+                                    <p>Niniejszy regulamin określa zasady korzystania z usługi &quot;Bramka Napiwkowa&quot;. Dokonując wpłaty, użytkownik oświadcza, że zapoznał się z niniejszymi warunkami i je akceptuje.</p>
 
-                        <div className="grid grid-cols-3 gap-2">
-                            {suggestedAmounts.map(amount => (
-                                <button
-                                    key={amount}
-                                    onClick={() => setFormData({ ...formData, amount })}
-                                    className={cn(
-                                        "py-3 rounded-lg font-bold transition-all border relative overflow-hidden group",
-                                        formData.amount === amount
-                                            ? "bg-neutral-900 border-neutral-900 text-white shadow-lg scale-[1.02]"
-                                            : "bg-black/5 border-black/10 text-black/60 hover:bg-black/10 hover:text-black"
-                                    )}
-                                >
-                                    {amount} {formData.currency}
-                                </button>
-                            ))}
-                        </div>
+                                    <p className="font-bold">2. Płatności</p>
+                                    <p>Wszystkie wpłaty są dobrowolne i bezzwrotne. Płatności przetwarzane są przez operatora Stripe. Serwis nie gromadzi pełnych danych kart płatniczych.</p>
 
-                        <div className="flex items-center bg-black/5 border border-black/10 rounded-xl shadow-inner z-20 relative" ref={dropdownRef}>
-                            <input
-                                type="number"
-                                value={formData.amount}
-                                onChange={(e) => setFormData({ ...formData, amount: Number(e.target.value) })}
-                                className="flex-1 w-full bg-transparent text-center text-3xl font-black text-black py-4 focus:outline-none placeholder:text-black/10 pl-4 rounded-l-xl"
-                                placeholder="0"
-                            />
-                            
-                            {/* Kontener dla triggera i listy */}
-                            <div className="relative h-full">
-                                {/* TRIGGER WALUTY */}
-                                <div 
-                                    className="h-full border-l border-black/10 flex items-center bg-black/5 hover:bg-black/10 transition-colors relative shrink-0 cursor-pointer pl-4 pr-10 rounded-r-xl"
-                                    onClick={() => setIsCurrencyDropdownOpen(!isCurrencyDropdownOpen)}
-                                >
-                                    <span className="font-bold text-lg text-black select-none">{formData.currency}</span>
-                                    <motion.div
-                                        animate={{ rotate: isCurrencyDropdownOpen ? 180 : 0 }}
-                                        transition={{ duration: 0.2 }}
-                                        className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center justify-center"
+                                    <p className="font-bold">3. Polityka Prywatności</p>
+                                    <p>Dane osobowe (adres email) są przetwarzane wyłącznie w celu realizacji transakcji oraz ewentualnego założenia konta użytkownika (jeśli wyrażono zgodę). Administratorem danych jest właściciel serwisu.</p>
+
+                                    <p className="font-bold">4. Reklamacje</p>
+                                    <p>Wszelkie problemy z płatnościami należy zgłaszać na adres kontaktowy w ciągu 14 dni od daty transakcji.</p>
+                                </div>
+                                <div className="mt-4">
+                                     <button
+                                        onClick={() => setShowTerms(false)}
+                                        className="w-full py-3 rounded-lg font-bold text-black/70 bg-black/5 border border-black/5 hover:bg-black/10 hover:text-black transition-all text-sm"
                                     >
-                                        <ChevronDown className="w-4 h-4 text-black/50" />
-                                    </motion.div>
+                                        Wróć do płatności
+                                    </button>
+                                </div>
+                             </div>
+                        ) : (
+                            <>
+                                {/* ZMIANA: Usunięto text-center, aby wyrównać do lewej */}
+                                <div>
+                                    <h3 className="text-lg font-bold text-black">Wybierz lub wpisz kwotę napiwku</h3>
                                 </div>
 
-                                {/* NOWA LISTA ROZWIJANA (SOLIDNY SZARY STYL, ZAKRYWA TRIGGER) */}
-                                <AnimatePresence>
-                                    {isCurrencyDropdownOpen && (
-                                        <motion.div
-                                            // ZMIANA POZYCJI: top-0 right-0 żeby zakryć trigger
-                                            initial={{ opacity: 0, scale: 0.95 }}
-                                            animate={{ opacity: 1, scale: 1 }}
-                                            exit={{ opacity: 0, scale: 0.95 }}
-                                            transition={{ duration: 0.2, ease: "easeInOut" }}
-                                            style={{ originY: 0, originX: 1 }} // Rozwijanie z prawego górnego rogu
-                                            // ZMIANA STYLU: Solidny szary kolor (bg-[#eeeeee]), brak rozmycia, wysoki z-index
-                                            className="absolute top-0 right-0 min-w-[120px] bg-[#d1d5db] border border-black/10 rounded-xl shadow-[0_10px_30px_-10px_rgba(0,0,0,0.25)] overflow-hidden z-[100]"
+                                <div className="grid grid-cols-3 gap-2">
+                                    {suggestedAmounts.map(amount => (
+                                        <button
+                                            key={amount}
+                                            onClick={() => setFormData({ ...formData, amount })}
+                                            className={cn(
+                                                "py-3 rounded-lg font-bold transition-all border relative overflow-hidden group",
+                                                formData.amount === amount
+                                                    ? "bg-neutral-900 border-neutral-900 text-white shadow-lg scale-[1.02]"
+                                                    : "bg-black/5 border-black/10 text-black/60 hover:bg-black/10 hover:text-black"
+                                            )}
                                         >
-                                            <div className="py-1">
-                                                {currencies.map((currency) => (
-                                                    <button
-                                                        key={currency}
-                                                        onClick={() => {
-                                                            setFormData({ ...formData, currency: currency as any });
-                                                            setIsCurrencyDropdownOpen(false);
-                                                        }}
-                                                        // ZMIANA STYLU ELEMENTÓW LISTY: Ciemny tekst, ciemniejsze tło po najechaniu
-                                                        className={cn(
-                                                            "w-full flex items-center justify-between px-4 py-3 text-left font-bold transition-colors relative group text-black",
-                                                            formData.currency === currency 
-                                                                ? "bg-black/10" 
-                                                                : "hover:bg-black/5"
-                                                        )}
-                                                    >
-                                                        <span>{currency}</span>
-                                                        {formData.currency === currency && (
-                                                            <Check size={16} className="text-black" />
-                                                        )}
-                                                    </button>
-                                                ))}
-                                            </div>
-                                        </motion.div>
-                                    )}
-                                </AnimatePresence>
-                            </div>
-                        </div>
+                                            {amount} {formData.currency}
+                                        </button>
+                                    ))}
+                                </div>
 
-                        <div 
-                            className="flex items-center justify-center gap-3 cursor-pointer group relative z-10"
-                            onClick={() => setFormData(prev => ({ ...prev, terms_accepted: !prev.terms_accepted }))}
-                        >
-                            <div className={cn(
-                                "w-5 h-5 rounded-md border-2 flex items-center justify-center transition-all duration-200",
-                                formData.terms_accepted 
-                                    ? "bg-neutral-900 border-neutral-900" 
-                                    : "border-black/30 group-hover:border-black/60 bg-white/20"
-                            )}>
-                                {formData.terms_accepted && <Check size={14} className="text-white" strokeWidth={4} />}
-                            </div>
-                            <p className="text-sm font-medium text-black/70 group-hover:text-black transition-colors">
-                                Akceptuję <span className="underline decoration-black/30 underline-offset-2">regulamin i Politykę Prywatności</span>
-                            </p>
-                        </div>
+                                <div className="flex items-center bg-black/5 border border-black/10 rounded-xl shadow-inner z-20 relative" ref={dropdownRef}>
+                                    <input
+                                        type="number"
+                                        value={formData.amount}
+                                        onChange={(e) => setFormData({ ...formData, amount: Number(e.target.value) })}
+                                        className="flex-1 w-full bg-transparent text-center text-3xl font-black text-black py-4 focus:outline-none placeholder:text-black/10 pl-4 rounded-l-xl"
+                                        placeholder="0"
+                                    />
+
+                                    {/* Kontener dla triggera i listy */}
+                                    <div className="relative h-full">
+                                        {/* TRIGGER WALUTY */}
+                                        <div
+                                            className="h-full border-l border-black/10 flex items-center bg-black/5 hover:bg-black/10 transition-colors relative shrink-0 cursor-pointer pl-4 pr-10 rounded-r-xl"
+                                            onClick={() => setIsCurrencyDropdownOpen(!isCurrencyDropdownOpen)}
+                                        >
+                                            <span className="font-bold text-lg text-black select-none">{formData.currency}</span>
+                                            <motion.div
+                                                animate={{ rotate: isCurrencyDropdownOpen ? 180 : 0 }}
+                                                transition={{ duration: 0.2 }}
+                                                className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center justify-center"
+                                            >
+                                                <ChevronDown className="w-4 h-4 text-black/50" />
+                                            </motion.div>
+                                        </div>
+
+                                        {/* NOWA LISTA ROZWIJANA (SOLIDNY SZARY STYL, ZAKRYWA TRIGGER) */}
+                                        <AnimatePresence>
+                                            {isCurrencyDropdownOpen && (
+                                                <motion.div
+                                                    // ZMIANA POZYCJI: top-0 right-0 żeby zakryć trigger
+                                                    initial={{ opacity: 0, scale: 0.95 }}
+                                                    animate={{ opacity: 1, scale: 1 }}
+                                                    exit={{ opacity: 0, scale: 0.95 }}
+                                                    transition={{ duration: 0.2, ease: "easeInOut" }}
+                                                    style={{ originY: 0, originX: 1 }} // Rozwijanie z prawego górnego rogu
+                                                    // ZMIANA STYLU: Solidny szary kolor (bg-[#eeeeee]), brak rozmycia, wysoki z-index
+                                                    className="absolute top-0 right-0 min-w-[120px] bg-[#d1d5db] border border-black/10 rounded-xl shadow-[0_10px_30px_-10px_rgba(0,0,0,0.25)] overflow-hidden z-[100]"
+                                                >
+                                                    <div className="py-1">
+                                                        {currencies.map((currency) => (
+                                                            <button
+                                                                key={currency}
+                                                                onClick={() => {
+                                                                    setFormData({ ...formData, currency: currency as any });
+                                                                    setIsCurrencyDropdownOpen(false);
+                                                                }}
+                                                                // ZMIANA STYLU ELEMENTÓW LISTY: Ciemny tekst, ciemniejsze tło po najechaniu
+                                                                className={cn(
+                                                                    "w-full flex items-center justify-between px-4 py-3 text-left font-bold transition-colors relative group text-black",
+                                                                    formData.currency === currency
+                                                                        ? "bg-black/10"
+                                                                        : "hover:bg-black/5"
+                                                                )}
+                                                            >
+                                                                <span>{currency}</span>
+                                                                {formData.currency === currency && (
+                                                                    <Check size={16} className="text-black" />
+                                                                )}
+                                                            </button>
+                                                        ))}
+                                                    </div>
+                                                </motion.div>
+                                            )}
+                                        </AnimatePresence>
+                                    </div>
+                                </div>
+
+                                <div
+                                    className="flex items-center justify-center gap-3 cursor-pointer group relative z-10"
+                                    onClick={() => setFormData(prev => ({ ...prev, terms_accepted: !prev.terms_accepted }))}
+                                >
+                                    <div className={cn(
+                                        "w-5 h-5 rounded-md border-2 flex items-center justify-center transition-all duration-200 shrink-0",
+                                        formData.terms_accepted
+                                            ? "bg-neutral-900 border-neutral-900"
+                                            : "border-black/30 group-hover:border-black/60 bg-white/20"
+                                    )}>
+                                        {formData.terms_accepted && <Check size={14} className="text-white" strokeWidth={4} />}
+                                    </div>
+                                    <p className="text-sm font-medium text-black/70 group-hover:text-black transition-colors select-none">
+                                        Akceptuję <span className="underline decoration-black/30 underline-offset-2 hover:text-black cursor-pointer" onClick={(e) => { e.stopPropagation(); setShowTerms(true); }}>regulamin i Politykę Prywatności</span>
+                                    </p>
+                                </div>
+                            </>
+                        )}
                     </motion.div>
                 )}
 
@@ -533,7 +571,7 @@ const TippingModal = () => {
             </AnimatePresence>
         </div>
 
-        {currentStep < 3 && (
+        {currentStep < 3 && !showTerms && (
             <div className="px-5 pb-5 pt-3 flex gap-2 bg-transparent z-20 relative">
                 {currentStep > 0 && (
                     <button

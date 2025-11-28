@@ -1,0 +1,3 @@
+yarn run v1.22.22
+$ next dev
+ ⚠ Port 3000 is in use, trying 3001 instead.

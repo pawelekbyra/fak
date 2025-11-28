@@ -5,6 +5,7 @@ import { sanitize } from '@/lib/sanitize';
 import { rateLimit } from '@/lib/rate-limiter';
 import { ably } from '@/lib/ably-server';
 import { prisma } from '@/lib/prisma'; // Import prisma for direct checks if needed, but we should try to use db layer
+import { NotificationService } from '@/lib/notifications';
 
 export const dynamic = 'force-dynamic';
 
@@ -65,6 +66,24 @@ export async function POST(request: NextRequest) {
 
     // Pass parentId and imageUrl to db.addComment
     const newComment = await db.addComment(slideId, currentUser.id!, sanitizedText, parentId || null, imageUrl || null);
+
+    // Handle Reply Notification
+    if (parentId) {
+        // Fetch parent comment to get author
+        const parentComment = await prisma.comment.findUnique({
+            where: { id: parentId },
+            select: { authorId: true }
+        });
+
+        if (parentComment && parentComment.authorId !== currentUser.id) {
+            await NotificationService.sendCommentReply(
+                parentComment.authorId,
+                currentUser.id!,
+                currentUser.name || currentUser.username || 'Użytkownik',
+                slideId
+            );
+        }
+    }
 
     const channel = ably.channels.get(`comments:${slideId}`);
     await channel.publish('new-comment', newComment);

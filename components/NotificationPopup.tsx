@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Bell, Mail, User, Tag, ChevronDown, Loader2, Heart, MessageSquare, UserPlus, Info, Trash } from 'lucide-react';
@@ -83,12 +83,12 @@ const NotificationItem: React.FC<{
 
         <div className="flex items-center gap-2 pt-1">
           {notification.unread && <div className="w-2 h-2 bg-pink-500 rounded-full" />}
-          <button
-            onClick={(e) => { e.stopPropagation(); onDelete(notification.id); }}
-            className="p-1 hover:text-red-500 text-white/40 transition-colors"
-          >
-            <Trash size={16} />
-          </button>
+
+          <DeleteButton
+            onDelete={(e) => { e.stopPropagation(); onDelete(notification.id); }}
+            t={t}
+          />
+
           <div onClick={handleToggle}>
              <ChevronDown size={14} className={`transition-transform ${isExpanded ? 'rotate-180' : ''}`} />
           </div>
@@ -111,6 +111,40 @@ const NotificationItem: React.FC<{
     </motion.li>
   );
 };
+
+// Sub-component for delete confirmation
+const DeleteButton = ({ onDelete, t }: { onDelete: (e: any) => void, t: any }) => {
+  const [confirming, setConfirming] = useState(false);
+
+  useEffect(() => {
+    if (confirming) {
+      const timer = setTimeout(() => setConfirming(false), 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [confirming]);
+
+  if (confirming) {
+     return (
+        <motion.button
+            initial={{ width: 0, opacity: 0 }}
+            animate={{ width: 'auto', opacity: 1 }}
+            className="px-2 py-0.5 text-[10px] font-bold bg-red-500/20 text-red-400 border border-red-500/50 rounded hover:bg-red-500 hover:text-white transition-colors whitespace-nowrap"
+            onClick={onDelete}
+        >
+            {t('confirm') || 'Potwierdź?'}
+        </motion.button>
+     );
+  }
+
+  return (
+      <button
+        onClick={(e) => { e.stopPropagation(); setConfirming(true); }}
+        className="p-1 hover:text-red-500 text-white/40 transition-colors"
+      >
+        <Trash size={16} />
+      </button>
+  );
+}
 
 interface NotificationPopupProps {
   isOpen: boolean;
