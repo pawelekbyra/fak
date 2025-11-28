@@ -12,7 +12,7 @@ import { Loader2, Check, X, ShieldCheck, Mail, ChevronRight, Lock } from 'lucide
 import { useToast } from '@/context/ToastContext';
 import { motion, AnimatePresence } from 'framer-motion';
 import ToggleSwitch from '@/components/ui/ToggleSwitch';
-import { useSession } from 'next-auth/react';
+import { useSession, signIn } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 
 // Zod Schemas for individual steps
@@ -109,29 +109,44 @@ export default function SetupPage() {
                                 addToast('Witamy w Polutku!', 'success');
 
                                 try {
-                                    // Trigger session update - server will fetch fresh DB data
-                                    await update({ force: true });
-                                    console.log("Session updated");
+                                    // Instead of relying on update(), we re-authenticate to force a fresh session token.
+                                    // This guarantees the 'isFirstLogin' flag is updated in the cookie.
+                                    const loginIdentifier = user?.email || user?.username || '';
 
-                                    // Update local context
-                                    if (user) {
-                                        setUser({
-                                            ...user,
-                                            isFirstLogin: false,
-                                            displayName: finalData.displayName,
-                                            emailConsent: finalData.emailConsent,
-                                            emailLanguage: finalData.emailLanguage
+                                    if (loginIdentifier) {
+                                        const signInResult = await signIn('credentials', {
+                                            redirect: false,
+                                            login: loginIdentifier,
+                                            password: finalData.newPassword
                                         });
+
+                                        if (signInResult?.ok) {
+                                             // Update local context to reflect changes immediately in UI if visible
+                                            if (user) {
+                                                setUser({
+                                                    ...user,
+                                                    isFirstLogin: false,
+                                                    displayName: finalData.displayName,
+                                                    emailConsent: finalData.emailConsent,
+                                                    emailLanguage: finalData.emailLanguage
+                                                });
+                                            }
+                                            // Force reload to apply new session
+                                            window.location.href = '/';
+                                        } else {
+                                            console.error("Re-login failed", signInResult);
+                                            // Fallback: try to redirect anyway, maybe update() worked
+                                            await update({ force: true });
+                                            window.location.href = '/';
+                                        }
+                                    } else {
+                                        // Fallback if no identifier found (unlikely)
+                                        await update({ force: true });
+                                        window.location.href = '/';
                                     }
 
-                                    // Skip router.refresh() to avoid racing with the full reload.
-                                    // Wait for the session update to propagate.
-                                    setTimeout(() => {
-                                        window.location.href = '/';
-                                    }, 1500);
-
                                 } catch (e) {
-                                    console.error("Session update failed", e);
+                                    console.error("Session setup failed", e);
                                     // Fallback redirect
                                     window.location.href = '/';
                                 }
