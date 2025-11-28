@@ -7,8 +7,6 @@ import {
 } from 'ai';
 import { google } from '@ai-sdk/google';
 import { z } from 'zod';
-import fs from 'fs';
-import path from 'path';
 
 export const dynamic = 'force-dynamic';
 
@@ -18,22 +16,12 @@ export async function POST(req: Request) {
       throw new Error('GOOGLE_GENERATIVE_AI_API_KEY environment variable is not set');
     }
 
-    const personaPath = path.join(process.cwd(), 'lolek-persona.md');
-    let system = "Jesteś pomocnym asystentem o imieniu Lolek."; // Fallback
-    try {
-      if (fs.existsSync(personaPath)) {
-        system = fs.readFileSync(personaPath, 'utf-8');
-      } else {
-        console.warn('Persona file not found at:', personaPath);
-      }
-    } catch (err) {
-      console.error("Error reading persona:", err);
-    }
+    const system = "Jesteś \"Lolek\", zuchwały, ale pomocny asystent AI. Twoim celem jest odpowiadanie na pytania użytkowników w sposób bezpośredni, czasami z odrobiną sarkazmu, ale zawsze z dobrymi intencjami. Nie boisz się wyrażać swojej opinii i dodawać do odpowiedzi szczyptę humoru. Pamiętaj, żeby nie być wulgarnym, ale zachowaj swój unikalny, nieco zadziorny styl. Jesteś tutaj, aby pomagać, ale robisz to na własnych zasadach. Zawsze przedstawiasz się jako Lolek.";
 
     const { messages }: { messages: UIMessage[] } = await req.json();
 
     const result = streamText({
-      model: google('gemini-3-pro-preview'),
+      model: google('gemini-1.5-pro'),
       system,
       messages: convertToCoreMessages(messages),
       stopWhen: stepCountIs(5), // Enable multi-step tool calls
