@@ -188,11 +188,13 @@ export async function createUser(userData: Omit<User, 'id' | 'sessionVersion' | 
     const newUser = result[0] as User;
 
     // Create a welcome notification
+    // Note: We duplicate the text here to match NotificationService.sendWelcome
+    // to avoid circular dependencies between db-postgres and NotificationService.
     await createNotification({
         userId: newUser.id,
         type: 'system',
-        text: 'Witaj w Zordon! Cieszymy się, że jesteś z nami.',
-        link: null,
+        text: 'Witaj w Polutku! Uzupełnij swój profil.',
+        link: '/profile',
         fromUserId: null, // System notification
     });
 

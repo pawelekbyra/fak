@@ -1,86 +1,57 @@
+
+import os
+import time
 from playwright.sync_api import sync_playwright
 
 def verify_ui_changes():
     with sync_playwright() as p:
         browser = p.chromium.launch(headless=True)
-        # Use user data dir to persist session if possible, but for now we mock
-        context = browser.new_context()
+        # Grant permissions for notifications to test the TopBar logic if needed,
+        # though we are mostly checking visual spacing.
+        context = browser.new_context(
+            permissions=['notifications'],
+            viewport={'width': 1280, 'height': 800}
+        )
         page = context.new_page()
 
-        # Step 1: Visit page
-        # Note: In this environment, we need to bypass first login or handle it.
-        # However, the user wants us to Verify First Login Modal LOGS.
-        # But we also want to verify the Tipping Modal animation visually if possible.
-
-        # We need to simulate a logged-in user for Author Profile -> Tipping Modal
-        # Or a first-time user for First Login Modal.
-
-        # Let's try to verify Tipping Modal visuals first, as logs are hard to verify via screenshot.
-        # We can open the page, inject some state or click through.
-
+        # 1. Navigate to the app
+        print("Navigating to app...")
         try:
-            print("Navigating to home...")
-            page.goto("http://127.0.0.1:3000")
-
-            # Handle Preloader (Language Selection)
-            # Memory says: "The application shows a full-screen language selection overlay... Test scripts must first select a language"
-            print("Handling language selection...")
-            try:
-                page.wait_for_selector('text="Polski"', timeout=5000)
-                page.get_by_text("Polski").click(force=True)
-                # Wait for preloader to disappear
-                page.wait_for_timeout(2000)
-            except Exception as e:
-                print(f"Preloader handling might have failed or skipped: {e}")
-
-            # Now we are on the main page (Feed).
-            # To test Tipping Modal animation from Author Profile, we need to open Author Profile.
-            # Usually clicking on an avatar in the feed opens it.
-
-            print("Looking for an avatar to click...")
-            # Assuming there are slides. If no slides, we might be stuck.
-            # Let's try to find an avatar image or button.
-            # Sidebar usually has an avatar.
-
-            # Note: Sidebar might require slides to render (memory).
-            # If DB is empty, we might see nothing.
-
-            # Let's take a screenshot of the landing to see where we are.
-            page.screenshot(path="/home/jules/verification/step1_landing.png")
-
-            # If we see the feed, we can try clicking the avatar.
-            # Usually in the sidebar or bottom info.
-            # Sidebar Avatar:
-
-            avatar = page.locator('img[alt="Avatar"]').first
-            if avatar.is_visible():
-                print("Clicking avatar...")
-                avatar.click()
-                page.wait_for_timeout(1000) # Wait for animation
-
-                # Now Author Profile Modal should be open.
-                page.screenshot(path="/home/jules/verification/step2_author_profile.png")
-
-                # Click "Zostań Patronem"
-                print("Clicking 'Zostań Patronem'...")
-                patron_btn = page.get_by_text("Zostań Patronem")
-                if patron_btn.is_visible():
-                    patron_btn.click()
-                    page.wait_for_timeout(1000) # Wait for Tipping Modal animation
-
-                    # Now Tipping Modal should be visible OVER Author Profile Modal
-                    page.screenshot(path="/home/jules/verification/step3_tipping_modal.png")
-                    print("Screenshots taken.")
-                else:
-                    print("Button 'Zostań Patronem' not found.")
-            else:
-                print("Avatar not found. Check step1_landing.png")
-
+            page.goto("http://127.0.0.1:3000", timeout=60000)
         except Exception as e:
-            print(f"Error: {e}")
-            page.screenshot(path="/home/jules/verification/error_state.png")
-        finally:
-            browser.close()
+            print(f"Navigation failed: {e}")
+            return
+
+        # 2. Handle Preloader (Language Selection)
+        # Since we are essentially a new user in this context, the preloader will show.
+        # We need to click a language to proceed.
+        print("Handling preloader...")
+        try:
+            pl_button = page.get_by_text("Polski")
+            pl_button.wait_for(state="visible", timeout=10000)
+            pl_button.click(force=True)
+            # Wait for preloader to disappear
+            page.wait_for_selector(".absolute.inset-0.bg-black", state="hidden", timeout=5000)
+            print("Preloader handled.")
+        except Exception as e:
+            print(f"Preloader handling issue (might be skipped if logic worked?): {e}")
+
+        # 3. Wait for TopBar to be visible
+        # TopBar usually has the menu icon or "Ting Tong" text (or "Too scared to log in")
+        page.wait_for_timeout(2000)
+
+        # 4. Take Screenshot of TopBar (Mobile View) to verify padding
+        print("Taking screenshots...")
+        page.set_viewport_size({"width": 375, "height": 667})
+        page.wait_for_timeout(1000)
+        page.screenshot(path="verification/topbar_mobile_padding.png")
+
+        # 5. Take Screenshot of Desktop View
+        page.set_viewport_size({"width": 1280, 'height': 800})
+        page.wait_for_timeout(1000)
+        page.screenshot(path="verification/topbar_desktop_padding.png")
+
+        browser.close()
 
 if __name__ == "__main__":
     verify_ui_changes()

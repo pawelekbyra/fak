@@ -7,6 +7,7 @@ import * as bcrypt from 'bcryptjs';
 import { AuthError } from 'next-auth';
 import { put, del } from '@vercel/blob';
 import { DEFAULT_AVATAR_URL } from '@/lib/constants';
+import { NotificationService } from '@/lib/notifications';
 
 export interface ActionResponse {
   success: boolean;
@@ -102,6 +103,9 @@ export async function updateUserProfile(prevState: ActionResponse | any, formDat
         }
 
         await db.updateUser(userId, updateData);
+
+        // Create system notification about profile update
+        await NotificationService.sendProfileUpdate(userId);
 
         revalidatePath('/');
         return { success: true, message: 'Profile updated successfully.' };
