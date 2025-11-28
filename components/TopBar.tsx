@@ -15,6 +15,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { User, LogOut, ChevronDown, Settings } from 'lucide-react';
 import { usePushSubscription } from '@/hooks/usePushSubscription';
 import { usePathname } from 'next/navigation';
+import { useQuery } from '@tanstack/react-query';
 
 const TopBar = () => {
   const { user, logout } = useUser();
@@ -53,12 +54,21 @@ const TopBar = () => {
     return () => window.removeEventListener('resize', checkIsDesktop);
   }, []);
 
+  const { data: notificationData } = useQuery({
+    queryKey: ['notifications'],
+    queryFn: async () => {
+      const res = await fetch('/api/notifications');
+      return res.json();
+    },
+    enabled: !!user,
+    refetchInterval: 30000, // Poll every 30s
+  });
+
   if (pathname?.startsWith('/setup')) {
     return null;
   }
 
-  // This should be replaced with real data from a notifications context or API
-  const unreadCount = 0;
+  const unreadCount = notificationData?.unreadCount || 0;
 
   const handleLoggedOutMenuClick = () => {
     addToast(t('loginRequired') || 'Musisz się zalogować', 'locked');

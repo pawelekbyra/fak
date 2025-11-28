@@ -1,6 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Bell, Mail, User, Tag, ChevronDown, Loader2, Heart, MessageSquare, UserPlus, Info } from 'lucide-react';
+import { X, Bell, Mail, User, Tag, ChevronDown, Loader2, Heart, MessageSquare, UserPlus, Info, Trash } from 'lucide-react';
 import { useTranslation } from '@/context/LanguageContext';
 import { formatDistanceToNow } from 'date-fns';
 import { pl } from 'date-fns/locale';
@@ -8,7 +9,6 @@ import Image from 'next/image';
 
 type NotificationType = 'like' | 'comment' | 'follow' | 'message' | 'system';
 
-// This type is now aligned with the mock data
 interface Notification {
   id: string;
   type: NotificationType;
@@ -31,33 +31,24 @@ const iconMap: Record<NotificationType, React.ReactNode> = {
   system: <Info size={20} className="text-blue-400" />
 };
 
-const NotificationItem: React.FC<{ notification: Notification; onToggle: (id: string) => void }> = ({ notification, onToggle }) => {
-  const { t, lang } = useTranslation();
+const NotificationItem: React.FC<{
+  notification: Notification;
+  onMarkAsRead: (id: string) => void;
+  onDelete: (id: string) => void;
+}> = ({ notification, onMarkAsRead, onDelete }) => {
+  const { t } = useTranslation();
   const [isExpanded, setIsExpanded] = useState(false);
 
   const handleToggle = () => {
     const newIsExpanded = !isExpanded;
     setIsExpanded(newIsExpanded);
 
-    // If expanding and it's unread, update state and call API
     if (newIsExpanded && notification.unread) {
-      onToggle(notification.id); // Update parent state (removes dot)
-
-      fetch('/api/notifications/mark-as-read', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ notificationId: notification.id }),
-      })
-      .catch(error => {
-        console.error('Error marking notification as read:', error);
-        // Here you could potentially revert the UI change
-      });
+      onMarkAsRead(notification.id);
     }
   };
 
-  // Helper to safely display text even if translation key is missing
   const getFullText = () => {
-      // If it looks like a translation key (no spaces, camelCase), try translate, else return as is
       if (notification.full && !notification.full.includes(' ')) {
           return t(notification.full, { name: notification.user?.displayName || 'System' });
       }
@@ -72,23 +63,35 @@ const NotificationItem: React.FC<{ notification: Notification; onToggle: (id: st
       exit={{ opacity: 0 }}
       className={`rounded-lg cursor-pointer transition-colors hover:bg-white/10 mb-1 ${isExpanded ? 'expanded' : ''}`}
     >
-      <div className="flex items-start gap-3 p-3" onClick={handleToggle}>
-        {notification.type === 'system' ? (
-           <div className="w-10 h-10 rounded-full mt-1 bg-white/10 flex items-center justify-center">
-             <Info size={20} className="text-white" />
-           </div>
-        ) : (
-           <Image src={notification.user?.avatar || '/default-avatar.png'} alt={t('userAvatar', { user: notification.user?.displayName || 'User' })} width={40} height={40} className="w-10 h-10 rounded-full mt-1" />
-        )}
-        <div className="flex-1 flex flex-col">
+      <div className="flex items-start gap-3 p-3">
+        <div onClick={handleToggle} className="flex-shrink-0">
+            {notification.type === 'system' ? (
+            <div className="w-10 h-10 rounded-full mt-1 bg-white/10 flex items-center justify-center">
+                <Info size={20} className="text-white" />
+            </div>
+            ) : (
+            <Image src={notification.user?.avatar || '/default-avatar.png'} alt={t('userAvatar', { user: notification.user?.displayName || 'User' })} width={40} height={40} className="w-10 h-10 rounded-full mt-1" />
+            )}
+        </div>
+
+        <div className="flex-1 flex flex-col" onClick={handleToggle}>
           <p className="text-sm">
             {notification.type !== 'system' && <span className="font-bold">{notification.user?.displayName}</span>} {notification.preview}
           </p>
           <span className="text-xs text-white/60 mt-1">{notification.time}</span>
         </div>
+
         <div className="flex items-center gap-2 pt-1">
           {notification.unread && <div className="w-2 h-2 bg-pink-500 rounded-full" />}
-          <ChevronDown size={14} className={`transition-transform ${isExpanded ? 'rotate-180' : ''}`} />
+          <button
+            onClick={(e) => { e.stopPropagation(); onDelete(notification.id); }}
+            className="p-1 hover:text-red-500 text-white/40 transition-colors"
+          >
+            <Trash size={16} />
+          </button>
+          <div onClick={handleToggle}>
+             <ChevronDown size={14} className={`transition-transform ${isExpanded ? 'rotate-180' : ''}`} />
+          </div>
         </div>
       </div>
       <AnimatePresence>
@@ -116,57 +119,90 @@ interface NotificationPopupProps {
 
 const NotificationPopup: React.FC<NotificationPopupProps> = ({ isOpen, onClose }) => {
   const { t, lang } = useTranslation();
-  const [notifications, setNotifications] = useState<Notification[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const queryClient = useQueryClient();
 
-  useEffect(() => {
-    if (isOpen) {
-      setIsLoading(true);
-      setError(null);
-      fetch('/api/notifications')
-        .then(res => {
-            if (!res.ok) {
-                throw new Error('Failed to fetch notifications');
-            }
-            return res.json();
-        })
-        .then(data => {
-            if (data.success) {
-                const transformedNotifications = data.notifications.map((n: any) => {
-                    // Robustly handle direct text vs translation keys
-                    const previewText = n.text || t(n.previewKey) || '';
-                    return {
-                        id: n.id,
-                        type: (n.type as NotificationType) || 'system',
-                        preview: previewText,
-                        time: formatDistanceToNow(new Date(n.createdAt), { addSuffix: true, locale: lang === 'pl' ? pl : undefined }),
-                        full: n.text || n.fullKey, // Use text as fallback for full content
-                        unread: !n.read,
-                        user: n.fromUser || { displayName: 'System', avatar: '/icons/icon-192x192.png' },
-                    };
-                });
-                setNotifications(transformedNotifications);
-            } else {
-                throw new Error(data.message || 'Failed to fetch notifications');
-            }
-        })
-        .catch(err => {
-            setError(err.message);
-        })
-        .finally(() => {
-            setIsLoading(false);
+  const { data, isLoading, error } = useQuery({
+    queryKey: ['notifications'],
+    queryFn: async () => {
+      const res = await fetch('/api/notifications');
+      if (!res.ok) throw new Error('Failed to fetch');
+      return res.json();
+    },
+    enabled: isOpen,
+  });
+
+  const markReadMutation = useMutation({
+    mutationFn: async (id: string) => {
+        await fetch('/api/notifications/mark-as-read', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ notificationId: id }),
         });
+    },
+    onMutate: async (id) => {
+        await queryClient.cancelQueries({ queryKey: ['notifications'] });
+        const previousData = queryClient.getQueryData(['notifications']);
+        queryClient.setQueryData(['notifications'], (old: any) => {
+            if (!old) return old;
+            return {
+                ...old,
+                notifications: old.notifications.map((n: any) =>
+                    n.id === id ? { ...n, read: true } : n
+                ),
+                unreadCount: Math.max(0, (old.unreadCount || 0) - 1)
+            };
+        });
+        return { previousData };
+    },
+    onError: (err, newTodo, context) => {
+        queryClient.setQueryData(['notifications'], context?.previousData);
+    },
+    onSettled: () => {
+        queryClient.invalidateQueries({ queryKey: ['notifications'] });
     }
-  }, [isOpen, lang, t]);
+  });
 
-  const handleToggle = (id: string) => {
-    setNotifications(
-      notifications.map(n =>
-        n.id === id ? { ...n, unread: false } : n
-      )
-    );
-  };
+  const deleteMutation = useMutation({
+    mutationFn: async (id: string) => {
+        await fetch(`/api/notifications/${id}`, {
+            method: 'DELETE',
+        });
+    },
+    onMutate: async (id) => {
+        await queryClient.cancelQueries({ queryKey: ['notifications'] });
+        const previousData = queryClient.getQueryData(['notifications']);
+        queryClient.setQueryData(['notifications'], (old: any) => {
+            if (!old) return old;
+            const notification = old.notifications.find((n: any) => n.id === id);
+            const wasUnread = notification && !notification.read;
+            return {
+                ...old,
+                notifications: old.notifications.filter((n: any) => n.id !== id),
+                unreadCount: wasUnread ? Math.max(0, (old.unreadCount || 0) - 1) : old.unreadCount
+            };
+        });
+        return { previousData };
+    },
+    onError: (err, id, context) => {
+        queryClient.setQueryData(['notifications'], context?.previousData);
+    },
+    onSettled: () => {
+        queryClient.invalidateQueries({ queryKey: ['notifications'] });
+    }
+  });
+
+  const notifications: Notification[] = data?.success ? data.notifications.map((n: any) => {
+        const previewText = n.text || t(n.previewKey) || '';
+        return {
+            id: n.id,
+            type: (n.type as NotificationType) || 'system',
+            preview: previewText,
+            time: formatDistanceToNow(new Date(n.createdAt), { addSuffix: true, locale: lang === 'pl' ? pl : undefined }),
+            full: n.text || n.fullKey,
+            unread: !n.read,
+            user: n.fromUser || { displayName: 'System', avatar: '/icons/icon-192x192.png' },
+        };
+  }) : [];
 
   const renderContent = () => {
     if (isLoading) {
@@ -183,7 +219,7 @@ const NotificationPopup: React.FC<NotificationPopupProps> = ({ isOpen, onClose }
         </div>
       );
     }
-    if (!notifications || !Array.isArray(notifications) || notifications.length === 0) {
+    if (notifications.length === 0) {
       return (
         <div className="p-4 text-center text-white/50 text-sm">
             Brak nowych powiadomień
@@ -194,7 +230,12 @@ const NotificationPopup: React.FC<NotificationPopupProps> = ({ isOpen, onClose }
       <ul className="flex-grow p-2 max-h-[60vh] overflow-y-auto custom-scrollbar">
         <AnimatePresence>
           {notifications.map((notif) => (
-            <NotificationItem key={notif.id} notification={notif} onToggle={handleToggle} />
+            <NotificationItem
+                key={notif.id}
+                notification={notif}
+                onMarkAsRead={(id) => markReadMutation.mutate(id)}
+                onDelete={(id) => deleteMutation.mutate(id)}
+            />
           ))}
         </AnimatePresence>
       </ul>
