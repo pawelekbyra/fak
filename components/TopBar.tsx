@@ -14,6 +14,7 @@ import PwaDesktopModal from './PwaDesktopModal';
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { User, LogOut, ChevronDown, Settings } from 'lucide-react';
 import { usePushSubscription } from '@/hooks/usePushSubscription';
+import { usePathname } from 'next/navigation';
 
 const TopBar = () => {
   const { user, logout } = useUser();
@@ -24,6 +25,7 @@ const TopBar = () => {
   const [showPwaModal, setShowPwaModal] = useState(false);
   const [isDesktop, setIsDesktop] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const pathname = usePathname();
 
   // Hook for push subscription
   const { permission, subscribe } = usePushSubscription();
@@ -50,6 +52,10 @@ const TopBar = () => {
     window.addEventListener('resize', checkIsDesktop);
     return () => window.removeEventListener('resize', checkIsDesktop);
   }, []);
+
+  if (pathname?.startsWith('/setup')) {
+    return null;
+  }
 
   // This should be replaced with real data from a notifications context or API
   const unreadCount = 0;

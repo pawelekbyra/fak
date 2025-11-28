@@ -124,13 +124,11 @@ export default function SetupPage() {
                                         });
                                     }
 
-                                    // Refresh router to clear cache and redirect
-                                    router.refresh();
-
-                                    // Hard redirect as fallback/guarantee
+                                    // Skip router.refresh() to avoid racing with the full reload.
+                                    // Wait for the session update to propagate.
                                     setTimeout(() => {
                                         window.location.href = '/';
-                                    }, 500);
+                                    }, 1500);
 
                                 } catch (e) {
                                     console.error("Session update failed", e);
