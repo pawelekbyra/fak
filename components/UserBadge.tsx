@@ -3,11 +3,11 @@ import { cn } from "@/lib/utils";
 type UserRole = 'user' | 'admin' | 'patron' | 'verified';
 
 interface UserBadgeProps {
-  role: string;
+  role?: string;
   className?: string;
 }
 
-export default function UserBadge({ role, className }: UserBadgeProps) {
+export default function UserBadge({ role = 'user', className }: UserBadgeProps) {
   if (role === 'user') return null;
 
   const getBadgeConfig = (role: string) => {

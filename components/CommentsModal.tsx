@@ -86,9 +86,6 @@ const CommentItem: React.FC<CommentItemProps> = ({ comment, onLike, onDelete, on
       role: 'user'
   };
 
-  // @ts-ignore - isRobot might be missing from type definition in some environments
-  const isRobot = safeAuthor.isRobot;
-
   return (
     <motion.div
       initial={{ opacity: 0, y: 10 }}
@@ -107,7 +104,7 @@ const CommentItem: React.FC<CommentItemProps> = ({ comment, onLike, onDelete, on
           height={isL0 ? 36 : 28}
           className="rounded-full object-cover mt-1"
         />
-        <UserBadge role={safeAuthor.role} isRobot={isRobot} />
+        <UserBadge role={safeAuthor.role} />
       </div>
 
       <div className="flex-1 min-w-0">
