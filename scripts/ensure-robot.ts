@@ -14,13 +14,11 @@ async function main() {
       console.log('Robot Robert już istnieje.');
       if (!user.isRobot) {
         console.log('Aktualizacja flagi isRobot...');
-        // @ts-ignore - isRobot might not be in the type definition if not regenerated
         await updateUser(user.id, { isRobot: true });
         console.log('Zaktualizowano.');
       }
     } else {
       console.log('Tworzenie Robota Roberta...');
-      // @ts-ignore
       user = await createUser({
         username,
         email,
@@ -32,7 +30,6 @@ async function main() {
       });
 
       // Update specifically for isRobot as createUser might not support it in arguments yet
-      // @ts-ignore
       await updateUser(user.id, { isRobot: true });
       console.log('Utworzono Robota Roberta.');
     }
