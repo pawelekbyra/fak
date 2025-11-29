@@ -19,15 +19,19 @@ export const { auth, handlers, signIn, signOut } = NextAuth({
       if (trigger === "update") {
         // Use token.sub (userId) to fetch fresh data
         if (token.sub) {
-            const freshUser = await prisma.user.findUnique({
-                where: { id: token.sub }
-            });
-            if (freshUser) {
-                token.displayName = freshUser.displayName;
-                token.isFirstLogin = freshUser.isFirstLogin;
-                token.role = freshUser.role;
-                token.username = freshUser.username;
-                token.avatar = freshUser.avatar;
+            try {
+                const freshUser = await prisma.user.findUnique({
+                    where: { id: token.sub }
+                });
+                if (freshUser) {
+                    token.displayName = freshUser.displayName;
+                    token.isFirstLogin = freshUser.isFirstLogin;
+                    token.role = freshUser.role;
+                    token.username = freshUser.username;
+                    token.avatar = freshUser.avatar;
+                }
+            } catch (error) {
+                console.error("Error fetching fresh user data in JWT callback:", error);
             }
         }
         return token;
@@ -59,29 +63,49 @@ export const { auth, handlers, signIn, signOut } = NextAuth({
   providers: [
     Credentials({
         async authorize(credentials) {
-            const parsedCredentials = z
-              .object({ login: z.string(), password: z.string() })
-              .safeParse(credentials);
+            try {
+                const parsedCredentials = z
+                  .object({ login: z.string(), password: z.string() })
+                  .safeParse(credentials);
 
-            if (parsedCredentials.success) {
-                const { login, password } = parsedCredentials.data;
-                let user = null;
+                if (parsedCredentials.success) {
+                    const { login, password } = parsedCredentials.data;
+                    let user = null;
 
-                if (login.includes('@')) {
-                    user = await prisma.user.findUnique({ where: { email: login } });
-                } else {
-                    user = await prisma.user.findUnique({ where: { username: login } });
+                    // Support login by email or username
+                    if (login.includes('@')) {
+                        user = await prisma.user.findUnique({ where: { email: login } });
+                    } else {
+                        user = await prisma.user.findUnique({ where: { username: login } });
+                    }
+
+                    if (!user) {
+                        console.log(`Login failed: User '${login}' not found.`);
+                        return null;
+                    }
+
+                    if (!user.password) {
+                        console.log(`Login failed: User '${user.username}' has no password set.`);
+                        return null;
+                    }
+
+                    const passwordsMatch = await bcrypt.compare(password, user.password);
+
+                    if (passwordsMatch) {
+                        console.log(`Login successful for user: ${user.username}`);
+                        return user;
+                    } else {
+                        console.log(`Login failed: Invalid password for user '${user.username}'.`);
+                        return null;
+                    }
                 }
 
-                if (!user) return null;
-                if (!user.password) return null; // User might exist via OAuth (if added later) but no password
-
-                const passwordsMatch = await bcrypt.compare(password, user.password);
-
-                if (passwordsMatch) return user;
+                console.log('Login failed: Invalid credentials format.');
+                return null;
+            } catch (error) {
+                console.error('Unexpected authentication error:', error);
+                return null;
             }
-            console.log('Invalid credentials');
-            return null;
         }
     })
   ],
