@@ -24,19 +24,14 @@ const DeleteTab: React.FC<DeleteTabProps> = ({ onClose }) => {
 
   const handleDeleteSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    if (confirmation !== DELETE_CONFIRM_TEXT) {
+    if (confirmation.trim() !== DELETE_CONFIRM_TEXT) {
       addToast(t('deleteAccountConfirmError'), 'error');
       return;
     }
 
     setIsSaving(true);
 
-    const formData = new FormData(event.currentTarget);
-    // We need to append the confirmation text manually if the input doesn't have a name matching what the action expects,
-    // but we can just give the input the name 'confirm_text'.
-    // The input below has id="deleteConfirmation", let's add name="confirm_text".
-
-    // Wait, we used 'confirm_text' in lib/actions.ts.
+    const formData = new FormData();
     formData.append('confirm_text', confirmation);
 
     try {
