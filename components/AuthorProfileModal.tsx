@@ -3,9 +3,8 @@
 import React, { useState, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
-import { ChevronLeft, Instagram, Grid, Heart, Lock } from 'lucide-react';
+import { ChevronLeft, Instagram, Grid, Heart, Lock, Loader2 } from 'lucide-react';
 import { useStore } from '@/store/useStore';
-import { Skeleton } from '@/components/ui/skeleton';
 import Image from 'next/image';
 import { DEFAULT_AVATAR_URL } from '@/lib/constants';
 import { UserBadge } from './UserBadge';
@@ -47,6 +46,7 @@ export function AuthorProfileModal({ authorId, onClose }: AuthorProfileModalProp
     };
 
     const togglePatron = () => {
+        onClose();
         openTippingModal({ fromLeft: false }); // Slide from right
     };
 
@@ -88,7 +88,9 @@ export function AuthorProfileModal({ authorId, onClose }: AuthorProfileModalProp
                     <div className="w-12" /> {/* Spacer to balance the back button */}
                 </div>
                 {isLoading ? (
-                    <AuthorProfileSkeleton />
+                    <div className="flex-1 flex items-center justify-center h-full">
+                        <Loader2 className="h-8 w-8 animate-spin text-pink-400" />
+                    </div>
                 ) : isError ? (
                     <div className="flex flex-col items-center justify-center h-full space-y-4 text-white/50">
                         <p>Nie udało się załadować profilu.</p>
@@ -250,39 +252,3 @@ export function AuthorProfileModal({ authorId, onClose }: AuthorProfileModalProp
     );
 }
 
-const AuthorProfileSkeleton = () => (
-    <div className="w-full h-full p-4 flex flex-col items-center pt-10">
-        <Skeleton className="w-24 h-24 rounded-full mb-4 bg-white/10" />
-        <Skeleton className="h-6 w-32 mb-2 bg-white/10" />
-        <Skeleton className="h-4 w-20 mb-6 bg-white/10" />
-
-        <div className="flex gap-8 mb-6">
-            <div className="flex flex-col items-center gap-1">
-                <Skeleton className="h-5 w-10 bg-white/10" />
-                <Skeleton className="h-3 w-16 bg-white/10" />
-            </div>
-            <div className="flex flex-col items-center gap-1">
-                <Skeleton className="h-5 w-10 bg-white/10" />
-                <Skeleton className="h-3 w-16 bg-white/10" />
-            </div>
-            <div className="flex flex-col items-center gap-1">
-                <Skeleton className="h-5 w-10 bg-white/10" />
-                <Skeleton className="h-3 w-16 bg-white/10" />
-            </div>
-        </div>
-
-        <div className="flex gap-2 w-full max-w-xs mb-8">
-            <Skeleton className="flex-1 h-10 rounded bg-white/10" />
-            <Skeleton className="w-10 h-10 rounded bg-white/10" />
-        </div>
-
-        <div className="w-full grid grid-cols-3 gap-1">
-            <Skeleton className="aspect-[3/4] bg-white/10" />
-            <Skeleton className="aspect-[3/4] bg-white/10" />
-            <Skeleton className="aspect-[3/4] bg-white/10" />
-            <Skeleton className="aspect-[3/4] bg-white/10" />
-            <Skeleton className="aspect-[3/4] bg-white/10" />
-            <Skeleton className="aspect-[3/4] bg-white/10" />
-        </div>
-    </div>
-)
