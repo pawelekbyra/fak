@@ -17,6 +17,7 @@ export interface User {
   isFirstLogin?: boolean;
   emailConsent?: boolean;
   emailLanguage?: string | null;
+  isRobot?: boolean;
 }
 
 export interface Comment {

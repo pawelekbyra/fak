@@ -98,7 +98,7 @@ const CommentItem: React.FC<CommentItemProps> = ({ comment, onLike, onDelete, on
     >
       <div
         onClick={() => onAvatarClick(safeAuthor.id)}
-        className="cursor-pointer flex-shrink-0"
+        className="cursor-pointer flex-shrink-0 flex flex-col items-center gap-1"
       >
         <Image
           src={safeAuthor.avatar || DEFAULT_AVATAR_URL}
@@ -107,6 +107,7 @@ const CommentItem: React.FC<CommentItemProps> = ({ comment, onLike, onDelete, on
           height={isL0 ? 36 : 28}
           className="rounded-full object-cover mt-1"
         />
+        <UserBadge role={safeAuthor.role} isRobot={isRobot} />
       </div>
 
       <div className="flex-1 min-w-0">
@@ -115,7 +116,6 @@ const CommentItem: React.FC<CommentItemProps> = ({ comment, onLike, onDelete, on
              <p className="text-xs font-semibold text-[#A6A6A6] cursor-pointer hover:underline" onClick={() => onAvatarClick(safeAuthor.id)}>
                 @{safeAuthor.displayName || safeAuthor.username || 'User'}
               </p>
-              <UserBadge role={safeAuthor.role} isRobot={isRobot} />
            </div>
           <p className="text-[13px] text-white whitespace-pre-wrap break-words">
             {isL1Plus && comment.parentAuthorUsername && (
@@ -137,29 +137,33 @@ const CommentItem: React.FC<CommentItemProps> = ({ comment, onLike, onDelete, on
 
         <div className="flex items-center gap-3 text-xs text-[#808080] mt-1.5">
           <span>{formattedTime}</span>
-          <button onClick={() => onStartReply(comment)} className="font-semibold hover:text-white transition-colors">
-            {t('reply')}
-          </button>
-          <DropdownMenu.Root>
-            <DropdownMenu.Trigger asChild>
-              <button className="text-white/40 hover:text-white opacity-0 group-hover:opacity-100 transition-opacity p-1">
-                <MoreHorizontal size={14} />
-              </button>
-            </DropdownMenu.Trigger>
-            <DropdownMenu.Portal>
-              <DropdownMenu.Content className="min-w-[150px] bg-[#282828] rounded-md p-1 shadow-xl z-[60] border border-white/10" align="end">
-                {currentUserId === comment.authorId ? (
-                  <DropdownMenu.Item className="flex items-center gap-2 px-2 py-1.5 text-sm text-[#FF4D4D] hover:bg-white/10 rounded cursor-pointer outline-none" onSelect={() => { if (confirm(t('deleteConfirmation'))) onDelete(comment.id); }}>
-                    <Trash size={14} />{t('delete') || 'Usuń'}
-                  </DropdownMenu.Item>
-                ) : (
-                  <DropdownMenu.Item className="flex items-center gap-2 px-2 py-1.5 text-sm text-white hover:bg-white/10 rounded cursor-pointer outline-none" onSelect={() => onReport(comment.id)}>
-                    <Flag size={14} />{t('report') || 'Zgłoś'}
-                  </DropdownMenu.Item>
-                )}
-              </DropdownMenu.Content>
-            </DropdownMenu.Portal>
-          </DropdownMenu.Root>
+          {currentUserId && (
+            <button onClick={() => onStartReply(comment)} className="font-semibold hover:text-white transition-colors">
+              {t('reply')}
+            </button>
+          )}
+          {currentUserId && (
+            <DropdownMenu.Root>
+              <DropdownMenu.Trigger asChild>
+                <button className="text-white/40 hover:text-white opacity-0 group-hover:opacity-100 transition-opacity p-1">
+                  <MoreHorizontal size={14} />
+                </button>
+              </DropdownMenu.Trigger>
+              <DropdownMenu.Portal>
+                <DropdownMenu.Content className="min-w-[150px] bg-[#282828] rounded-md p-1 shadow-xl z-[60] border border-white/10" align="end">
+                  {currentUserId === comment.authorId ? (
+                    <DropdownMenu.Item className="flex items-center gap-2 px-2 py-1.5 text-sm text-[#FF4D4D] hover:bg-white/10 rounded cursor-pointer outline-none" onSelect={() => { if (confirm(t('deleteConfirmation'))) onDelete(comment.id); }}>
+                      <Trash size={14} />{t('delete') || 'Usuń'}
+                    </DropdownMenu.Item>
+                  ) : (
+                    <DropdownMenu.Item className="flex items-center gap-2 px-2 py-1.5 text-sm text-white hover:bg-white/10 rounded cursor-pointer outline-none" onSelect={() => onReport(comment.id)}>
+                      <Flag size={14} />{t('report') || 'Zgłoś'}
+                    </DropdownMenu.Item>
+                  )}
+                </DropdownMenu.Content>
+              </DropdownMenu.Portal>
+            </DropdownMenu.Root>
+          )}
         </div>
 
         {replyCount > 0 && (
@@ -529,7 +533,7 @@ const CommentsModal: React.FC<CommentsModalProps> = ({ isOpen, onClose, slideId,
             <div className="flex-shrink-0 border-t border-white/10 bg-[#121212] pb-[calc(0.5rem+env(safe-area-inset-bottom))] z-10">
               {replyingTo && (
                 <div className="bg-[#282828] px-4 py-1.5 text-xs text-[#A6A6A6] flex justify-between items-center">
-                  <span>{t('replyingTo', { user: replyingTo.author.displayName || replyingTo.author.username || '' })}</span>
+                  <span>{t('replyingTo', { user: replyingTo.author?.displayName || replyingTo.author?.username || '' })}</span>
                   <button onClick={handleCancelReply}><X size={14} /></button>
                 </div>
               )}
@@ -548,7 +552,7 @@ const CommentsModal: React.FC<CommentsModalProps> = ({ isOpen, onClose, slideId,
                       ref={textareaRef}
                       value={newComment}
                       onChange={(e) => setNewComment(e.target.value)}
-                      placeholder={replyingTo ? t('replyTo', { user: replyingTo.author.displayName || replyingTo.author.username || '' }) : t('addCommentPlaceholder')}
+                      placeholder={replyingTo ? t('replyTo', { user: replyingTo.author?.displayName || replyingTo.author?.username || '' }) : t('addCommentPlaceholder')}
                       className="w-full pl-4 pr-20 py-2 bg-transparent text-white focus:outline-none text-sm resize-none min-h-[40px] max-h-[120px]"
                       disabled={replyMutation.isPending}
                       rows={1}
