@@ -16,7 +16,7 @@ import { formatDistanceToNow } from 'date-fns';
 import { pl, enUS } from 'date-fns/locale';
 import { Skeleton } from "@/components/ui/skeleton";
 import { DEFAULT_AVATAR_URL } from '@/lib/constants';
-import { UserBadge } from './UserBadge';
+import UserBadge from './UserBadge';
 import { fetchComments } from '@/lib/queries';
 import { cn } from '@/lib/utils';
 

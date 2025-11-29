@@ -6,7 +6,7 @@ import { X } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import Image from 'next/image';
 import { DEFAULT_AVATAR_URL } from '@/lib/constants';
-import { UserBadge } from './UserBadge';
+import UserBadge from './UserBadge';
 import { useQuery } from '@tanstack/react-query';
 import { fetchAuthorProfile } from '@/lib/queries';
 

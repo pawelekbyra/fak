@@ -13,7 +13,7 @@ import { useToast } from '@/context/ToastContext';
 import { updateUserProfile } from '@/lib/actions';
 import { DEFAULT_AVATAR_URL } from '@/lib/constants';
 import CropModal from './CropModal';
-import { UserBadge } from './UserBadge';
+import UserBadge from './UserBadge';
 import { useQueryClient } from '@tanstack/react-query';
 
 interface ProfileTabProps {

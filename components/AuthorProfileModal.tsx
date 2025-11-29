@@ -7,7 +7,7 @@ import { ChevronLeft, Instagram, Grid, Heart, Lock, Loader2 } from 'lucide-react
 import { useStore } from '@/store/useStore';
 import Image from 'next/image';
 import { DEFAULT_AVATAR_URL } from '@/lib/constants';
-import { UserBadge } from './UserBadge';
+import UserBadge from './UserBadge';
 import { fetchAuthorProfile } from '@/lib/queries';
 import { AuthorProfile } from '@/types';
 import { formatCount } from '@/lib/utils';
