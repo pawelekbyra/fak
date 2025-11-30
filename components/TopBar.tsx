@@ -130,7 +130,7 @@ const TopBar = () => {
   return (
     <>
       <div
-        className="absolute top-0 left-0 w-full z-[60] flex items-center justify-between px-1 bg-black text-white border-b border-white/10"
+        className="absolute top-0 left-0 w-full z-[60] flex items-center justify-between bg-black text-white border-b border-white/10"
         style={{
           height: 'var(--topbar-height)',
           paddingTop: 'var(--safe-area-top)',
@@ -139,7 +139,7 @@ const TopBar = () => {
         {!user ? (
           // --- WIDOK DLA UŻYTKOWNIKÓW NIEZALOGOWANYCH ---
           <>
-            <div className="flex justify-start pl-1">
+            <div className="flex justify-start">
               <motion.button
                 whileTap={{ scale: 0.9 }}
                 className="p-2 text-white hover:text-white transition-colors active:bg-white/10 rounded-md outline-none"
@@ -163,7 +163,7 @@ const TopBar = () => {
                 </div>
               </button>
             </div>
-            <div className="flex justify-end items-center gap-1 pr-1">
+            <div className="flex justify-end items-center gap-1">
               {isDesktop && (
                 <Button variant="ghost" size="icon" onClick={handleShowPwaModal} aria-label={t('installPwaAriaLabel')}>
                   <span className="text-sm font-semibold">{t('installAppText')}</span>
@@ -182,7 +182,7 @@ const TopBar = () => {
         ) : (
           // --- WIDOK DLA ZALOGOWANYCH UŻYTKOWNIKÓW ---
           <>
-            <div className="flex justify-start pl-1">
+            <div className="flex justify-start">
               <Popover open={isMenuOpen} onOpenChange={setIsMenuOpen}>
                   <PopoverTrigger asChild>
                     <Button variant="ghost" size="icon" aria-label={t('menuAriaLabel')}>
@@ -227,7 +227,7 @@ const TopBar = () => {
             <div className="flex justify-center flex-1">
               <span className="font-semibold text-lg text-white">{loggedInTitle}</span>
             </div>
-            <div className="flex justify-end pr-1">
+            <div className="flex justify-end">
               {isDesktop && (
                 <Button variant="ghost" size="icon" onClick={handleShowPwaModal} aria-label={t('installPwaAriaLabel')}>
                   <span className="text-sm font-semibold">{t('installAppText')}</span>

@@ -25,6 +25,27 @@ export async function GET(req: NextRequest) {
         botUser = await findUserByEmail('robot@polutek.app');
     }
 
+    // Auto-create bot user if it doesn't exist
+    if (!botUser) {
+        try {
+            console.log("Bot user not found, creating...");
+            // Using createUser from lib/db-postgres.ts which expects specific object
+            const { createUser } = await import('@/lib/db-postgres');
+            botUser = await createUser({
+                username: 'robot_robert',
+                displayName: 'Robot Robert',
+                email: 'robot@polutek.app',
+                password: null, // No password needed
+                avatar: 'https://api.dicebear.com/7.x/bottts/svg?seed=Robert',
+                role: 'verified' // Or a specific 'bot' role if available, but 'verified' is good for visibility
+            });
+            console.log("Bot user created:", botUser.id);
+        } catch (err: any) {
+            console.error("Failed to create bot user:", err);
+             return NextResponse.json({ error: 'Bot user not found and creation failed: ' + err.message }, { status: 500 });
+        }
+    }
+
     if (!botUser) {
       return NextResponse.json({ error: 'Bot user not found' }, { status: 404 });
     }

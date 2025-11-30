@@ -104,7 +104,6 @@ const CommentItem: React.FC<CommentItemProps> = ({ comment, onLike, onDelete, on
           height={isL0 ? 36 : 28}
           className="rounded-full object-cover mt-1"
         />
-        <UserBadge role={safeAuthor.role} />
       </div>
 
       <div className="flex-1 min-w-0">
@@ -134,6 +133,7 @@ const CommentItem: React.FC<CommentItemProps> = ({ comment, onLike, onDelete, on
 
         <div className="flex items-center gap-3 text-xs text-[#808080] mt-1.5">
           <span>{formattedTime}</span>
+          <UserBadge role={safeAuthor.role} />
           {currentUserId && (
             <button onClick={() => onStartReply(comment)} className="font-semibold hover:text-white transition-colors">
               {t('reply')}

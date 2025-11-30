@@ -1,62 +1,72 @@
 
-import os
+import time
 from playwright.sync_api import sync_playwright
 
 def verify_ui():
     with sync_playwright() as p:
         browser = p.chromium.launch(headless=True)
-        context = browser.new_context(viewport={'width': 1280, 'height': 800})
+        context = browser.new_context(
+            viewport={'width': 414, 'height': 896}, # iPhone 11 Pro Max size
+            user_agent='Mozilla/5.0 (iPhone; CPU iPhone OS 13_2_3 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/13.0.3 Mobile/15E148 Safari/604.1'
+        )
         page = context.new_page()
 
         try:
-            print("Navigating to http://127.0.0.1:3000...")
+            # 1. Navigate to the app
+            print("Navigating to http://127.0.0.1:3000")
             page.goto("http://127.0.0.1:3000", timeout=60000)
 
-            # Handle Preloader
-            print("Checking for Preloader...")
+            # Wait for content to load
+            print("Waiting for page load...")
+            time.sleep(5)
+
+            # 2. Handle Language Preloader (if present)
+            # Memory says: "The application shows a full-screen language selection overlay... Test scripts must first select a language"
+            # It also says we should clear localStorage, but new context starts clean.
+
             try:
-                # Wait for language selection (based on memory about Preloader)
-                # Try clicking "Polski" if visible
-                polski_btn = page.get_by_text("Polski")
-                if polski_btn.is_visible(timeout=5000):
+                print("Checking for language selector...")
+                pl_button = page.get_by_text("Polski")
+                if pl_button.is_visible(timeout=5000):
                     print("Clicking Polski...")
-                    polski_btn.click(force=True)
-                    # Wait for preloader to disappear
-                    page.wait_for_timeout(2000)
+                    pl_button.click(force=True)
+                    time.sleep(2)
             except Exception as e:
-                print(f"Preloader handling warning: {e}")
+                print(f"Preloader handling note: {e}")
 
-            print("Waiting for main content...")
-            # Wait for something main to load, e.g. a slide or sidebar
-            page.wait_for_timeout(3000)
+            # 3. Verify TopBar Icons (Task 1)
+            # Capture screenshot of top area
+            print("Taking TopBar screenshot...")
+            page.screenshot(path="verification/topbar.png", clip={'x': 0, 'y': 0, 'width': 414, 'height': 100})
 
-            # Screenshot of main page (to see if comments are visible or we need to navigate)
-            page.screenshot(path="verification_step1.png")
-            print("Step 1 screenshot taken.")
+            # 4. Verify Video Footer (Task 4)
+            # Capture screenshot of bottom area
+            print("Taking Footer screenshot...")
+            page.screenshot(path="verification/footer.png", clip={'x': 0, 'y': 700, 'width': 414, 'height': 196})
 
-            # Look for comments button or content
-            # The memory says "Sidebar.tsx component contains a comments button identifiable by data-testid='comments-button'"
-            comments_btn = page.locator('[data-testid="comments-button"]')
-            if comments_btn.is_visible():
-                print("Clicking comments button...")
-                comments_btn.click()
-                page.wait_for_timeout(2000)
+            # 5. Verify Badges (Task 3a)
+            # We need to find a comment or simulate one.
+            # Navigating to a slide that has comments is hard without knowing DB state.
+            # But we can try to click the comments button on the sidebar if visible.
 
-                # Take screenshot of comments modal
-                page.screenshot(path="verification_comments.png")
-                print("Comments screenshot taken.")
+            # Memory says: "Sidebar... contains a comments button identifiable by `data-testid='comments-button'`"
+            try:
+                print("Looking for comments button...")
+                # We might need to wait for a slide to load.
+                page.wait_for_selector('[data-testid="comments-button"]', timeout=10000)
+                page.click('[data-testid="comments-button"]')
+                time.sleep(2)
 
-                # Try to find a badge
-                # Badges text: "Admin", "Patron", "Zweryfikowany"
-                # If we see one, that's great.
-                if page.locator("text=Admin").is_visible() or page.locator("text=Patron").is_visible():
-                    print("Found a badge!")
-            else:
-                print("Comments button not found. Maybe no slides?")
+                print("Taking Comments Modal screenshot...")
+                page.screenshot(path="verification/comments.png")
+            except Exception as e:
+                print(f"Could not open comments: {e}")
+
+            print("Verification script finished.")
 
         except Exception as e:
             print(f"Error: {e}")
-            page.screenshot(path="verification_error.png")
+            page.screenshot(path="verification/error.png")
         finally:
             browser.close()
 

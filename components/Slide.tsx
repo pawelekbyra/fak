@@ -108,7 +108,7 @@ const SlideUI = ({ slide, isLocked = false }: SlideUIProps) => {
         </AnimatePresence>
 
         {/* UI Controls Container - Added bottom padding/margin to lift it up */}
-        <div className="relative z-20 pointer-events-none w-full max-w-[calc(100%-60px)] flex flex-col items-start text-left mb-6">
+        <div className="relative z-20 pointer-events-none w-full max-w-[calc(100%-60px)] flex flex-col items-start text-left mb-6 pb-[calc(env(safe-area-inset-bottom)+10px)]">
             <div className="flex items-center gap-2 mb-2 pointer-events-auto max-w-full">
                 <Image 
                     src={slide.avatar || DEFAULT_AVATAR_URL} 

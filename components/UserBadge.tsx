@@ -37,7 +37,7 @@ export default function UserBadge({ role = 'user', className }: UserBadgeProps) 
 
   return (
     <span className={cn(
-      "px-1.5 py-[1px] text-[9px] font-bold tracking-wider rounded-sm",
+      "px-1 py-0 text-[8px] font-bold tracking-wider rounded-sm leading-none h-fit self-center",
       config.styles,
       className
     )}>

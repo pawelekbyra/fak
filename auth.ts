@@ -72,15 +72,18 @@ export const { auth, handlers, signIn, signOut } = NextAuth({
                     const { login, password } = parsedCredentials.data;
                     let user = null;
 
+                    // Normalize login input
+                    const normalizedLogin = login.trim();
+
                     // Support login by email or username
-                    if (login.includes('@')) {
-                        user = await prisma.user.findUnique({ where: { email: login } });
+                    if (normalizedLogin.includes('@')) {
+                        user = await prisma.user.findUnique({ where: { email: normalizedLogin } });
                     } else {
-                        user = await prisma.user.findUnique({ where: { username: login } });
+                        user = await prisma.user.findUnique({ where: { username: normalizedLogin } });
                     }
 
                     if (!user) {
-                        console.log(`Login failed: User '${login}' not found.`);
+                        console.log(`Login failed: User '${normalizedLogin}' not found.`);
                         return null;
                     }
 
@@ -89,6 +92,7 @@ export const { auth, handlers, signIn, signOut } = NextAuth({
                         return null;
                     }
 
+                    // Use bcryptjs compare
                     const passwordsMatch = await bcrypt.compare(password, user.password);
 
                     if (passwordsMatch) {
